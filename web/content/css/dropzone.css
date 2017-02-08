@@ -1,0 +1,22 @@
+.dropzone .dz-preview .dz-details {
+    display: none;
+}
+
+.dropzone .dz-preview .dz-remove,
+.dropzone .dz-preview .dz-image img {
+    cursor: pointer;
+}
+
+.dropzone.dz-clickable {
+    cursor: cell;
+}
+
+.dropzone .dz-preview:hover .dz-image img {
+    -webkit-transform: none;
+    -moz-transform: none;
+    -ms-transform: none;
+    -o-transform: none;
+    transform: none;
+    -webkit-filter: none;
+    filter: none;
+}

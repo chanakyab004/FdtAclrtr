@@ -1,0 +1,33 @@
+	body {
+		background-color: #ffffff;
+		}
+	.callout {
+		border:none;
+        background: #ffffff;
+        border: 1px solid #4e4e4e;
+        padding: 1rem;
+		}
+	.hidden{
+		display: none;
+	}
+	.loginTitle {
+		color:#2089ca;
+         margin-bottom: 0;
+         margin-top:0;
+		}
+	.page-content-text {
+		color:#999999;
+		}
+	.page-content-text small {
+		color:#999999;
+		}
+	.errorMsg {
+		color: red;
+    	font-size: .8rem;
+    	/*height: .8rem;*/
+    	margin: .1rem 0;
+		}
+	.is-invalid-input:not(:focus) {
+     background-color: rgba(236, 88, 64, 0.5); 
+    border-color: #ec5840;
+	}		

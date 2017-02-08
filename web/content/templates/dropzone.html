@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../css/dropzone/dropzone.css" />
+    <link rel="stylesheet" href="../css/dropzone.css" />
+    <script src="../js/jquery.js"></script>
+    <script src="../js/dropzone/dropzone.js"></script>
+    <script src="../js/dropzone.js"></script>
+
+                            
+</head>
+<body style="background:transparent;">
+    <?php
+    $section = filter_input(INPUT_GET, 'section', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $evaluationID = filter_input(INPUT_GET, 'evaluationID', FILTER_SANITIZE_NUMBER_INT);
+    $projectID = filter_input(INPUT_GET, 'projectID', FILTER_SANITIZE_NUMBER_INT);
+    ?>
+    <form action="dropzone.php" id="my-dropzone" class="dropzone">
+        <input type="hidden" id="section" name="section" value="<?php echo $section;  ?>" />
+        <input type="hidden" id="evaluationID" name="evaluationID" value="<?php echo $evaluationID;  ?>" />
+        <input type="hidden" id="projectID" name="projectID" value="<?php echo $projectID;  ?>" />
+        <input type="hidden" id="companyID" name="companyID" value="<?php echo $companyID;  ?>" />
+    </form>
+</body>
+</html>

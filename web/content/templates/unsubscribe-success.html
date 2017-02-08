@@ -1,0 +1,70 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Foundation Accelerator</title>
+    <link rel="stylesheet" href="css/foundation.css" />
+  <link rel="stylesheet" href="css/custom.css" />
+    <link rel="stylesheet" href="css/registration.css" />
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
+  <script src="js/jquery.js"></script>
+  <style>
+      div.loadingImage {
+          position: fixed;
+          z-index: 1500;
+          left: 0;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #eee;
+          opacity: 0.5;
+          text-align: center;
+      }
+      div.loadingImage {
+          display: none;
+      }
+      div.loadingImage > img {
+          position: absolute;
+          top: 40%;
+      }
+  </style>
+    <script>
+           $(document).ready(function () {
+            $('#close').click(function (){
+              console.log('close window');
+            })
+            });
+    </script>
+  </head>
+  <body>
+    <div id="loading-image" class="loadingImage">
+        <img src="images/ajax-loader.gif" />
+    </div>
+    <div class="row">
+        <div class="small-3 columns">&nbsp;</div>
+        <div class="small-2 columns" style="margin-top:1rem;">
+            <img src="images/FoundationAcceleratorLogo.png">
+        </div>
+        <div class="small-4 columns text-right">
+            <h4 class="loginTitle" style="margin-top: 5.5rem;">Successfully Unsubscribed</h4>
+        </div>
+        <div class="small-3 columns">&nbsp;</div>
+    </div>
+    <div class="row">
+        <div class="small-3 columns">&nbsp;</div>
+        <div class="small-6 columns">
+            <div class="callout" style="padding-top: 1rem;margin-top: 1rem;">
+            You have successfully unsubscribed from fxlratr.com emails.
+        </div>
+        <div class="small-3 columns">&nbsp;</div>
+    </div>
+    <script src="js/jquery.js"></script>
+    <script src="js/foundation.min.js"></script>
+    <script>
+      $(document).foundation();
+    </script>
+  </body>
+</html>

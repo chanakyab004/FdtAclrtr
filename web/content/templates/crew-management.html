@@ -1,0 +1,2344 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Foundation Accelerator</title>
+    <link rel="stylesheet" href="css/foundation.css" />
+    <link rel="stylesheet" href="css/custom.css" />
+    <link rel="stylesheet" href="css/crew-management.css" />
+    <link rel="stylesheet" href="css/motion-ui.css" />
+    <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+    <link rel="stylesheet" href="css/wickedpicker.css" />
+    <link href='css/fullcalendar.css' rel='stylesheet' />
+    <link href='css/scheduler.css' rel='stylesheet' />
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
+    <script src="js/jquery.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+    <script src='js/moment.min.js'></script>
+    <script src='js/fullcalendar.js'></script>
+    <script src='js/jquery.tablesorter.min.js'></script>
+    <script src='js/map.js'></script>
+    <script src='js/cookie.js'></script>
+    <script src='js/setup-progress.js'></script>
+    <script src='js/zen.js'></script>
+    <script src='js/wickedpicker.js'></script>
+    <script>
+        var decodeEntities = function (encodedString) {
+            var textArea = document.createElement('textarea');
+            textArea.innerHTML = encodedString;
+            return textArea.value;
+        };
+
+        var downloadReport = function() {
+            var week = $('.fc-week-number').not('.fc-widget-header').find('span').text();
+            var year = $('#calendar').fullCalendar('getView').dayGrid.dayDates[0].format('YYYY');
+            window.open('time-report.php?week=' + week + '&year=' + year, '_blank');
+        };
+
+        var approveAll = function() {
+            var timecardDates = [];
+            var days = $('#calendar').fullCalendar('getView').dayGrid.dayDates;
+            for (i = 0; i < days.length; i++){
+                timecardDates.push(days[i].format('YYYY-MM-DD'));
+            }
+            $('.clockIconWeek').each(function(){
+                $(this).addClass('clicked')
+                var crewmanID = $(this).parent().parent().find('.calendarName').attr('crewman');
+                approveTimecardWeek(timecardDates, crewmanID, 1);
+                $(this).parent().parent().find('.calendarTime').addClass('approved');
+            });
+        };
+
+        var unapproveAll = function() {
+            var timecardDates = [];
+            var days = $('#calendar').fullCalendar('getView').dayGrid.dayDates;
+            for (i = 0; i < days.length; i++){
+                timecardDates.push(days[i].format('YYYY-MM-DD'));
+            }
+            $('.clockIconWeek').each(function(){
+                $(this).removeClass('clicked')
+                var crewmanID = $(this).parent().parent().find('.calendarName').attr('crewman');
+                approveTimecardWeek(timecardDates, crewmanID, 0);
+                $(this).parent().parent().find('.calendarTime').removeClass('approved');
+            });
+        };
+
+        var getCrewmen = function(sort) {
+            var viewAll = false;
+            var active = $('#active').val();
+            $(".calendarTable").find("tr:gt(0)").remove();
+            $('.calendarDay').removeClass('today');
+            $('.calendarTableDetail tr').removeClass('today');
+            $(".calendarTableDetailNames").empty();
+
+            var day1 = $('#calendar').fullCalendar('getView').dayGrid.dayDates[0].format('YYYY-MM-DD');
+            var day2 = $('#calendar').fullCalendar('getView').dayGrid.dayDates[1].format('YYYY-MM-DD');
+            var day3 = $('#calendar').fullCalendar('getView').dayGrid.dayDates[2].format('YYYY-MM-DD');
+            var day4 = $('#calendar').fullCalendar('getView').dayGrid.dayDates[3].format('YYYY-MM-DD');
+            var day5 = $('#calendar').fullCalendar('getView').dayGrid.dayDates[4].format('YYYY-MM-DD');
+            var day6 = $('#calendar').fullCalendar('getView').dayGrid.dayDates[5].format('YYYY-MM-DD');
+            var day7 = $('#calendar').fullCalendar('getView').dayGrid.dayDates[6].format('YYYY-MM-DD');
+
+            var days = [day1, day2, day3, day4, day5, day6, day7];
+
+            $('loading-image').show();
+
+            //Get Crewman Timecard Info
+            $.ajax({
+                url: 'getAllCrewmen.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "POST",
+                data: {
+                    weekStart: day1,
+                    weekEnd: day7,
+                    sort: sort,
+                    active: active
+                },
+                contentType: "application/x-www-form-urlencoded",
+                success: function(response) {
+                    if (response != null){
+                        index = 1;
+                        $.each(response, function (i, item) {
+                            var sum = item.sum;
+                            var approved = '';
+                            var times = ['', '', '', '', '', '', ''];
+                            var approvedDays = [];
+                            var invalid = '';
+
+                            if (item.approved != null){
+                                approved = ' approved';
+                            }
+
+                            if (sum == null){
+                                sum = '';
+                            }
+                            else{
+                                sum = item.sum.substr(0, 5);
+                            }
+
+                            if (Object.keys(item.days).length <= 1){
+                                invalid = ' invalid';
+                            }
+
+                            $.each(item.days, function (day, time) {
+                                if (time != null) {
+                                    if (days.indexOf(day) != -1){
+                                        times[days.indexOf(day)] = time.substr(0, 5);
+                                    }
+                                }
+                            });
+
+                            $(".calendarTable").append('<tr><td class="calendarName" crewman="' + item.crewmanID + '"><span>' + item.crewmanName + '</span><div crewman="' + item.crewmanID + '" class="personIcon"></div></td><td class="calendarTime">' + times[0] + '</td><td class="calendarTime" >' + times[1] + '</td><td class="calendarTime">' + times[2] + '</td><td class="calendarTime">' + times[3] + '</td><td class="calendarTime">' + times[4] + '</td><td class="calendarTime">' + times[5] + '</td><td class="calendarTime">' + times[6] + '</td><td class="calendarTime sum">' + sum + '</td><td class="calendarCheckbox"><div class="clockIconWeek' + invalid + '" value="0"></div></td></tr>');
+                            $(".calendarTableDetailNames").append('<tr><td class="calendarName" crewman="' + item.crewmanID + '"><span>' + item.crewmanName + '</span><div crewman="' + item.crewmanID + '" class="personIcon"></div></td></tr>');
+
+                            $.each(item.approved, function (day, time) {
+                                if (time != null) {
+                                    approvedDays.push(day);
+                                    if (days.indexOf(day) != -1){
+                                        var row = $('.calendarTable .calendarName').find('[crewman="' + item.crewmanID + '"]').parent().parent().index() + 1;
+                                        var column = days.indexOf(day) + 2;
+                                        $('.calendarTable tr:nth-child(' + row + ') td:nth-child(' + column + ')').addClass('approved');
+                                    }
+                                }
+                            });
+                            if (approvedDays.length == Object.keys(item.days).length - 1 && approvedDays.length != 0){ //if all days in week that have time are approved, check approved button
+                                $('.calendarTable .calendarName').find('[crewman="' + item.crewmanID + '"]').parent().parent().find('.clockIconWeek').addClass('clicked')
+                                $('.calendarTable .calendarName').find('[crewman="' + item.crewmanID + '"]').parent().parent().find('.clockIconWeek').val(1);
+                            }
+                            index += 1;
+                            $('loading-image').hide();
+                            if (item.invalidTime){
+                                $.each(item.invalidTime, function (day, i) {
+                                    if (days.indexOf(day) != -1){
+                                        var row = $('.calendarTable .calendarName').find('[crewman="' + item.crewmanID + '"]').parent().parent().index() + 1;
+                                        var column = days.indexOf(day) + 2;
+                                        $('.calendarTable tr:nth-child(' + row + ') td:nth-child(' + column + ')').addClass('invalid-time');
+                                        $('.calendarTable .calendarName').find('[crewman="' + item.crewmanID + '"]').parent().parent().find('.clockIconWeek').addClass('invalid');
+                                        $('.calendarTable .calendarName').find('[crewman="' + item.crewmanID + '"]').parent().parent().find('.clockIconWeek').removeClass('clicked');
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    else{
+                        //no crewmen
+                        $('.headerName').empty()
+                        $(".calendarTableDetailNames").append('<tr><td class="calendarNameBlank"></div></td></tr><tr><td class="calendarNameBlank"></div></td></tr><tr><td class="calendarNameBlank"></div></td></tr><tr><td class="calendarNameBlank"></div></td></tr><tr><td class="calendarNameBlank"></div></td></tr><tr><td class="calendarNameBlank"></div></td></tr><tr><td class="calendarNameBlank"></div></td></tr><tr><td class="calendarNameBlankBottom"></div></td></tr>');
+                    }
+                }, error: function(jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            }).done(highlightToday, removeFutureTimes);      
+        };
+
+        var getCrewmanTimeDetail = function(crewmanID) {
+            $('#currentCrewman').val(crewmanID);
+            $('.calendarDetailHeader').attr('crewman', crewmanID);
+            $('.clockIconDetail').removeClass('clicked');
+            $('.clockIconDetail').val(0);
+            $('.calendarDetailTotalHours').empty();
+            $('.calendarDetailHours').empty();
+            $('.calendarDetailTime').empty();
+            $('.calendarDetailNotes').empty();
+            $('.calendarDetailBottom .calendarName').empty();
+            $('.calendarDetailBottom .calendarName').eq(0).append('<span></span>');
+            $('.calendarDetailBottom .calendarName').eq(0).attr('class', 'calendarDetailBlankBottom');
+            $('.calendarDetailBottom tr .calendarName').remove();
+            $('.calendarDetailTime').removeClass('invalid-time');
+            $('.clockIconDetail').addClass('invalid');
+
+            var day1 = $('#calendar').fullCalendar('getView').dayGrid.dayDates[0].format('YYYY-MM-DD');
+            var day2 = $('#calendar').fullCalendar('getView').dayGrid.dayDates[1].format('YYYY-MM-DD');
+            var day3 = $('#calendar').fullCalendar('getView').dayGrid.dayDates[2].format('YYYY-MM-DD');
+            var day4 = $('#calendar').fullCalendar('getView').dayGrid.dayDates[3].format('YYYY-MM-DD');
+            var day5 = $('#calendar').fullCalendar('getView').dayGrid.dayDates[4].format('YYYY-MM-DD');
+            var day6 = $('#calendar').fullCalendar('getView').dayGrid.dayDates[5].format('YYYY-MM-DD');
+            var day7 = $('#calendar').fullCalendar('getView').dayGrid.dayDates[6].format('YYYY-MM-DD');
+
+            var days = [day1, day2, day3, day4, day5, day6, day7];
+            var index = 1;
+            var times = ['00:00', '00:00', '00:00', '00:00', '00:00', '00:00', '00:00'];
+
+            $('loading-image').show();
+
+            //Get Crewman Timecard Info
+            $.ajax({
+                url: 'getCrewmanTimeDetail.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "POST",
+                data: {
+                    crewmanID: crewmanID,
+                    weekStart: day1,
+                    weekEnd: day7
+                },
+                contentType: "application/x-www-form-urlencoded",
+                success: function(response) {
+                    $.each(response, function (i, item) {
+                        if (i != 'total' && i != 'crewmanName'){
+                            if (days.indexOf(i) != -1){
+                                var indexIncremented = days.indexOf(i) + 1;
+                                $('#day' + indexIncremented).parent().find('.calendarDetailHours').text(item.total.substr(0, 5));
+                                if (item.approved != null){
+                                    $('#day' + indexIncremented).parent().find('.clockIconDetail').addClass('clicked')
+                                    $('#day' + indexIncremented).parent().find('.clockIconDetail').val(1);
+                                }
+                                $.each(item.punchTimes, function (day, time) {
+                                    var inTime = moment(time.inTime, "HH:mm:ss").format("hh:mm a");
+                                    var outTime = moment(time.outTime, "HH:mm:ss").format("hh:mm a");
+                                    var notes = time.notes + '<br/>';
+                                    if (time.notes == null){
+                                        notes = '';
+                                    }
+                                    if (time.outTime != null){
+                                        $('#day' + indexIncremented).parent().find('.calendarDetailTime').append('<span>' + inTime + ' - ' + outTime + '</span><br/>');
+                                        $('#day' + indexIncremented).parent().find('.clockIconDetail').removeClass('invalid');
+                                    }
+                                    else{
+                                        $('#day' + indexIncremented).parent().find('.calendarDetailTime').append('<span class="invalid-punchIn">' +inTime + '</span><br/>');
+                                        $('#day' + indexIncremented).parent().find('.calendarDetailTime').addClass('invalid-time');
+                                        // $('#day' + indexIncremented).parent().find('.clockIconDetail').addClass('invalid');
+
+                                    }
+                                    $('#day' + indexIncremented).parent().find('.calendarDetailNotes').append(notes);
+                                    if (findOverlappingTimes(item.punchTimes)){
+                                       $('#day' + indexIncremented).parent().find('.calendarDetailTime').addClass('invalid-time'); 
+                                       $('#day' + indexIncremented).parent().find('.clockIconDetail').removeClass('clicked')
+                                       // $('#day' + indexIncremented).parent().find('.clockIconDetail').addClass('invalid');
+                                    }
+                                });
+                            }
+                            $('#day' + indexIncremented).parent().find('.invalid-time span').not('.invalid-punchIn').append(' <img src="images/icons/info.png" title="There are overlapping times. Please correct these before approving."/>');
+                            index += 1;
+                        }
+                        else if (i == 'crewmanName'){
+                            $('.headerName').text(item);
+                        }
+                        else{
+                            $('.calendarDetailTotalHours').append(item.substr(0, 5));
+                        }
+                    });
+                    $('.invalid-punchIn').append(' <img src="images/icons/info.png" title="Crew member is still punched in. Please correct this before approving."/>');
+                }, error: function(jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            });   
+        };
+
+        var editCrewmanInfo = function (crewmanID) {
+            $('#crewmanID').val(crewmanID);
+            $('#phoneTable tbody tr').not(':first').remove();
+
+            $('small.fullPhone').removeClass('is-visible');
+            $('small.primary').removeClass('is-visible');
+            $('small.onePhone').removeClass('is-visible'); 
+
+            $('#editCrewmanInfoModal input[name="firstName"]').val('');
+            $('#editCrewmanInfoModal input[name="lastName"]').val('');
+            $('#editCrewmanInfoModal input[name="address"]').val('');
+            $('#editCrewmanInfoModal input[name="address2"]').val('');
+            $('#editCrewmanInfoModal input[name="city"]').val('');
+            $('#editCrewmanInfoModal select[name="state"]').val('');
+            $('#editCrewmanInfoModal input[name="zip"]').val('');
+            $('#editCrewmanInfoModal input[name="email"]').val('');
+            // $('#editCrewmanInfoModal input[name="notes"]').val('');
+                            
+            //Get Crewman Info
+            $.ajax({
+                url: 'getCrewman.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "GET",
+                contentType: "application/x-www-form-urlencoded",
+                data: {
+                        crewmanID: crewmanID
+                },
+                success: function(response) {                
+                    $('#editCrewmanInfoModal input[name="firstName"]').val(decodeEntities(response.firstName));
+                    $('#editCrewmanInfoModal input[name="lastName"]').val(decodeEntities(response.lastName));
+                    $('#editCrewmanInfoModal input[name="address"]').val(decodeEntities(response.address));
+                    $('#editCrewmanInfoModal input[name="address2"]').val(decodeEntities(response.address2));
+                    $('#editCrewmanInfoModal input[name="city"]').val(decodeEntities(response.city));
+
+                    if ($('#editCrewmanInfoModal select[name="state"]').has('option[value="' + response.state + '"]').length > 0)
+                        $('#editCrewmanInfoModal select[name="state"] > option[value="' + response.state + '"]').prop('selected', true);
+
+                    $('#editCrewmanInfoModal select[name="state"]').val(response.state);
+                    $('#editCrewmanInfoModal input[name="zip"]').val(response.zip);
+                    $('#editCrewmanInfoModal input[name="email"]').val(response.email);
+                    // $('#editCrewmanInfoModal textarea[name="notes"]').val(decodeEntities(response.notes));
+                    if (response.crewmanActive == 0){
+                        $('#userActive').prop('checked', false);
+                    }
+                    else{
+                        $('#userActive').prop('checked', true);
+                    }
+
+                    //On Success Get Crewman Phone 
+                    $.ajax({
+                        url: 'getCrewmanPhone.php',
+                        dataType: "json",
+                        contentType: 'application/json',
+                        type: "GET",
+                        contentType: "application/x-www-form-urlencoded",
+                        data: {
+                            crewmanID: crewmanID
+                        },  
+                        success: function(response) {
+                            if (response != null){
+                                $.each(response, function (i, item) {
+
+                                    $cloneRow = $('#editCrewmanInfoModal .phoneTable tbody tr:first').clone().css('display', '');
+
+                                    $cloneRow.addClass('dbRow');
+
+                                    if ($cloneRow.find('select.Description').has('option[value="' + item.phoneDescription + '"]').length > 0)
+                                        $cloneRow.find('select.Description > option[value="' + item.phoneDescription + '"]').prop('selected', true);
+
+                                    $cloneRow.find('input.Phone').val(item.phoneNumber);
+                                  
+                                     if (item.isPrimary == '1') {
+                                        $cloneRow.find('input.isPrimary').prop('checked', true);
+                                    } else {
+                                        $cloneRow.find('input.isPrimary').prop('checked', false);
+                                    }
+
+                                    $cloneRow.find('select.Description').attr('sort', item.crewmanPhoneID);
+                                    $cloneRow.find('input.Phone').attr('sort', item.crewmanPhoneID);
+                                    $cloneRow.find('input.isPrimary').attr('sort', item.crewmanPhoneID);
+
+                                    $('#editCrewmanInfoModal .phoneTable tbody').append($cloneRow);
+                                    $('#editCrewmanInfoModal .phoneTable tbody > tr:last-child input.isPrimary ').click(isPrimaryCheck);
+                                    $('#editCrewmanInfoModal .phoneTable tbody > tr:last-child a ').click(deletePhoneRow);
+                                });
+                            }
+
+                            //On Success Display Modal
+                            $('#editCrewmanInfoModal').foundation('open');
+                                
+                        }, error: function(jqXHR, textStatus, errorThrown) {
+                            console.log(textStatus, errorThrown);
+                            console.log(jqXHR.responseText);
+                        }
+                   });     
+                        
+                }, error: function(jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            });     
+        };
+
+    var saveEditCrewmanInfo = function() {
+
+        $('#editCrewmanInfoModal input.crewmanRequired, #editCrewmanInfoModal select.crewmanRequired').each(function () {
+
+             if ($(this).val() == '') {
+                $(this).parent().addClass('is-invalid-label');
+                $(this).addClass('is-invalid-input');
+                $(this).parent().find('.form-error').addClass('is-visible');
+            } else {
+                $(this).parent().removeClass('is-invalid-label');
+                $(this).removeClass('is-invalid-input');
+                $(this).parent().find('.form-error').removeClass('is-visible');
+            }
+        });
+
+        if ($('#phoneTable tbody tr:visible').length > 0) {
+            $('small.onePhone').removeClass('is-visible');
+
+            if ($('#phoneTable .isPrimary:checked').length < 1) {
+                $('small.primary').addClass('is-visible');
+                
+            } else {
+                if ($('#phoneTable .isPrimary:checked').is(':visible')) {
+                    $('small.primary').removeClass('is-visible');
+                } else {
+                    $('small.primary').addClass('is-visible');
+                }
+            }
+
+            $('#phoneTable tbody tr:visible').each(function(){
+                if ($(this).find('td input.Phone').val() == '' || $(this).find('td select.Description').val() == '') {
+                    $('small.fullPhone').addClass('is-visible');
+                } else {
+                    if ($(this).find('td input.Phone').val().length < 14) {
+                         $('small.fullPhone').addClass('is-visible');
+                    } else {
+                        $('small.fullPhone').removeClass('is-visible');
+                    }
+                }
+            }); 
+        } else {
+            $('small.fullPhone').removeClass('is-visible');
+            $('small.primary').removeClass('is-visible');
+            $('small.onePhone').removeClass('is-visible'); 
+        }
+
+        if (!$('#editCrewmanInfoModal input[name="firstName"]').parent().hasClass('is-invalid-label') &&
+            !$('#editCrewmanInfoModal input[name="lastName"]').parent().hasClass('is-invalid-label') && 
+            !$('#editCrewmanInfoModal input[name="address"]').parent().hasClass('is-invalid-label') && 
+            !$('#editCrewmanInfoModal input[name="address2"]').parent().hasClass('is-invalid-label') && 
+            !$('#editCrewmanInfoModal input[name="city"]').parent().hasClass('is-invalid-label') &&
+            !$('#editCrewmanInfoModal select[name="state"]').parent().hasClass('is-invalid-label') &&
+            !$('#editCrewmanInfoModal input[name="zip"]').parent().hasClass('is-invalid-label') &&
+            !$('#editCrewmanInfoModal input[name="email"]').parent().hasClass('is-invalid-label')
+            &&
+            !$('small.onePhone').hasClass('is-visible') &&
+            !$('small.fullPhone').hasClass('is-visible') &&
+            !$('small.primary').hasClass('is-visible')
+            ) {
+
+            var firstName = $('#editCrewmanInfoModal input[name="firstName"]').val();
+            var lastName = $('#editCrewmanInfoModal input[name="lastName"]').val();
+            var address = $('#editCrewmanInfoModal input[name="address"]').val();
+            var address2 = $('#editCrewmanInfoModal input[name="address2"]').val();
+            var city = $('#editCrewmanInfoModal input[name="city"]').val();
+            var state = $('#editCrewmanInfoModal select[name="state"]').val();
+            var zip = $('#editCrewmanInfoModal input[name="zip"]').val();
+            var email = $('#editCrewmanInfoModal input[name="email"]').val();
+            // var notes = $('#editCrewmanInfoModal textarea[name="notes"]').val();
+            var crewmanID = $('#crewmanID').val();
+            var active = $('#userActive').prop('checked') ? 1 : 0; 
+
+            storePhoneTableData();
+
+            function storePhoneTableData() {
+                var phoneTableData = new Array();
+                $('#phoneTable tbody tr').each(function(row,tr){
+                    phoneTableData[row]={
+                        "phoneDelete":$(tr).find('td:eq(0)').find('select').attr('delete'),
+                        "crewmanPhoneID":$(tr).find('td:eq(0)').find('select').attr('sort'),
+                        "phoneDescription":$(tr).find('td:eq(0)').find('select').val(),
+                        "phoneNumber":$(tr).find('td:eq(1)').find('input').val(),
+                        "isPrimary":$(tr).find('td:eq(2)').find('input:checked').val()
+                    };
+                    if (phoneTableData[row]['isPrimary'] == undefined){
+                        phoneTableData[row]['isPrimary'] = 0;
+                    }
+                });
+
+                phoneTableData.shift();
+                var phoneTableArray = phoneTableData;
+
+                $('loading-image').show();
+                $.ajax({
+                    url: 'editCrewman.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        crewmanID: crewmanID,
+                        firstName: firstName,
+                        lastName: lastName,
+                        address: address,
+                        address2: address2,
+                        city: city,
+                        state: state,
+                        zip: zip,
+                        email: email,
+                        active: active,
+                        phoneArray: phoneTableArray,
+                        // notes: notes,
+                    },
+                    success: function(response) {
+                        if (response == 'true') {
+                            $('#phoneTable tbody tr').not(':first').remove();
+
+                            $('#editCrewmanInfoModal input[name="firstName"]').val('');
+                            $('#editCrewmanInfoModal input[name="lastName"]').val('');
+                            $('#editCrewmanInfoModal input[name="address"]').val('');
+                            $('#editCrewmanInfoModal input[name="address2"]').val('');
+                            $('#editCrewmanInfoModal input[name="city"]').val('');
+                            $('#editCrewmanInfoModal select[name="state"]').val('');
+                            $('#editCrewmanInfoModal input[name="zip"]').val('');
+                            $('#editCrewmanInfoModal input[name="email"]').val('');
+                            // $('#editCrewmanInfoModal input[name="notes"]').val('');
+                            $('#userActive').prop('checked', true);
+
+                            $('#crewmanID').val('');
+
+                            $('#editCrewmanInfoModal').foundation('close');
+                            $('#editCrewmanInfoSuccessModal').foundation('open');
+
+                            updateCrewmanInfo(crewmanID);
+                            getCrewmen();
+                            $('loading-image').hide(); 
+                        } 
+                        else {
+                            $('#editCrewmanInfoErrorModal p.error-text').text(response);
+                            $('#editCrewmanInfoModal').foundation('open');
+                        }
+                    }, error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                });     
+            }
+            }
+        };
+
+    var saveAddCrewman = function() {
+
+        $('#addCrewmanModal input.crewmanRequired, #addCrewmanModal select.crewmanRequired').each(function () {
+
+             if ($(this).val() == '') {
+                $(this).parent().addClass('is-invalid-label');
+                $(this).addClass('is-invalid-input');
+                $(this).parent().find('.form-error').addClass('is-visible');
+            } else {
+                $(this).parent().removeClass('is-invalid-label');
+                $(this).removeClass('is-invalid-input');
+                $(this).parent().find('.form-error').removeClass('is-visible');
+            }
+        });
+
+        if ($('#phoneTableAdd tbody tr:visible').length > 0) {
+            $('small.onePhone').removeClass('is-visible');
+
+            if ($('#phoneTableAdd .isPrimary:checked').length < 1) {
+                $('small.primary').addClass('is-visible');
+                
+            } else {
+                if ($('#phoneTableAdd .isPrimary:checked').is(':visible')) {
+                    $('small.primary').removeClass('is-visible');
+                } else {
+                    $('small.primary').addClass('is-visible');
+                }
+            }
+
+            $('#phoneTableAdd tbody tr:visible').each(function(){
+                if ($(this).find('td input.Phone').val() == '' || $(this).find('td select.Description').val() == '') {
+                    $('small.fullPhone').addClass('is-visible');
+                } else {
+                    if ($(this).find('td input.Phone').val().length < 14) {
+                         $('small.fullPhone').addClass('is-visible');
+                    } else {
+                        $('small.fullPhone').removeClass('is-visible');
+                    }
+                }
+            }); 
+        } else {
+            $('small.fullPhone').removeClass('is-visible');
+            $('small.primary').removeClass('is-visible');
+            $('small.onePhone').removeClass('is-visible'); 
+        }
+
+        if (!$('#addCrewmanModal input[name="firstName"]').parent().hasClass('is-invalid-label') &&
+            !$('#addCrewmanModal input[name="lastName"]').parent().hasClass('is-invalid-label') && 
+            !$('#addCrewmanModal input[name="address"]').parent().hasClass('is-invalid-label') && 
+            !$('#addCrewmanModal input[name="address2"]').parent().hasClass('is-invalid-label') && 
+            !$('#addCrewmanModal input[name="city"]').parent().hasClass('is-invalid-label') &&
+            !$('#addCrewmanModal select[name="state"]').parent().hasClass('is-invalid-label') &&
+            !$('#addCrewmanModal input[name="zip"]').parent().hasClass('is-invalid-label') &&
+            !$('#addCrewmanModal input[name="email"]').parent().hasClass('is-invalid-label')
+            &&
+            !$('small.onePhone').hasClass('is-visible') &&
+            !$('small.fullPhone').hasClass('is-visible') &&
+            !$('small.primary').hasClass('is-visible')
+            ) {
+
+            var firstName = $('#addCrewmanModal input[name="firstName"]').val();
+            var lastName = $('#addCrewmanModal input[name="lastName"]').val();
+            var address = $('#addCrewmanModal input[name="address"]').val();
+            var address2 = $('#addCrewmanModal input[name="address2"]').val();
+            var city = $('#addCrewmanModal input[name="city"]').val();
+            var state = $('#addCrewmanModal select[name="state"]').val();
+            var zip = $('#addCrewmanModal input[name="zip"]').val();
+            var email = $('#addCrewmanModal input[name="email"]').val();
+            // var notes = $('#addCrewmanModal textarea[name="notes"]').val();
+            var crewmanID = $('#crewmanID').val();
+
+            storePhoneTableData();
+
+            function storePhoneTableData() {
+                var phoneTableData = new Array();
+                $('#phoneTableAdd tbody tr').each(function(row,tr){
+                    phoneTableData[row]={
+                        "phoneDelete":$(tr).find('td:eq(0)').find('select').attr('delete'),
+                        "crewmanPhoneID":$(tr).find('td:eq(0)').find('select').attr('sort'),
+                        "phoneDescription":$(tr).find('td:eq(0)').find('select').val(),
+                        "phoneNumber":$(tr).find('td:eq(1)').find('input').val(),
+                        "isPrimary":$(tr).find('td:eq(2)').find('input:checked').val()
+                    };
+                    if (phoneTableData[row]['isPrimary'] == undefined){
+                        phoneTableData[row]['isPrimary'] = 0;
+                    }
+                });
+
+                phoneTableData.shift();
+                var phoneTableArray = phoneTableData;
+               
+                $('loading-image').show();
+                $.ajax({
+                    url: 'addCrewman.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        crewmanID: crewmanID,
+                        firstName: firstName,
+                        lastName: lastName,
+                        address: address,
+                        address2: address2,
+                        city: city,
+                        state: state,
+                        zip: zip,
+                        email: email,
+                        phoneArray: phoneTableArray,
+                        // notes: notes,
+                    },
+                    success: function(response) {
+                        if (response == 'true') {
+                            $('#phoneTableAdd tbody tr').not(':first').remove();
+
+                            $('#addCrewmanModal input[name="firstName"]').val('');
+                            $('#addCrewmanModal input[name="lastName"]').val('');
+                            $('#addCrewmanModal input[name="address"]').val('');
+                            $('#addCrewmanModal input[name="address2"]').val('');
+                            $('#addCrewmanModal input[name="city"]').val('');
+                            $('#addCrewmanModal select[name="state"]').val('');
+                            $('#addCrewmanModal input[name="zip"]').val('');
+                            $('#addCrewmanModal input[name="email"]').val('');
+                            // $('#addCrewmanModal input[name="notes"]').val('');
+                            $('#crewmanID').val('');
+
+                            $('#addCrewmanModal').foundation('close');
+                            $('#addCrewmanSuccessModal').foundation('open');
+
+                            getCrewmen();
+                            $('loading-image').hide(); 
+                        } 
+                        else {
+                            $('#editCrewmanInfoErrorModal p.error-text').text(response);
+                            $('#addCrewmanModal').foundation('open');
+                        }
+                    }, error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                });     
+            }
+            }
+        };
+
+        var updateCrewmanInfo = function(crewmanID) {
+            $.ajax({
+                url: 'getCrewman.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "GET",
+                contentType: "application/x-www-form-urlencoded",
+                data: {
+                    crewmanID: crewmanID
+                },
+                success: function(response) {
+                    var fullName = response.firstName + ' ' + response.lastName;
+                    $('.calendarName[crewman="' + crewmanID + '"] span').text(fullName);
+                        
+                }, error: function(jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }   
+            });   
+        };
+
+        var addPhoneRow = function () {
+            $cloneBlankRow = $('#phoneTable').find('tbody tr:first').clone().css('display', '');
+            $('#phoneTable').find('tbody').append($cloneBlankRow);
+            $('#phoneTable').find('tbody > tr:last-child input.isPrimary').change(isPrimaryCheck);
+            $('#phoneTable').find('tbody > tr:last-child .delete > a').click(deletePhoneRow);
+
+            $('#phoneTable').find('tbody > tr:last-child input.Phone').mask('(000) 000-0000');
+
+            if ($('#phoneTable input.isPrimary:checked').length <= 0) {
+                $('#phoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+            }
+        };
+
+        var addNewCrewmanPhoneRow = function () {
+            $cloneBlankRow = $('#phoneTableAdd').find('tbody tr:first').clone().css('display', '');
+            $('#phoneTableAdd').find('tbody').append($cloneBlankRow);
+            $('#phoneTableAdd').find('tbody > tr:last-child input.isPrimary').change(isPrimaryCheckNewCrewman);
+            $('#phoneTableAdd').find('tbody > tr:last-child .delete > a').click(deleteNewCrewmanPhoneRow);
+
+            $('#phoneTableAdd').find('tbody > tr:last-child input.Phone').mask('(000) 000-0000');
+
+            if ($('#phoneTableAdd input.isPrimary:checked').length <= 0) {
+                $('#phoneTableAdd tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+            }
+        };
+
+        var isPrimaryCheckNewCrewman = function () {
+            $('#phoneTableAdd').find('input.isPrimary').prop('checked', false);
+            $(this).prop('checked', true);
+        };
+
+        var isPrimaryCheck = function () {
+            $('#phoneTable').find('input.isPrimary').prop('checked', false);
+            $(this).prop('checked', true);
+        };
+
+        var deleteNewCrewmanPhoneRow = function () {
+
+            if ($(this).parent().parent().hasClass('dbRow')) {
+                $(this).parent().parent().find('select').attr('delete','delete');
+                $(this).parent().parent().css('display','none');
+
+                 if ($(this).parent().parent().find('input.isPrimary').is(':checked'))
+                    $('#phoneTableAdd tbody tr:visible').eq(0).find('td.primary input.isPrimary').prop('checked', true);
+
+                // if ($('#phoneTableAdd tbody').children().length == 1)
+                //     addPhoneRow();
+            } else {
+                $(this).parent().parent().remove();
+
+                if ($(this).parent().parent().find('input.isPrimary').is(':checked'))
+                    $('#phoneTableAdd tbody tr:visible').eq(0).find('td.primary input.isPrimary').prop('checked', true);
+
+                // if ($('#phoneTableAdd tbody').children().length == 1)
+                //    addNewCrewmanPhoneRow();
+            $('small.fullPhone').removeClass('is-visible');
+            $('small.primary').removeClass('is-visible');
+            $('small.onePhone').removeClass('is-visible'); 
+            }
+        };
+
+        var deletePhoneRow = function () {
+
+            if ($(this).parent().parent().hasClass('dbRow')) {
+                $(this).parent().parent().find('select').attr('delete','delete');
+                $(this).parent().parent().css('display','none');
+
+                 if ($(this).parent().parent().find('input.isPrimary').is(':checked'))
+                    $('#phoneTable tbody tr:visible').eq(0).find('td.primary input.isPrimary').prop('checked', true);
+
+                // if ($('#phoneTable tbody').children().length == 1)
+                //     addPhoneRow();
+            } else {
+                $(this).parent().parent().remove();
+
+                if ($(this).parent().parent().find('input.isPrimary').is(':checked'))
+                    $('#phoneTable tbody tr:visible').eq(0).find('td.primary input.isPrimary').prop('checked', true);
+
+                $('small.fullPhone').removeClass('is-visible');
+                $('small.primary').removeClass('is-visible');
+                $('small.onePhone').removeClass('is-visible');
+            }
+        };
+
+        var getDaysOfWeek = function () {
+            $('#allDay1').text($('#calendar').fullCalendar('getView').dayGrid.dayDates[0].format('MM/DD'));
+            $('#allDay2').text($('#calendar').fullCalendar('getView').dayGrid.dayDates[1].format('MM/DD'));
+            $('#allDay3').text($('#calendar').fullCalendar('getView').dayGrid.dayDates[2].format('MM/DD'));
+            $('#allDay4').text($('#calendar').fullCalendar('getView').dayGrid.dayDates[3].format('MM/DD'));
+            $('#allDay5').text($('#calendar').fullCalendar('getView').dayGrid.dayDates[4].format('MM/DD'));
+            $('#allDay6').text($('#calendar').fullCalendar('getView').dayGrid.dayDates[5].format('MM/DD'));
+            $('#allDay7').text($('#calendar').fullCalendar('getView').dayGrid.dayDates[6].format('MM/DD'));
+
+            $('#day1').text($('#calendar').fullCalendar('getView').dayGrid.dayDates[0].format('MM/DD'));
+            $('#day2').text($('#calendar').fullCalendar('getView').dayGrid.dayDates[1].format('MM/DD'));
+            $('#day3').text($('#calendar').fullCalendar('getView').dayGrid.dayDates[2].format('MM/DD'));
+            $('#day4').text($('#calendar').fullCalendar('getView').dayGrid.dayDates[3].format('MM/DD'));
+            $('#day5').text($('#calendar').fullCalendar('getView').dayGrid.dayDates[4].format('MM/DD'));
+            $('#day6').text($('#calendar').fullCalendar('getView').dayGrid.dayDates[5].format('MM/DD'));
+            $('#day7').text($('#calendar').fullCalendar('getView').dayGrid.dayDates[6].format('MM/DD'));
+        };
+
+        var editTimecard = function(hourTotal, date, crewmanID) {
+            $('.timepicker').wickedpicker();
+            var formattedDate = moment(date).format('MMMM DD, YYYY');
+            var formattedTime = '';
+            if (hourTotal != ''){
+                var minutes = moment(hourTotal, "hh:mm").minute();
+                var hours = moment(hourTotal, "hh:mm").hour();
+                switch (minutes){
+                    case 0:
+                        formattedMinutes = '';
+                        break;
+                    case 1:
+                        formattedMinutes = moment(hourTotal, "hh:mm:ss").format(' m [minute]');
+                        break;
+                    default:
+                        formattedMinutes = moment(hourTotal, "hh:mm:ss").format(' m [minutes]');
+                        break;
+                }
+                switch (hours){
+                    case 0:
+                        formattedHours = ' - ';
+                        break;
+                    case 1:
+                        formattedHours = ' - ' +  moment(hourTotal, "hh:mm:ss").format('H [hour]');
+                        break;
+                    default:
+                        formattedHours = ' - ' +  moment(hourTotal, "hh:mm:ss").format('H [hours]');
+                        break;
+                }
+                if (hours != 0 || minutes != 0){
+                    formattedTime = formattedHours + formattedMinutes;
+                }
+                if (formattedHours.includes('Invalid') || formattedMinutes.includes('Invalid')) {
+                    formattedTime = '';
+                }
+            }
+
+            $('#editTimecardModal').empty();
+            $('#editTimecardModal').append('<input id="date" type="hidden" value="' + date + '" /><span id="timecardTitle">Time Entry Detail</span><span id="timecardDateTitle">' + formattedDate + formattedTime + '</span><hr/><div class="row addTime"><div class="medium-12 columns"><img class="addTimeEntry" src="images/icons/phone_add.png" />  <span>New Time Entry</span></div></div><br/><div class="row"><div class="medium-12 columns"><p class="text-center no-margin"><button class="button" id="saveEditTimecardModal">Save</button> <button class="button secondary" id="closeEditTimecardModal" data-close>Cancel</button></p></div></div>');
+
+            $.ajax({
+                url: 'getTimecardEntries.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "POST",
+                contentType: "application/x-www-form-urlencoded",
+                data: {
+                    crewmanID: crewmanID,
+                    timecardDate: date
+                },
+                success: function(response) {
+                    if (response != null){
+                        $.each(response, function (i, item) {
+                            var notes = item.notes;
+                            var inTime = item.inTime;   
+                            var outTime = item.outTime;
+                            var punchTimeID = item.punchTimeID;
+                            var projectID = item.projectID;
+                            if (notes == null){
+                                notes = "";
+                            }
+
+                            if (inTime == null){
+                                inTime = "00:00";
+                            }
+
+                            if (outTime == null){
+                                outTime = "00:00";
+                            }
+
+                            $('<div class="row"><div class="medium-7 columns"><label class="notesLabel">Notes</label></div><div class="medium-4 columns"><label>Project </label></div></div><div class="row timeEntry"><div class="is-hidden" time="' + item.punchTimeID + '"></div><div class="medium-1 columns labelWrapper"><label class="timeLabelIn">Clock in</label><label class="timeLabelOut">Clock out</label></div><div class="medium-2 columns"><input class="clockIn timepicker" style="margin-bottom: .2rem;" type="text" name="timepicker" value="' + item.inTime + '" /><input class="clockOut timepicker" style="margin-bottom: .2rem;" type="text" name="timepicker" value="' + item.outTime + '" /><small style="margin-top: .6rem;" id="endTimeErr" class="form-error">Clock in time must be after clock out time.</small></div><div class="medium-4 columns"><textarea name="notes" rows="3" class="timecardNote" type="text" value="">' + notes + '</textarea></div><div class="medium-1 columns"><img class="deleteTimeEntry" src="images/icons/phone_delete.png" /></div></div><hr/>').insertBefore('#editTimecardModal .addTime');
+
+                                $(select).insertBefore($('[time="' + punchTimeID + '"]').parent().find('.deleteTimeEntry').parent());
+                                for (i = 0; i < installations.length; i++){
+                                    $('.combobox').append(installations[i]);
+                                }
+                                $( ".combobox" ).combobox();
+                            setTime(inTime, outTime, punchTimeID);
+                            if (projectID != null){
+                                $('[time="' + punchTimeID + '"]').parent().find('.combobox').find('option[value="' + projectID + '"]').prop('selected', true);
+                                var optionText = $('[time="' + punchTimeID + '"]').parent().find('.combobox').find('option[value="' + projectID + '"]').text();
+                                $('[time="' + punchTimeID + '"]').parent().find('.custom-combobox-input').val(optionText);
+                            }
+                        });
+                    }
+                    else{
+                        addTimeEntry();
+                    }
+                    $('#editTimecardModal').foundation('open');
+                }, error: function(jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            });  
+        };
+
+        var saveEditTimecard = function () {
+            var crewmanID = $('.calendarDetailHeader').attr('crewman');
+            var calls = [];
+            var addTimes = [];
+            var editTimes = [];
+            $('.timeEntry').each(function(){
+                var inTime = moment($(this).find('.clockIn').wickedpicker('time'), "h : mm A").format("HH:mm:ss");
+                var outTime = moment($(this).find('.clockOut').wickedpicker('time'), "h : mm A").format("HH:mm:ss");
+                var notes = $(this).find('.timecardNote').val();
+                var punchTimeID = $(this).find('.is-hidden').attr('time');
+                var timecardDate = $(this).parent().find('#date').val();
+                var projectID = $(this).find('.combobox').find('option:selected').last().val();
+
+                if (punchTimeID == 0){
+                    addTimes.push({
+                        "inTime": inTime,
+                        "outTime": outTime,
+                        "notes": notes,
+                        "timecardDate": timecardDate,
+                        "crewmanID": crewmanID,
+                        "projectID": projectID
+                    });
+                }
+                else{
+                    editTimes.push({
+                        "inTime": inTime,
+                        "outTime": outTime,
+                        "notes": notes,
+                        "punchTimeID": punchTimeID,
+                        "projectID": projectID
+                    });
+                }
+            });
+            if (addTimes.length > 0){
+                calls.push($.ajax({
+                    url: 'addPunchTime.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        punchTimes: addTimes
+                    },
+                    success: function(response) {
+                    }, error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                }));
+            }
+            if (editTimes.length > 0){
+                calls.push($.ajax({
+                    url: 'editPunchTime.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        punchTimes: editTimes
+                    },
+                    success: function(response) {
+                    }, error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                }));
+            }
+           $.when.apply($, calls).then(function() {
+                //update table when all ajax calls have finished
+                $('.calendarDetailHeader').attr('crewman', crewmanID);
+                $('.clockIconDetail').removeClass('clicked')
+                $('.clockIconDetail').val(0);
+                $('.calendarDetailTotalHours').empty();
+                $('.calendarDetailHours').empty();
+                $('.calendarDetailTime').empty();
+                $('.calendarDetailNotes').empty();
+                $('#editTimecardModal').foundation('close');
+                $('#editTimecardSuccessModal').foundation('open');
+                getCrewmanTimeDetail(crewmanID);
+                getCrewmen();
+            });
+        };
+    var select = '<div class="medium-4 columns comboboxWrapper"><div class="ui-widget"><select class="combobox"><option value="">Select one...</option></select></div></div>';
+    var installations = [];
+    var getInstallations = function () {
+        
+        $.ajax({
+            url: 'getPastInstallations.php',
+            dataType: "json",
+            contentType: 'application/json',
+            type: "POST",
+            contentType: "application/x-www-form-urlencoded",
+            success: function(response) {
+                $.each(response, function (i, item) {
+                    installations.push('<option value="' + item.projectID + '">' + item.customerName + ' - ' + item.projectDescription + '</option>');
+                });
+            }, error: function(jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+                console.log(jqXHR.responseText);
+            }
+        });
+    };
+
+        var addTimeEntry = function () {
+            $('<div class="row"><div class="medium-7 columns"><label class="notesLabel">Notes</label></div><div class="medium-4 columns"><label>Project </label></div></div><div class="row timeEntry"><div class="is-hidden" time="0"></div><div class="medium-1 columns labelWrapper"><label class="timeLabelIn">Clock in</label><label class="timeLabelOut">Clock out</label></div><div class="medium-2 columns"><input class="clockIn timepicker" style="margin-bottom: .2rem;" type="text" name="timepicker" /><input class="clockOut timepicker" style="margin-bottom: .2rem;" type="text" name="timepicker" /><small style="margin-top: .6rem;" id="endTimeErr" class="form-error">Clock in time must be after clock out time.</small></div><div class="medium-4 columns"><textarea name="notes" rows="3" class="timecardNote" type="text" value=""></textarea></div><div class="medium-1 columns"><img class="deleteTimeEntry" src="images/icons/phone_delete.png" /></div></div><hr/>').insertBefore('#editTimecardModal .addTime');
+
+                
+                $(select).insertBefore($('[time="0"]').parent().last().find('.deleteTimeEntry').parent());
+                for (i = 0; i < installations.length; i++){
+                    $('.combobox').append(installations[i]);
+                }
+                $( ".combobox" ).combobox();
+            setTime("00:00:00", "12:00:00", 0);
+        };
+
+        var deleteTimeEntry = function () {
+            var punchTimeID = $('#deleteNumber').text();
+            $.ajax({
+                url: 'deletePunchTime.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "POST",
+                contentType: "application/x-www-form-urlencoded",
+                data: {
+                    punchTimeID: punchTimeID
+                },
+                success: function(response) {
+                    if (response == 'true') {
+                        $('#editTimecardModal').foundation('open');
+                        $('[time="' + punchTimeID + '"]').parent().prev().remove();
+                        $('[time="' + punchTimeID + '"]').parent().next().remove();
+                        $('[time="' + punchTimeID + '"]').parent().remove();
+                    } 
+                    else {
+                        $('#editTimecardErrorModal p.error-text').text(response);
+                        $('#editTimecardModal').foundation('open');
+                    }
+                }, error: function(jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            }).done(function () {
+                getCrewmanTimeDetail($('#currentCrewman').val());
+                getCrewmen();
+            });
+        };
+
+        var highlightToday = function () {
+            var todaysNumber = new Date().getDay();
+            var todaysNumberIncremented = todaysNumber + 1;
+            var currentDisplayDateForDayNumber = $('#calendar').fullCalendar('getView').dayGrid.dayDates[todaysNumber-1].format('YYYY-MM-DD');
+            var todaysDate = moment(new Date()).format('YYYY-MM-DD');
+            //checks today's date against the day number on the calendar. This is to
+            //prevent highlighting a day on previous or future weeks, and only highlights today
+            if (todaysDate == currentDisplayDateForDayNumber){ 
+                $('.calendarTable tr td:nth-child(' + todaysNumberIncremented + ')').addClass('today');
+                $('.calendarTableDetail tr:nth-child(' + todaysNumber + ')').addClass('today'); 
+            }
+        };
+
+        var removeFutureTimes = function () {
+            var todaysNumber = new Date().getDay();
+            var todaysNumberIncremented = todaysNumber + 1;
+            var currentDisplayDateForDayNumber = $('#calendar').fullCalendar('getView').dayGrid.dayDates[todaysNumber-1].format('YYYY-MM-DD');
+            var todaysDate = moment(new Date()).format('YYYY-MM-DD');
+            if (todaysDate == currentDisplayDateForDayNumber){ 
+                for (i = todaysNumberIncremented + 1; i < 9; i++){
+                    //if for some strange reason there is a time entry in the future, show it. this removes only the blank times.
+                    $('.calendarTable tr td:nth-child(' + i + '):contains("00:00")').not('.calendarDay').text('');
+                    $('.calendarTableDetail tr:nth-child(' + i + ')').find('.clockIconDetail').addClass('invalid');
+                }
+            }
+        };
+
+        var approveTimecard = function (timecardDate, crewmanID, approved) {
+            $.ajax({
+                url: 'approveTimecard.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "POST",
+                contentType: "application/x-www-form-urlencoded",
+                data: {
+                    timecardDate: timecardDate,
+                    crewmanID: crewmanID,
+                    approved: approved
+                },
+                success: function(response) {
+
+                }, error: function(jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            }).done(getCrewmen()); 
+        };
+
+        var approveTimecardWeek = function (timecardDates, crewmanID, approved) {
+            for (i = 0; i < timecardDates.length; i++){
+                timecardDate = timecardDates[i];
+                $.ajax({
+                    url: 'approveTimecard.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        timecardDate: timecardDate,
+                        crewmanID: crewmanID,
+                        approved: approved
+                    },
+                    success: function(response) {
+
+                    }, error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                }); 
+            }
+        };
+
+        var addCrewman = function () {
+            $('#phoneTableAdd tbody tr').not(':first').remove();
+            $('#addCrewmanModal input[name="firstName"]').val('');
+            $('#addCrewmanModal input[name="lastName"]').val('');
+            $('#addCrewmanModal input[name="address"]').val('');
+            $('#addCrewmanModal input[name="address2"]').val('');
+            $('#addCrewmanModal input[name="city"]').val('');
+            $('#addCrewmanModal select[name="state"]').val('');
+            $('#addCrewmanModal input[name="zip"]').val('');
+            $('#addCrewmanModal input[name="email"]').val('');
+
+            $('small.fullPhone').removeClass('is-visible');
+            $('small.primary').removeClass('is-visible');
+            $('small.onePhone').removeClass('is-visible');
+
+            $('#addCrewmanModal .crewmanRequired').each(function(){
+                $(this).next().removeClass('is-visible');
+                $(this).removeClass("required");
+                $(this).removeClass("is-invalid-input");
+                $(this).parent().removeClass('is-invalid-label');
+            });
+
+            $('#addCrewmanModal').foundation('open');
+            // addNewCrewmanPhoneRow();
+        };
+
+        var setTime = function (start, end, punchTimeID) {
+            //set Start Date & Time
+            var startTime = moment(start, "HH:mm:ss").format("HH:mm");
+            var startTimeAMPM = moment(start, "HH:mm:ss").format("h : mm A");
+            var startTimeString = startTime.toString();
+
+            var StartTimeOptions ={
+                        now: startTimeString,
+                        twentyFour: false,  //Display 24 hour format, defaults to false
+                        upArrow: 'wickedpicker__controls__control-up',  //The up arrow class selector to use, for custom CSS
+                        downArrow: 'wickedpicker__controls__control-down', //The down arrow class selector to use, for custom CSS
+                        close: 'wickedpicker__close', //The close class selector to use, for custom CSS
+                        hoverState: 'hover-state', //The hover state class to use, for custom CSS
+                        title: "Select a time", //The Wickedpicker's title,
+                        showSeconds: false, //Whether or not to show seconds,
+                        secondsInterval: 1, //Change interval for seconds, defaults to 1,
+                        minutesInterval: 1, //Change interval for minutes, defaults to 1
+                        beforeShow: null, //A function to be called before the Wickedpicker is shown
+                        show: function(){
+                            var modal = $('#editTimecardModal');
+                            var datePicker = $('body').find('.wickedpicker');
+                                if(!modal.length) {
+                                    $(datePicker).css('z-index', 'auto');
+                                    return;
+                                }
+                            var zIndexModal = $(modal).css('z-index');
+                                $(datePicker).css('z-index', zIndexModal + 1);
+                            // var zIndexModal = $(modal).css('z-index');
+                                // $(datePicker).css('z-index', zIndexModal + 1);
+                            }, //A function to be called when the Wickedpicker is shown
+                        clearable: false //Make the picker's input clearable (has clickable "x")
+                    };
+
+                    
+
+            //set End Date & Time
+            var endTime = moment(end, "HH:mm:ss").format("HH:mm");
+            var endTimeAMPM = moment(end, "HH:mm:ss").format("h : mm A");
+            var endTimeString = endTime.toString();
+                    var EndTimeOptions ={
+                    now: endTimeString,
+                    twentyFour: false,  //Display 24 hour format, defaults to false
+                    upArrow: 'wickedpicker__controls__control-up',  //The up arrow class selector to use, for custom CSS
+                    downArrow: 'wickedpicker__controls__control-down', //The down arrow class selector to use, for custom CSS
+                    close: 'wickedpicker__close', //The close class selector to use, for custom CSS
+                    hoverState: 'hover-state', //The hover state class to use, for custom CSS
+                    showSeconds: false, //Whether or not to show seconds,
+                    secondsInterval: 1, //Change interval for seconds, defaults to 1,
+                    minutesInterval: 1, //Change interval for minutes, defaults to 1
+                    beforeShow: null, //A function to be called before the Wickedpicker is shown
+                    show: function(){
+                            var modal = $('#editTimecardModal');
+                            var datePicker = $('body').find('.wickedpicker');
+                                if(!modal.length) {
+                                    $(datePicker).css('z-index', 'auto');
+                                    return;
+                                }
+                            var zIndexModal = $(modal).css('z-index');
+                                $(datePicker).css('z-index', zIndexModal + 1);
+                            }, //A function to be called when the Wickedpicker is shown
+                    clearable: false, //Make the picker's input clearable (has clickable "x")
+                    };
+
+
+                if(/iPhone|iPad|iPod/i.test(navigator.userAgent) ){
+                    $('[time="' + punchTimeID + '"]').next().next().find('.clockIn').last().val(startTime);
+                    $('[time="' + punchTimeID + '"]').next().next().find('.clockOut').last().val(endTime);
+                }else{
+                    $('[time="' + punchTimeID + '"]').next().next().find('.clockIn').last().wickedpicker(StartTimeOptions);
+                    $('[time="' + punchTimeID + '"]').next().next().find('.clockOut').last().val(startTimeAMPM);
+        
+                    $('[time="' + punchTimeID + '"]').next().next().find('.clockOut').last().wickedpicker(EndTimeOptions);          
+                    $('[time="' + punchTimeID + '"]').next().next().find('.clockOut').last().val(endTimeAMPM);
+                
+             }    
+            //stops the iPad / Android Keyboard from popping up on the date picker
+            $('.clockIn').prop('readonly', 'readonly');
+            $('.clockOut').prop('readonly', 'readonly');
+
+            if( /iPhone|iPad|iPod/i.test(navigator.userAgent) ) {
+                //change the input types for time to 
+                //html 5 "time" so that we don't have
+                //interface issues
+                $('.clockIn').removeClass('timepicker');
+                $('.clockOut').removeClass('timepicker');
+
+                $('.clockIn').prop('type','time');
+                $('.clockOut').prop('type', 'time');
+            }
+
+            $('.clockIn').focus(function(event){
+                if( /iPhone|iPad|iPod/i.test(navigator.userAgent)){
+                    //without this, the time controls lost focus and made data entry impossible. 
+                    $(window).scrollTop(0);
+                }
+            });
+
+            $('.clockOut').focus(function(event){
+                if( /iPhone|iPad|iPod/i.test(navigator.userAgent)){
+                    //without this, the time controls lost focus and made data entry impossible. 
+                    $(window).scrollTop(0);
+                }
+            });       
+        };
+
+        var findOverlappingTimes = function(timecardEntries){
+            var overlapFound = false;
+            for (i = 0; i < timecardEntries.length - 1; i++){
+                var inTime = timecardEntries[i].inTime;
+                var inTimeNext = timecardEntries[i+1].inTime;
+                var outTime = timecardEntries[i].outTime;
+                var outTimeNext = timecardEntries[i+1].outTime;
+                var overlap = ((inTime < outTimeNext)  &&  (outTime > inTimeNext));
+                if (overlap){
+                    overlapFound = true;
+                }
+            }
+            return overlapFound;
+        };
+
+    $(document).ready(function () {
+            $( document ).tooltip();
+            getInstallations();
+
+        $('#editCrewmanInfoModal .crewmanRequired').focusout(function(){
+            if($(this).val()!=''){
+                $(this).next().removeClass('is-visible');
+                $(this).removeClass("required");
+                $(this).removeClass("is-invalid-input");
+                $(this).parent().removeClass('is-invalid-label');
+                
+            } else{
+                $(this).next().addClass('is-visible');
+                $(this).addClass("required");
+                $(this).addClass("is-invalid-input");
+                $(this).parent().addClass('is-invalid-label');
+            }
+        });
+
+        $('#addCrewmanModal .crewmanRequired').focusout(function(){
+            if($(this).val()!=''){
+                $(this).next().removeClass('is-visible');
+                $(this).removeClass("required");
+                $(this).removeClass("is-invalid-input");
+                $(this).parent().removeClass('is-invalid-label');
+                
+            } else{
+                $(this).next().addClass('is-visible');
+                $(this).addClass("required");
+                $(this).addClass("is-invalid-input");
+                $(this).parent().addClass('is-invalid-label');
+            }
+        });
+
+
+        //Show Setup Modal if Clicked in Top Nav
+        $('#showSetup').click(showSetupModal);
+
+        //Show Setup Modal On Page Load if it Hasn't Been Viewed Since Yesterday
+        showSetupModal('true');
+
+        //Update Last Viewed When Modal Opens
+        $('#setupModal').on('open.zf.reveal', function() {
+            $.ajax({
+                url: 'setupProgressUpdate.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "POST",
+                contentType: "application/x-www-form-urlencoded",
+                data: {
+                    updateSetupNotice: 'true'
+                },
+                success: function (response) {
+                    //console.log(response);
+                    // if (response == 'true') {
+                    // }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            });
+
+        });
+
+        //Update Checkmarks When Clicked
+        $('img.setupProgressCheckmark').click(updateChecks);
+
+        //Stop Showing Setup Modal
+        $('#setupComplete').click(setupComplete);
+
+            //needed for Zendesk Help Ticket
+             userInfo = {
+                name: "<?php echo $userFirstName;  ?>" + " <?php echo $userLastName;  ?>",
+                email: "<?php echo $userEmail;  ?>"
+            }
+
+            $('#calendarTitleAll').click(function() {
+                $('#datepicker').datepicker('show');
+            });
+
+            $( function() {
+                $( "#datepicker" ).datepicker();
+            } );
+
+            $('body').on('change', '#filterResources', function() {
+              getCrewmen($(this).val());
+            });
+
+            //Click Functions
+            $('#detailApproveAll').click(function () {
+                $('.clockIconDetail').each(function(){
+                    var dayNumber = $(this).attr('value');
+                    var date = $('#calendar').fullCalendar('getView').dayGrid.dayDates[dayNumber].format('YYYY-MM-DD');
+                    var crewmanID = $('.calendarDetailHeader').attr('crewman');
+
+                    if ($(this).val() == 0){
+                        if ($(this).parent().parent().find('.invalid-time').length > 0 || $(this).parent().parent().find('.invalid').length > 0) {
+                            // $('#invalidTimeModal').foundation('open');
+                        }
+                        else{
+                            $(this).addClass('clicked')
+                            $(this).val(1);
+                            approveTimecard(date, crewmanID, 1);
+                        }
+                    }
+                });
+            });
+
+            $('.addIcon').click(addCrewman);
+            $('#downloadReport').click(downloadReport);
+
+            $('body').on('click', '.calendarName', function() {
+                var crewmanID = $(this).parent().find('.calendarName').attr("crewman");
+                $('#calendarViewAll').hide();
+                $('#calendarViewDetail').show();
+                $('#currentCrewman').val(crewmanID);
+                $('#detailViewAll').removeClass('active');
+                $('#detailViewDetail').addClass('active');
+                getCrewmanTimeDetail(crewmanID);
+            });
+
+            $('body').on('click', '.calendarTime', function() {
+                var crewmanID = $(this).parent().find('.calendarName').attr("crewman");
+                $('#calendarViewAll').hide();
+                $('#calendarViewDetail').show();
+                $('#currentCrewman').val(crewmanID);
+                $('#detailViewAll').removeClass('active');
+                $('#detailViewDetail').addClass('active');
+                getCrewmanTimeDetail(crewmanID);
+            });
+
+            $('#viewActive').click(function () {
+                $('#viewActive').addClass('active');
+                $('#viewInactive').removeClass('active');
+                $('#active').val(1);
+                getCrewmen();
+            });
+
+            $('#viewInactive').click(function () {
+                $('#viewInactive').addClass('active');
+                $('#viewActive').removeClass('active');
+                $('#active').val(0);
+                getCrewmen();
+            });
+
+            $('#viewActiveDetail').click(function () {
+                $('#viewActiveDetail').addClass('active');
+                $('#viewInactiveDetail').removeClass('active');
+                $('#active').val(1);
+                getCrewmen();
+                getCrewmanTimeDetail($('#currentCrewman').val());
+            });
+
+            $('#viewInactiveDetail').click(function () {
+                $('#viewInactiveDetail').addClass('active');
+                $('#viewActiveDetail').removeClass('active');
+                $('#active').val(0);
+                getCrewmen();
+                getCrewmanTimeDetail($('#currentCrewman').val());
+            });
+
+            $('#allViewDetail').click(function () {
+                $('#calendarViewAll').hide();
+                $('#calendarViewDetail').show();
+                $('#allViewDetail').addClass('active');
+                $('#detailViewDetail').addClass('active');
+                $('#detailViewAll').removeClass('active');
+            });
+
+            $('#detailViewAll').click(function () {
+                $('#calendarViewDetail').hide();
+                $('#calendarViewAll').show();
+                $('#detailViewAll').addClass('active');
+                $('#allViewAll').addClass('active');
+                $('#allViewDetail').removeClass('active');
+            });
+
+            $('body').on('click', '.personIcon', function() {
+                var crewmanID = $(this).attr("crewman");
+                editCrewmanInfo(crewmanID);
+                $('#editCrewmanInfoModal').foundation('open');
+            });
+
+            //editTimecardModal
+            $('body').on('click', '.addTimeEntry', addTimeEntry);
+            $('body').on('click', '.deleteTimeEntry', function() {
+                var punchTimeID = $(this).parent().parent().find('.is-hidden').attr('time');
+                if (punchTimeID != 0){
+                    $('#deleteNumber').text(punchTimeID);
+                    $('#confirmDeleteModal').foundation('open');
+                }
+                else{
+                    $(this).parent().parent().prev().remove();
+                    $(this).parent().parent().next().remove();
+                    $(this).parent().parent().remove();
+                }
+            });
+
+            $('#deleteTimeYes').click(deleteTimeEntry);
+
+            $('#deleteTimeCancel').click(function () {
+                $('#editTimecardModal').foundation('open');
+            });
+
+            $('body').on('click', '#saveEditTimecardModal', function () {
+            
+                $('.timeEntry').each(function(){
+                    var inTime = moment($(this).find('.clockIn').wickedpicker('time'), "h : mm A").format("HH:mm:ss");
+                    var outTime = moment($(this).find('.clockOut').wickedpicker('time'), "h : mm A").format("HH:mm:ss");
+                    if (inTime > outTime || inTime == outTime){
+                        $(this).find('.labelWrapper label').addClass('is-invalid-label');
+                        $(this).find('.clockIn').addClass('is-invalid-input');
+                        $(this).find('.form-error').addClass('is-visible');
+
+                        $(this).find('.clockOut').addClass('is-invalid-input');
+                        $(this).find('.form-error').addClass('is-visible');
+                    }
+                    else{
+                        $(this).find('.labelWrapper label').removeClass('is-invalid-label');
+                        $(this).find('.clockIn').removeClass('is-invalid-input');
+                        $(this).find('.form-error').removeClass('is-visible');
+
+                        $(this).find('.clockOut').removeClass('is-invalid-input');
+                        $(this).find('.form-error').removeClass('is-visible');
+                    }
+                });
+                if (!$(".is-invalid-label").length > 0){
+                    saveEditTimecard();
+                }
+            });
+
+            $('#saveEditCrewmanInfoModal').click(saveEditCrewmanInfo);
+            $('#saveAddCrewmanModal').click(saveAddCrewman);
+
+            $('#phoneTable .addPhone').click(addPhoneRow);
+            $('#phoneTableAdd .addPhone').click(addNewCrewmanPhoneRow);
+
+            $('.clockIcon').click(function(){
+                if ($('.clockIcon').val() == 0){
+                    $('.clockIcon').addClass('clicked')
+                    $('.clockIcon').val(1);
+                    approveAll();
+                }
+                else{
+                    $('.clockIcon').removeClass('clicked')
+                    $('.clockIcon').val(0);
+                    unapproveAll();
+                }
+            });
+
+            $('body').on('click', '.clockIconWeek', function() {
+                if (!$(this).hasClass('invalid')){
+                    var days = $('#calendar').fullCalendar('getView').dayGrid.dayDates;
+                    var timecardDates = [];
+                    for (i = 0; i < days.length; i++){
+                        timecardDates.push(days[i].format('YYYY-MM-DD'));
+                    }
+                    
+                    var crewmanID = $(this).parent().parent().find('.calendarName').attr('crewman');
+
+                    if ($(this).val() == 0){
+                        if ($(this).parent().parent().find('.invalid-time').length > 0) {
+                            // $('#invalidTimeModal').foundation('open');
+                        }
+                        else{
+                            $(this).addClass('clicked')
+                            $(this).val(1);
+                            approveTimecardWeek(timecardDates, crewmanID, 1);
+                            $(this).parent().parent().find('.calendarTime').not('.sum').addClass('approved');
+                        }
+                    }
+                    else{
+                        $(this).removeClass('clicked')
+                        $(this).val(0);
+                        approveTimecardWeek(timecardDates, crewmanID, 0);
+                        $(this).parent().parent().find('.calendarTime').removeClass('approved');
+                    }
+                }
+            });
+
+            $('.clockIconDetail').click(function(){
+                var dayNumber = $(this).attr('value');
+                var date = $('#calendar').fullCalendar('getView').dayGrid.dayDates[dayNumber].format('YYYY-MM-DD');
+                var crewmanID = $('.calendarDetailHeader').attr('crewman');
+                var row = $('.calendarTable .calendarName').find('[crewman="' + crewmanID + '"]').parent().parent().index() + 3;
+                var column = parseInt(dayNumber) + 2;
+
+                if ($(this).val() == 0){
+                    if ($(this).parent().parent().find('.invalid-time').length > 0 || $(this).parent().parent().find('.invalid').length > 0) {
+                        // $('#invalidTimeModal').foundation('open');
+                    }
+                    else{
+                        $(this).addClass('clicked')
+                        $(this).val(1);
+                        approveTimecard(date, crewmanID, 1);
+                        $('.calendarTable tr:nth-child(' + row + ') td:nth-child(' + column + ')').addClass('approved');
+                    }
+                }
+                else{
+                    $(this).removeClass('clicked')
+                    $(this).val(0);
+                    approveTimecard(date, crewmanID, 0);
+                    $('.calendarTable tr:nth-child(' + row + ') td:nth-child(' + column + ')').removeClass('approved');
+                }
+            });
+
+            $('.pencilIcon').click(function(){
+                var hourTotal = $(this).parent().parent().find('.calendarDetailHours').text();
+                var dayNumber = $(this).attr('value');
+                var date = $('#calendar').fullCalendar('getView').dayGrid.dayDates[dayNumber].format('YYYY-MM-DD');
+                var crewmanID = $('.calendarDetailHeader').attr('crewman');
+                editTimecard(hourTotal, date, crewmanID);
+            });
+
+            $('#previous').click(function () {
+                $('#calendar').fullCalendar('prev');
+                var m = $('#calendar').fullCalendar('getView').title;
+                $('#calendarTitleAll').text(m);
+                $('#calendarTitleDetail').text(m);
+                getDaysOfWeek();
+                getCrewmen();
+                getCrewmanTimeDetail($('#currentCrewman').val());
+            });
+
+            $('#next').click(function () {
+                $('#calendar').fullCalendar('next');
+                var m = $('#calendar').fullCalendar('getView').title;
+                $('#calendarTitleAll').text(m);
+                $('#calendarTitleDetail').text(m);
+                getDaysOfWeek();
+                getCrewmen();
+                getCrewmanTimeDetail($('#currentCrewman').val());
+            });
+
+            $('#previousDetail').click(function () {
+                $('#calendar').fullCalendar('prev');
+                var m = $('#calendar').fullCalendar('getView').title;
+                $('#calendarTitleAll').text(m);
+                $('#calendarTitleDetail').text(m);
+                getDaysOfWeek();
+                getCrewmen();
+                getCrewmanTimeDetail($('#currentCrewman').val());
+            });
+
+            $('#nextDetail').click(function () {
+                $('#calendar').fullCalendar('next');
+                var m = $('#calendar').fullCalendar('getView').title;
+                $('#calendarTitleAll').text(m);
+                $('#calendarTitleDetail').text(m);
+                getDaysOfWeek();
+                getCrewmen();
+                getCrewmanTimeDetail($('#currentCrewman').val());
+            });
+
+            $('#filterSelect').append('<select id="filterResources"><option value="last">Sort By Last Name</option><option value="first">Sort By First Name</option></select>');
+            $('#filterSelectDetail').append('<select id="filterResourcesDetail"><option value="last">Sort By Last Name</option><option value="first">Sort By First Name</option></select>');
+            
+            $('#calendar').fullCalendar({
+                header: {
+                    left: '',
+                    center: 'title',
+                    right: 'today'
+                },
+                titleFormat: {
+                   week: "(MMM) MMM D, YYYY"
+                },
+                defaultView: 'basicWeek',
+                firstDay: 1,
+                weekNumbers: true,
+                height:0
+            });
+
+            var m = $('#calendar').fullCalendar('getView').title;
+            $('#calendarTitleAll').text(m);
+            $('#calendarTitleDetail').text(m);
+            getDaysOfWeek();
+
+            getCrewmen();
+
+            $('#currentCrewman').val(1);
+
+            $( function() {
+                $.widget( "custom.combobox", {
+                  _create: function() {
+                    this.wrapper = $( "<span>" )
+                      .addClass( "custom-combobox" )
+                      .insertAfter( this.element );
+             
+                    this.element.hide();
+                    this._createAutocomplete();
+                    this._createShowAllButton();
+                  },
+             
+                  _createAutocomplete: function() {
+                    var selected = this.element.children( ":selected" ),
+                      value = selected.val() ? selected.text() : "";
+             
+                    this.input = $( "<input>" )
+                      .appendTo( this.wrapper )
+                      .val( value )
+                      .attr( "title", "" )
+                      .addClass( "custom-combobox-input ui-widget ui-widget-content ui-state-default ui-corner-left" )
+                      .autocomplete({
+                        delay: 0,
+                        minLength: 0,
+                        source: $.proxy( this, "_source" )
+                      })
+                      .tooltip({
+                        classes: {
+                          "ui-tooltip": "ui-state-highlight"
+                        }
+                      });
+             
+                    this._on( this.input, {
+                      autocompleteselect: function( event, ui ) {
+                        ui.item.option.selected = true;
+                        this._trigger( "select", event, {
+                          item: ui.item.option
+                        });
+                      },
+             
+                      autocompletechange: "_removeIfInvalid"
+                    });
+                  },
+             
+                  _createShowAllButton: function() {
+                    var input = this.input,
+                      wasOpen = false;
+             
+                    $( "<a>" )
+                      .attr( "tabIndex", -1 )
+                      .attr( "title", "Show All Items" )
+                      .tooltip()
+                      .appendTo( this.wrapper )
+                      .button({
+                        icons: {
+                          primary: "ui-icon-triangle-1-s"
+                        },
+                        text: false
+                      })
+                      .removeClass( "ui-corner-all" )
+                      .addClass( "custom-combobox-toggle ui-corner-right" )
+                      .on( "mousedown", function() {
+                        wasOpen = input.autocomplete( "widget" ).is( ":visible" );
+                      })
+                      .on( "click", function() {
+                        input.trigger( "focus" );
+             
+                        // Close if already visible
+                        if ( wasOpen ) {
+                          return;
+                        }
+             
+                        // Pass empty string as value to search for, displaying all results
+                        input.autocomplete( "search", "" );
+                      });
+                  },
+             
+                  _source: function( request, response ) {
+                    var matcher = new RegExp( $.ui.autocomplete.escapeRegex(request.term), "i" );
+                    response( this.element.children( "option" ).map(function() {
+                      var text = $( this ).text();
+                      if ( this.value && ( !request.term || matcher.test(text) ) )
+                        return {
+                          label: text,
+                          value: text,
+                          option: this
+                        };
+                    }) );
+                  },
+             
+                  _removeIfInvalid: function( event, ui ) {
+             
+                    // Selected an item, nothing to do
+                    if ( ui.item ) {
+                      return;
+                    }
+             
+                    // Search for a match (case-insensitive)
+                    var value = this.input.val(),
+                      valueLowerCase = value.toLowerCase(),
+                      valid = false;
+                    this.element.children( "option" ).each(function() {
+                      if ( $( this ).text().toLowerCase() === valueLowerCase ) {
+                        this.selected = valid = true;
+                        return false;
+                      }
+                    });
+             
+                    // Found a match, nothing to do
+                    if ( valid ) {
+                      return;
+                    }
+             
+                    // Remove invalid value
+                    this.input
+                      .val( "" )
+                      .attr( "title", value + " didn't match any item" )
+                      .tooltip( "open" );
+                    this.element.val( "" );
+                    this._delay(function() {
+                      this.input.tooltip( "close" ).attr( "title", "" );
+                    }, 2500 );
+                    this.input.autocomplete( "instance" ).term = "";
+                  },
+
+                    open: function(){
+                        $(this).autocomplete('widget').css('z-index', 100);
+                        return false;
+                    },
+                  _destroy: function() {
+                    this.wrapper.remove();
+                    this.element.show();
+                  }
+                });
+             
+                $( ".combobox" ).combobox();
+                $( "#toggle" ).on( "click", function() {
+                  $( ".combobox" ).toggle();
+                });
+              } );
+
+        });
+    </script>
+</head>
+<body>
+    <?php  include_once 'header.html'  ?>
+    <div id="loading-image" class="loadingImage">
+        <img src="images/ajax-loader.gif" />
+    </div>
+    <div class="row expanded first-row" style="background-color:#f6f7fb;">
+        <div class="medium-12 columns">
+            <div class="medium-12 columns">
+                <h1 class="dashboard-title">Crew Management</h1>
+            </div>
+        </div>
+        <div class="medium-2 columns">
+        </div>
+        <div class="medium-8 columns">
+        </div>
+        <div class="medium-2 columns">
+            <button id="downloadReport" class="button right">Download Report</button>
+        </div>
+    </div>
+    <div id="calendarViewDetail" class="row expanded" style="margin-bottom: 4rem; display: none;">
+                 <table class="calendarHeader">
+                    <tr>
+                        <td class="calendarFilter" style="15%">
+                            <div class="row">
+                                <div class="addIcon medium-2 columns"></div>
+                                <div class="dottedLine"></div>
+                                <div class="medium-10 columns" id="filterSelectDetail"></div>
+                            </div>
+                        </td>
+                        <td class="calendarWeek">
+                            <div class="row expanded">
+                                <div class="button-group text-center crew-detail no-pad">
+                                    <a id="detailViewAll" class="button view view-left active">All</a>
+                                    <a id="detailViewDetail" class="button view view-right">Detail</a>
+                                </div>
+                                <div class="medium-3 columns no-pad">
+                                    <div id="previousDetail" class="arrow-left"></div>
+                                </div>
+                                <div class="medium-3 columns no-pad text-center">
+                                    <span id="calendarTitleDetail">Oct 31 - Nov 6</span>
+                                </div>
+                                <div class="medium-3 columns no-pad">
+                                    <div id="nextDetail" class="arrow-right"></div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                <table class="calendarTableDetail">
+                    <tr>
+                        <td class="calendarActive" style="border-top: 2px solid #b1b4bf;width:15.05%">            
+                            <div class="button-group text-center crew-options no-pad">
+                                <a id="viewActiveDetail" class="button view view-left active">Active</a>
+                                <a id="viewInactiveDetail" class="button view view-right">Inactive</a>
+                            </div>
+                        </td>
+                        <td class="calendarDetailHeader" crewman="0">
+                            <span class="headerName"></span>
+                        </td>
+                        <td class="headerStatus">
+                            <span>STATUS</span>
+                        </td>
+                        <td class="headerEdit">
+                            <span></span>
+                        </td>
+                    </tr>
+                </table>
+                <div class="alignedTable" style="width: 17.3%;">
+                    <table class='calendarTableDetailNames'>
+                    </table>
+                </div>
+                <div class="alignedTable" style="width: 82.7%;">
+                    <table class="calendarTableDetail">
+                        <tr>
+                            <td id="day1" class="calendarDetailDay"></td>
+                            <td class="calendarDetailHours"></td>
+                            <td class="calendarDetailTime"></td>
+                            <td class="calendarDetailNotes"></td>
+                            <td id="approveTime" class="calendarApproveTime"><div class="clockIconDetail" value="0"></div></td>
+                            <td id="editTime" class="calendarEditTime"><div class="pencilIcon" value="0"></div></td>
+                        </tr>
+                        <tr>
+                            <td id="day2" class="calendarDetailDay"></td>
+                            <td class="calendarDetailHours"></td>
+                            <td class="calendarDetailTime"></td>
+                            <td class="calendarDetailNotes"></td>
+                            <td id="approveTime" class="calendarApproveTime"><div class="clockIconDetail" value="1"></div></td>
+                            <td id="editTime" class="calendarEditTime"><div class="pencilIcon" value="1"></div></td>
+                        </tr>
+                        <tr>
+                            <td id="day3" class="calendarDetailDay"></td>
+                            <td class="calendarDetailHours"></td>
+                            <td class="calendarDetailTime"></td>
+                            <td class="calendarDetailNotes"></td>
+                            <td id="approveTime" class="calendarApproveTime"><div class="clockIconDetail" value="2"></div></td>
+                            <td id="editTime" class="calendarEditTime"><div class="pencilIcon" value="2"></div></td>
+                        </tr>
+                        <tr>
+                            <td id="day4" class="calendarDetailDay"></td>
+                            <td class="calendarDetailHours"></td>
+                            <td class="calendarDetailTime"></td>
+                            <td class="calendarDetailNotes"></td>
+                            <td id="approveTime" class="calendarApproveTime"><div class="clockIconDetail" value="3"></div></td>
+                            <td id="editTime" class="calendarEditTime"><div class="pencilIcon" value="3"></div></td>
+                        </tr>
+                        <tr>
+                            <td id="day5" class="calendarDetailDay"></td>
+                            <td class="calendarDetailHours"></td>
+                            <td class="calendarDetailTime"></td>
+                            <td class="calendarDetailNotes"></td>
+                            <td id="approveTime" class="calendarApproveTime"><div class="clockIconDetail" value="4"></div></td>
+                            <td id="editTime" class="calendarEditTime"><div class="pencilIcon" value="4"></div></td>
+                        </tr>
+                        <tr>
+                            <td id="day6" class="calendarDetailDay"></td>
+                            <td class="calendarDetailHours"></td>
+                            <td class="calendarDetailTime"></td>
+                            <td class="calendarDetailNotes"></td>
+                            <td id="approveTime" class="calendarApproveTime"><div class="clockIconDetail" value="5"></div></td>
+                            <td id="editTime" class="calendarEditTime"><div class="pencilIcon" value="5"></div></td>
+                        </tr>
+                        <tr>
+                            <td id="day7" class="calendarDetailDay"></td>
+                            <td class="calendarDetailHours"></td>
+                            <td class="calendarDetailTime"></td>
+                            <td class="calendarDetailNotes"></td>
+                            <td id="approveTime" class="calendarApproveTime"><div class="clockIconDetail" value="6"></div></td>
+                            <td id="editTime" class="calendarEditTime"><div class="pencilIcon" value="6"></div></td>
+                        </tr>
+                    </table>
+                    <div class="alignedTable">
+                    <table class="calendarTableBottom">
+                        <tr>
+                            <td class="calendarDetailTotal">Total</td>
+                            <td class="calendarDetailTotalHours"></td>
+                            <td class="calendarDetailApproveAll">
+                                <a class="button" id="detailApproveAll"><img class="clockApproveAll" src="../images/icons/cm-clock_white.png" value="0"> Approve All  </a></td>
+                        </tr>
+                    </table>
+                    </div>
+                </div>
+    </div>
+    <div id="calendarViewAll" class="row expanded" style="margin-bottom: 4rem;">
+        <div class="medium-12 columns no-pad">
+            <div class="calendarContainer">
+                 <table class="calendarHeader">
+                    <tr>
+                        <td class="calendarFilter"><div class="row"><div class="addIcon medium-2 columns"></div><div class="dottedLine"></div><div class="medium-10 columns" id="filterSelect"></div></div></td>
+                        <td class="calendarWeek">
+                            <div class="row expanded">
+                                <div class="button-group text-center crew-detail no-pad">
+                                    <a id="allViewAll" class="button view view-left active">All</a>
+                                    <a id="allViewDetail" class="button view view-right">Detail</a>
+                                </div>
+                                <div class="medium-3 columns no-pad">
+                                    <div id="previous" class="arrow-left"></div>
+                                </div>
+                                <div class="medium-3 columns no-pad text-center">
+                                    <span id="calendarTitleAll">Oct 31 - Nov 6</span>
+                                    <input type="text" id="datepicker" style="display: none;">
+                                </div>
+                                <div class="medium-3 columns no-pad">
+                                    <div id="next" class="arrow-right"></div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                <table class="calendarTable tablesorter" >
+                    <tr>
+                        <td class="calendarActive">            
+                            <div class="button-group text-center crew-options no-pad">
+                                <a id="viewActive" class="button view view-left active">Active</a>
+                                <a id="viewInactive" class="button view view-right">Inactive</a>
+                            </div>
+                        </td>
+                        <td id="allDay1" class="calendarDay"></td>
+                        <td id="allDay2" class="calendarDay"></td> 
+                        <td id="allDay3" class="calendarDay"></td>
+                        <td id="allDay4" class="calendarDay"></td>
+                        <td id="allDay5" class="calendarDay"></td>
+                        <td id="allDay6" class="calendarDay"></td>
+                        <td id="allDay7" class="calendarDay"></td>
+                        <td id="total" class="calendarDay">TOTAL</td>
+                        <td id="approveAll" class="calendarApproveAll"><div class="clockIcon" value="0"></div></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="reveal" id="editCrewmanInfoModal" data-reveal data-close-on-esc="false" data-close-on-click="false">
+        <h3 class="text-center">Crewmember Information</h3>
+        <div class="row">
+            <div class="medium-6 columns">
+                <label>First Name <small>required</small>
+                    <input class="crewmanRequired" name="firstName" type="text" value="" />
+                    <small class="form-error">First name is required.</small>
+                </label>
+            </div>
+            <div class="medium-6 columns">
+                <label>Last Name <small>required</small>
+                    <input class="crewmanRequired" name="lastName" type="text" value="" />
+                    <small class="form-error">Last name is required.</small>
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-8 columns">
+                <label>Address
+                    <input name="address" type="text" value="" />
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-8 columns">
+                <label>Address 2 
+                    <input name="address2" type="text" value="" />
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-4 columns">
+                <label>City
+                    <input name="city" type="text" value="" />
+                </label>
+            </div>
+            <div class="medium-4 columns">
+                <label>State
+                    <select name="state">
+                        <?php echo $stateOptions;  ?>
+                    </select>
+                </label>
+            </div>
+            <div class="medium-3 columns">
+                <label>Zip
+                    <input name="zip" type="text" value="" />
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-8 columns">
+                <label>Email
+                    <input name="email" type="text" value="" />
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="large-9 columns">
+                <table id="phoneTable" class="phoneTable" cellpadding="0" cellspacing="0">
+                    <thead style="background:none;">
+                        <tr>
+                            <th width="30%" style="text-align:left;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"><label>Phone</label></th>
+                            <th width="40%" style="text-align:center;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"></th>
+                            <th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">Primary</th>
+                            <th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">
+                             <a class="addPhone"><img src="images/icons/phone_add.png" /></a>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="display:none;">
+                            <td class="description" style="color:#36413e;text-align:center;">
+                                <select class="Description no-margin" sort="" name="description[]">
+                                    <option></option>
+                                    <option value="Cell">Cell</option>
+                                    <option value="Home">Home</option>
+                                    <option value="Work">Work</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </td>
+                            <td class="phoneNumber" style="color:#36413e;">
+                                <input class="Phone no-margin phone" sort="" name="phone[]" type="text" value="" />
+                            </td>
+                            <td class="primary" style="color:#36413e;text-align:center;">
+                                <input class="isPrimary no-margin" sort="" name="isPrimary[]" type="checkbox" value="1" />
+                            </td>
+                            <td class="delete" style="color:#36413e;text-align:center;">
+                                <a class="deletePhone"><img src="images/icons/phone_delete.png" /></a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <small style="margin-left: .5rem;" class="error-match onePhone">At least one phone is required.</small> 
+                <small style="margin-left: .5rem;" class="error-match fullPhone">Description and complete phone number are required.</small>
+                <small style="margin-left: .5rem;" class="error-match primary">Please mark one phone number as primary.</small> 
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-8 columns">
+                <label>Active</label>
+                <div class="row">
+                    <div class="medium-8 columns">
+                        <label>Is the user active?</label>
+                    </div>
+                    <div class="medium-4 columns">
+                        <div class="switch tiny">
+                            <input class="switch-input userEdit" id="userActive" type="checkbox" name="userActive" value="1">
+                            <label class="switch-paddle" for="userActive"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br/>
+<!--         <div class="row">
+            <div class="medium-12 columns">
+                <label>Notes
+                    <textarea name="notes" type="text" value=""></textarea>
+                </label>
+            </div>
+        </div> -->
+        <div class="row">
+            <div class="medium-12 columns">
+                <p class="text-center no-margin">
+                    <button class="button" id="saveEditCrewmanInfoModal">Save</button> 
+                    <button class="button secondary" id="closeEditCrewmanInfo" data-close>Cancel</button>
+                </p>
+            </div>
+        </div>
+        <div id="crewmanID" class="is-hidden"></div>
+    </div>
+    <div class="tiny reveal" id="editCrewmanInfoSuccessModal" data-reveal>
+        <div class="row">
+            <div class="medium-12 columns">
+                <p class="text-center no-margin">
+                    Crewmember has been updated!
+                    <br/><br/>
+                    <button class="button" data-close>OK</button>
+                </p> 
+            </div>
+        </div>
+    </div>
+    <div class="tiny reveal" id="editCrewmanInfoErrorModal" data-reveal>
+        <div class="row">
+            <div class="medium-12 columns">
+                <p class="text-center error-text" style="margin-top: 1rem;"></p>    
+                <p class="text-center no-margin">
+                    <button data-open="editCrewmanInfoModal" class="button">OK</button>
+                </p> 
+            </div>
+        </div>
+    </div>
+    <div class="small reveal" id="editTimecardModal" data-reveal>
+        <span id="timecardTitle">Time Entry Detail</span>
+        <span id="timecardDateTitle"></span>
+        <hr/>
+        <div class="row addTime">
+            <div class="medium-12 columns">
+                 <img class="addTimeEntry" src="images/icons/phone_add.png" />  
+                 <span>New Time Entry</span>
+            </div>
+        </div>
+        <br/>
+        <div class="row">
+            <div class="medium-12 columns">
+                <p class="text-center no-margin">
+                    <button class="button" id="saveEditTimecardModal">Save</button>  
+                    <button class="button secondary" id="closeEditTimecardModal" data-close>Cancel</button>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="tiny reveal" id="editTimecardSuccessModal" data-reveal>
+        <div class="row">
+            <div class="medium-12 columns">
+                <p class="text-center no-margin">
+                    Timecard has been udpated!
+                    <br/><br/>
+                    <button class="button" data-close>OK</button>
+                </p> 
+            </div>
+        </div>
+    </div>
+    <div class="tiny reveal" id="editTimecardErrorModal" data-reveal>
+        <div class="row">
+            <div class="medium-12 columns">
+                <p class="text-center error-text" style="margin-top: 1rem;"></p>    
+                <p class="text-center no-margin">
+                    <button data-open="editTimecardModal" class="button">OK</button>
+                </p> 
+            </div>
+        </div>
+    </div>
+    <div class="tiny reveal" id="confirmDeleteModal" data-reveal>
+        <div class="row">
+            <div class="medium-12 columns">
+                <p class="text-center no-margin">
+                    Are you sure you want to delete this time entry?
+                    <br/><br/>
+                    <button class="button" id="deleteTimeYes">Yes</button>
+                    <button class="button" id="deleteTimeCancel">Cancel</button>
+                </p> 
+            </div>
+        </div>
+    </div>
+    <div class="reveal" id="addCrewmanModal" data-reveal data-close-on-esc="false" data-close-on-click="false">
+        <h3 class="text-center">Crewmember Information</h3>
+        <div class="row">
+            <div class="medium-6 columns">
+                <label>First Name <small>required</small>
+                    <input class="crewmanRequired" name="firstName" type="text" value="" />
+                    <small class="form-error">First name is required.</small>
+                </label>
+            </div>
+            <div class="medium-6 columns">
+                <label>Last Name <small>required</small>
+                    <input class="crewmanRequired" name="lastName" type="text" value="" />
+                    <small class="form-error">Last name is required.</small>
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-8 columns">
+                <label>Address
+                    <input name="address" type="text" value="" />
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-8 columns">
+                <label>Address 2 
+                    <input name="address2" type="text" value="" />
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-4 columns">
+                <label>City
+                    <input name="city" type="text" value="" />
+                </label>
+            </div>
+            <div class="medium-4 columns">
+                <label>State
+                    <select name="state">
+                        <?php echo $stateOptions;  ?>
+                    </select>
+                </label>
+            </div>
+            <div class="medium-3 columns">
+                <label>Zip
+                    <input name="zip" type="text" value="" />
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-8 columns">
+                <label>Email
+                    <input name="email" type="text" value="" />
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="large-9 columns">
+                <table id="phoneTableAdd" class="phoneTable" cellpadding="0" cellspacing="0">
+                    <thead style="background:none;">
+                        <tr>
+                            <th width="30%" style="text-align:left;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"><label>Phone</label></th>
+                            <th width="40%" style="text-align:center;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"></th>
+                            <th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">Primary</th>
+                            <th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">
+                             <a class="addPhone"><img src="images/icons/phone_add.png" /></a>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="display:none;">
+                            <td class="description" style="color:#36413e;text-align:center;">
+                                <select class="Description no-margin" sort="" name="description[]">
+                                    <option></option>
+                                    <option value="Cell">Cell</option>
+                                    <option value="Home">Home</option>
+                                    <option value="Work">Work</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </td>
+                            <td class="phoneNumber" style="color:#36413e;">
+                                <input class="Phone no-margin phone" sort="" name="phone[]" type="text" value="" />
+                            </td>
+                            <td class="primary" style="color:#36413e;text-align:center;">
+                                <input class="isPrimary no-margin" sort="" name="isPrimary[]" type="checkbox" value="1" />
+                            </td>
+                            <td class="delete" style="color:#36413e;text-align:center;">
+                                <a class="deletePhone"><img src="images/icons/phone_delete.png" /></a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <small style="margin-left: .5rem;" class="error-match onePhone">At least one phone is required.</small> 
+                <small style="margin-left: .5rem;" class="error-match fullPhone">Description and complete phone number are required.</small>
+                <small style="margin-left: .5rem;" class="error-match primary">Please mark one phone number as primary.</small> 
+            </div>
+        </div>
+<!--         <div class="row">
+            <div class="medium-12 columns">
+                <label>Notes
+                    <textarea name="notes" type="text" value=""></textarea>
+                </label>
+            </div>
+        </div> -->
+        <div class="row">
+            <div class="medium-12 columns">
+                <p class="text-center no-margin">
+                    <button class="button" id="saveAddCrewmanModal">Save</button> 
+                    <button class="button secondary" id="closeAddCrewman" data-close>Cancel</button>
+                </p>
+            </div>
+        </div>
+        <div id="crewmanID" class="is-hidden"></div>
+    </div>
+    <div class="row expanded" style="margin-bottom: 4rem;">
+        <div class="medium-12 columns no-pad">
+            <div id="calendar"></div>
+        </div>
+    </div>
+    <div class="tiny reveal" id="invalidTimeModal" data-reveal>
+        <div class="row">
+            <div class="medium-12 columns">
+                <p class="text-center no-margin">
+                    You cannot approve this day because there is an invalid time entered.
+                    <br/><br/>
+                    <button class="button" data-close>OK</button>
+                </p> 
+            </div>
+        </div>
+    </div>
+    <div class="tiny reveal" id="addCrewmanSuccessModal" data-reveal>
+        <div class="row">
+            <div class="medium-12 columns">
+                <p class="text-center no-margin">
+                    Crewmember has been added!
+                    <br/><br/>
+                    <button class="button" data-close>OK</button>
+                </p> 
+            </div>
+        </div>
+    </div>
+    <div class="ui-widget" id="installationSearch" style="display: none;">
+        <label>Project: </label>
+        <select class="combobox">
+            <option value="">Select one...</option>
+        </select>
+    </div>
+    <?php  include_once 'setup-modal.html'  ?>
+    <?php  include_once 'footer.html'  ?>
+    <input id="currentCrewman" type="hidden" value="1" />
+    <input id="active" type="hidden" value="1" />
+    <input id="deleteNumber" type="hidden" />
+
+    <script src="js/what-input.js"></script>
+    <script src="js/foundation.js"></script>
+    <script type="text/javascript" src="js/jquery.mask.min.js"></script>
+    <script>
+        $(document).foundation();
+
+    </script>
+    <script type="text/javascript">
+        $(function () {
+            $('.Phone').mask('(000) 000-0000');
+        });
+    </script>
+</body>
+</html>  

@@ -1,0 +1,130 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Foundation Accelerator</title>
+    <link rel="stylesheet" href="css/foundation.css" />
+	<link rel="stylesheet" href="css/custom.css" />
+    <link rel="stylesheet" href="css/registration.css" />
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
+	<script src="js/jquery.js"></script>
+    <script>
+
+           $(document).ready(function () {
+               
+                if (<?php echo $showModal;?> == true) {
+                    $('#CodeUsedModal').foundation('open');
+                }
+                $('#password').focusin(function(){
+                    $('#passwordInfo').show();
+
+                });
+
+                $('#password').focusout(function(){
+                    $('#passwordInfo').toggle();
+
+                });
+
+            });
+
+    </script>
+  </head>
+  <body>
+
+    <div class="row">
+        <div class="small-3 columns">&nbsp;</div>
+        <div class="small-2 columns" style="margin-top:1rem;">
+            <img src="images/FoundationAcceleratorLogo.png">
+        </div>
+        <div class="small-4 columns text-right">
+            <h4 class="loginTitle" style="margin-top: 5.5rem;">Register</h4>
+        </div>
+        <div class="small-3 columns">&nbsp;</div>
+    </div>
+    <div class="tiny reveal" id="CodeUsedModal" data-reveal data-close-on-esc="true" data-close-on-click="true">
+        <div class="row">
+            <h3>Please Login</h3>
+        </div>
+        <p>This registration code has already been used to register an account. Please proceed to login with the user account already created.</p>
+       <p class="text-center no-margin">
+        <button class="button" id="code" data-close>OK</button>
+        </p>
+    </div>
+    <div class="row">
+        <div class="small-3 columns">&nbsp;</div>
+        <div class="small-6 columns">
+            <div class="callout" style="padding-top: .5rem;margin-top: 1rem;">
+                
+                <form id="myForm" data-abide="yi3x8e-abide" novalidate="" action="registration.php" method="post">
+                    <div class="row">
+                        <div class="small-6 columns">
+                            <label>
+                                Registration Code  <small>required</small>
+                                <input name="registrationID" type="text" value="<?php echo $registrationID; ?>" required="">
+                                <small class="form-error">Registration code is required.</small>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="small-10 columns">
+                            <label>
+                                Email <small>required</small>
+                                <input name="userEmail" type="text" value="<?php echo $userEmail; ?>" required="">
+                                <small class="form-error">Email is required.</small>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="medium-6 columns">
+                            <label>
+                                Password <span data-tooltip aria-haspopup="true" class="has-tip top" data-disable-hover="false" tabindex="5" title="Password must contain at least one upper case letter, one lower case letter, one number and contain 8 characters."><img src="images/icons/info.png" /></span> <small>required</small>
+                                    <input id="password" name="userPassword" type="password" value="" required="">
+                                <small class="form-error">Password is required.</small>
+                                <small class="error-match">Passwords do not match.</small>
+                            </label>
+                            <span style="margin-top:-2rem;" class="hidden" id="passwordInfo">
+                                    <p><strong><small>Please note: </strong>Password must contain:
+                                        <ul style="list-style:none; margin-top:-.8rem;"></small>
+                                            <li> <small>At least one UPPER CASE letter,</small></li>
+                                            <li> <small>At least one lower case letter,</small></li>
+                                            <li> <small>At least one number and </small> </li>
+                                            <li> <small>And be least 8 characters long.</small></li>
+                                        </ul>
+                                    </p>
+                                </span>
+                        </div>
+                        <div class="medium-6 columns">
+                            <label>
+                                Re-Enter Password <small>required</small>
+                                <input name="userPassword2" type="password" value="" required="">
+                                <small class="form-error">Password is required.</small>
+                                <small class="error-match">Passwords do not match.</small>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="errorMsg"><?php echo $formMessage; ?></div>
+                    <div class="row" style="margin-top:1rem;">
+                        <div class="small-12 columns">
+                            <input style="margin-bottom: 0;" class="button" type="submit" name="submit" value="Next">
+                        </div>
+                    </div>
+                </form>    
+            </div> 
+        </div>
+        <div class="small-3 columns">&nbsp;</div>
+    </div>
+     <script>
+        $('#code').click(function() {
+            window.location = "login.php";
+        });
+     </script>
+    <script src="js/jquery.js"></script>
+    <script src="js/foundation.min.js"></script>
+    <script>
+      $(document).foundation();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,1245 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Foundation Accelerator</title>
+    <link rel="stylesheet" href="css/foundation.css" />
+    <link rel="stylesheet" href="css/custom.css" />
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="css/spectrum.css">
+    <script src="js/jquery.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+    <script src='js/map.js'></script>
+    <script src="js/spectrum.js"></script>
+    <script src="js/jquery.creditCardValidator.js"></script>
+    <script>
+    $(document).ready(function() {
+
+        addPhoneRowCompany();
+        addPhoneRowUser();
+
+        $('#phoneTable .addPhone').click(addPhoneRowCompany);
+        $('#phoneTable .deletePhone').click(deletePhoneRowCompany);
+        $('#phoneTable input.isPrimary').change(isPrimaryCheckCompany);
+
+        $('#userPhoneTable .addPhone').click(addPhoneRowUser);
+        $('#userPhoneTable .deletePhone').click(deletePhoneRowUser);
+        $('#userPhoneTable input.isPrimary').change(isPrimaryCheckUser);
+
+        $('#viewRefundPolicy').click(function(){
+            $('#refundPolicy').foundation('open');
+        });
+
+        $('input[name="subscriptionPricingID"]').change(updatePaymentTotal);
+        
+        $('#addCCBillingAddress').click(addBillingAddress);
+
+        //Remove One Phone Required on Change User Table
+        $('#userPhoneTable tr:nth-child(2) select.Description, #userPhoneTable tr:nth-child(2) input.Phone').change(function(){
+            if ($('#userPhoneTable tr:nth-child(2) select.Description').val() != '' && $('#userPhoneTable tr:nth-child(2) input.Phone').val() != '') {
+                $('#userPhoneSection small.onePhone').removeClass('is-visible');
+            }
+        });
+
+        //Remove One Phone Required on Change Company Table
+        $('#phoneTable tr:nth-child(2) input.description, #phoneTable tr:nth-child(2) input.Phone').change(function(){
+            if ($('#phoneTable tr:nth-child(2) input.description').val() != '' && $('#phoneTable tr:nth-child(2) input.Phone').val() != '') {
+                $('#companyPhoneSection small.onePhone').removeClass('is-visible');
+            }
+        });
+
+        $('input[name="expirationDate"]').change(validateCreditCardDate);
+
+        $('input[name="cardCode"]').change(validateCreditCardCode);
+        
+
+        $('#registerCompany').click(registerCompanyValidate);
+
+        $('input[required], select[required]').change(function(){
+            if ($(this).val() == ''){
+                $(this).parent().addClass('is-invalid-label');
+                $(this).addClass('is-invalid-input');
+                $(this).parent().find('.form-error').addClass('is-visible');
+            } else {
+                $(this).parent().removeClass('is-invalid-label');
+                $(this).removeClass('is-invalid-input');
+                $(this).parent().find('.form-error').removeClass('is-visible');
+            }
+        });
+
+        $('input:radio[required]').change(function(){
+            if (!$('input:radio[required]').is(':checked')) {
+                $('input:radio[required]').parent().addClass('is-invalid-label');
+            } else {
+                $('input:radio[required]').parent().removeClass('is-invalid-label');
+            }
+        });
+
+
+
+        $('#cancelAddress').click(function(){
+            $('#latLongModal').foundation('close');
+        });
+
+        $('#usePartial').click(usePartialAddress);
+        $('#useComplete').click(useCompleteAddress);
+        
+        $('input[name="companyAddress1"], input[name="companyCity"], select[name="companyState"], input[name="companyZip"]').change(function(){
+            $('#addressChecked').val('');
+        });
+        
+
+
+         //Company Profile Color Picker
+        $("#companyColor").spectrum({
+            preferredFormat: "hex",
+            showInput: true,
+            change: function(color) {
+                var color = $("#companyColor").spectrum("get").toHexString();
+                $('input[name="companyColor"]').val(color);
+            },
+        });
+
+        //Company Profile Color Picker
+        $("#companyColorHover").spectrum({
+            preferredFormat: "hex",
+            showInput: true,
+            change: function(color) {
+                var color = $("#companyColorHover").spectrum("get").toHexString();
+                $('input[name="companyColorHover"]').val(color);
+            },
+        });
+
+    });
+
+    var addBillingAddress = function () {
+        
+        if ($('#addCCBillingAddress').is(":checked")){
+            //add validation class
+            $('#CCBillingAddress').toggle();
+                $('input[name="companyBillingAddress1"]').attr("required", "required");
+                $('input[name="companyBillingCity"]').attr("required", "required");
+                $('select[name="companyBillingState"]').attr("required", "required");
+                $('input[name="companyBillingZip"]').attr("required", "required");
+        }else{
+            $('#CCBillingAddress').toggle();
+                $('input[name="companyBillingAddress1"]').removeAttr("required");
+                $('input[name="companyBillingCity"]').removeAttr("required");
+                $('select[name="companyBillingState"]').removeAttr("required");
+                $('input[name="companyBillingZip"]').removeAttr("required");
+
+                //clear out the text boxes so they don't save anyway.
+                $('input[name="companyBillingAddress1"]').val('');
+                $('input[name="companyBillingAddress2"]').val('');
+                $('input[name="companyBillingCity"]').val('');
+                $('select[name="companyBillingState"]').val('');
+                $('input[name="companyBillingZip"]').val('');
+
+                //remove any validation errors if they appear
+                 $('#CCBillingAddress input').each(function(){
+                    $(this).parent().removeClass('is-invalid-label');
+                    $(this).removeClass('is-invalid-input');
+                    $(this).parent().find('.form-error').removeClass('is-visible');
+                 });
+            
+                $('#CCBillingAddress select').parent().removeClass('is-invalid-label');
+                $('#CCBillingAddress select').removeClass('is-invalid-input');
+                $('#CCBillingAddress select').parent().find('.form-error').removeClass('is-visible');
+        }
+    };
+
+
+    var updatePaymentTotal = function(){
+        var subscriptionPricingID = $('input[name="subscriptionPricingID"]:checked').val();
+
+        var paymentText = $('input[name="subscriptionPricingID"]:checked').parent().parent().parent().find('h4').text();
+
+        var subscriptionType = $('input[name="subscriptionPricingID"]:checked').parent().parent().parent().parent().attr('data-type');
+        var setupFee = $('input[name="subscriptionPricingID"]:checked').parent().parent().parent().parent().attr('data-setup-fee');
+        var monthlyPayment = $('input[name="subscriptionPricingID"]:checked').parent().parent().parent().parent().attr('data-monthly-payment');
+        var paymentTotal = $('input[name="subscriptionPricingID"]:checked').parent().parent().parent().parent().attr('data-total');
+
+
+
+        if (subscriptionPricingID != '') {
+            $('#paymentTotal').show();
+            $('#paymentTotal .paymentText').text(paymentText + ' Subscription');
+
+            //console.log(subscriptionPricingID);
+
+            if (subscriptionType == 1 || subscriptionType == 3) {
+                $('#paymentTotal .paymentBreakdown').html('Monthly Fee<br/>One Time Setup Fee<br/><br/>Due Now<br/>Next 11 Payments');
+                $('#paymentTotal .paymentTotal').html('$'+monthlyPayment+'<br/>$'+setupFee+'<br/><br/>$'+paymentTotal+'<br/>$'+monthlyPayment+'');
+
+            } else if (subscriptionType == 2) {
+                $('#paymentTotal .paymentBreakdown').html('One Time Setup Fee<br/><br/>Due Now');
+                $('#paymentTotal .paymentTotal').html('$'+setupFee+'<br/><br/>$'+paymentTotal+'');   
+
+            } 
+        }
+        
+    };
+
+    var addPhoneRowCompany = function () {
+
+        //oldRow = $('#phoneTable').find('tbody > tr:last-child input.isPrimary').attr('value');
+        //var newRow = parseFloat(oldRow) + 1;
+
+        $cloneBlankRow = $('#phoneTable').find('tbody tr:first').clone().css('display', '');
+        $('#phoneTable').find('tbody').append($cloneBlankRow);
+        $('#phoneTable').find('tbody > tr:last-child input.isPrimary').change(isPrimaryCheckCompany);
+        $('#phoneTable').find('tbody > tr:last-child .delete > a').click(deletePhoneRowCompany);
+
+        $('#phoneTable').find('tbody > tr:last-child input.Phone').mask('(000) 000-0000');
+
+    
+        if ($('#phoneTable input.isPrimary:checked').length <= 0) {
+            $('#phoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+        }
+    };
+
+    var deletePhoneRowCompany = function () {
+
+        if ($(this).parent().parent().hasClass('dbRow')) {
+            $(this).parent().parent().find('input').attr('delete','delete');
+            $(this).parent().parent().css('display','none');
+
+             if ($(this).parent().parent().find('input.isPrimary').is(':checked'))
+                $('#phoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+
+            if ($('#phoneTable tbody').children().length == 1)
+                addPhoneRowCompany();
+        } else {
+            $(this).parent().parent().remove();
+
+            if ($(this).parent().parent().find('input.isPrimary').is(':checked'))
+                $('#phoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+
+            if ($('#phoneTable tbody').children().length == 1)
+               addPhoneRowCompany();
+        }
+
+    };
+
+    var isPrimaryCheckCompany = function () {
+
+        $('#phoneTable').find('input.isPrimary').prop('checked', false);
+        $(this).prop('checked', true);
+
+    };
+
+    var addPhoneRowUser = function () {
+
+        //oldRow = $('#userPhoneTable').find('tbody > tr:last-child input.isPrimary').attr('value');
+        //var newRow = parseFloat(oldRow) + 1;
+
+        $cloneBlankRow = $('#userPhoneTable').find('tbody tr:first').clone().css('display', '');
+        $('#userPhoneTable').find('tbody').append($cloneBlankRow);
+        $('#userPhoneTable').find('tbody > tr:last-child input.isPrimary').change(isPrimaryCheckUser);
+        $('#userPhoneTable').find('tbody > tr:last-child .delete > a').click(deletePhoneRowUser);
+
+        $('#userPhoneTable').find('tbody > tr:last-child input.Phone').mask('(000) 000-0000');
+
+        if ($('#userPhoneTable input.isPrimary:checked').length <= 0) {
+            $('#userPhoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+        }
+
+    };
+
+    var deletePhoneRowUser = function () {
+
+        if ($(this).parent().parent().hasClass('dbRow')) {
+            $(this).parent().parent().find('select').attr('delete','delete');
+            $(this).parent().parent().css('display','none');
+
+             if ($(this).parent().parent().find('input.isPrimary').is(':checked'))
+                $('#userPhoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+
+            if ($('#userPhoneTable tbody').children().length == 1)
+                addPhoneRowUser();
+        } else {
+            $(this).parent().parent().remove();
+
+            if ($(this).parent().parent().find('input.isPrimary').is(':checked'))
+                $('#userPhoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+
+            if ($('#userPhoneTable tbody').children().length == 1)
+               addPhoneRowUser();
+        }
+
+    };
+
+    var isPrimaryCheckUser = function () {
+
+        $('#userPhoneTable').find('input.isPrimary').prop('checked', false);
+        $(this).prop('checked', true);
+
+    };
+
+
+    var registerCompanyValidate = function() {
+
+        $('input[required], select[required]').each(function(){
+            if ($.trim( $(this).val() ) == '') {
+            //if ($(this).val() == '') {
+                $(this).parent().addClass('is-invalid-label');
+                $(this).addClass('is-invalid-input');
+                $(this).parent().find('.form-error').addClass('is-visible');
+            } else {
+                $(this).parent().removeClass('is-invalid-label');
+                $(this).removeClass('is-invalid-input');
+                $(this).parent().find('.form-error').removeClass('is-visible');
+            }
+
+        });
+
+        if (!$('input:radio[required]').is(':checked')) {
+            $('input:radio[required]').parent().addClass('is-invalid-label');
+        } else {
+            $('input:radio[required]').parent().removeClass('is-invalid-label');
+        }
+
+
+        //if ($('input[required]').val() == '' || $('select[required]').val() == '') {
+        if ($(".is-visible")[0] || $(".is-invalid-label")[0]){
+            var registerCompanyLabels = 0;
+
+        } else {
+            var registerCompanyLabels = 1;
+        }
+            
+
+
+        // if ($('#userPhoneTable tbody tr:visible').eq(0).find('td input.Phone').val() == '' || $('#userPhoneTable tbody tr:visible').eq(0).find('td select').val() == '') {
+        //     $('#userPhoneSection small.onePhone').addClass('is-visible');
+        //     registerCompanyUserPhone = 0;
+        // } else {
+        //     $('#userPhoneSection small.onePhone').removeClass('is-visible');
+        //     if ($('#userPhoneTable .isPrimary:checked').length < 1) {
+        //         $('#userPhoneSection small.primary').addClass('is-visible');
+        //         registerCompanyUserPhone = 0;
+        //     } else {
+        //         if ($('#userPhoneTable .isPrimary:checked').is(':visible')) {
+        //             $('#userPhoneSection small.primary').removeClass('is-visible');
+        //             registerCompanyUserPhone = 1;
+        //         } else {
+        //             $('#userPhoneSection small.primary').addClass('is-visible');
+        //             registerCompanyUserPhone = 0;
+        //         }
+        //     }
+        // }
+
+
+        // if ($('#phoneTable tbody tr:visible').eq(0).find('td input.Phone').val() == '' || $('#phoneTable tbody tr:visible').eq(0).find('td input.Description').val() == '') {
+        //     $('#companyPhoneSection small.onePhone').addClass('is-visible');
+        //     registerCompanyPhone = 0;
+        // } else {
+        //     $('#companyPhoneSection small.onePhone').removeClass('is-visible');
+        //     if ($('#phoneTable .isPrimary:checked').length < 1) {
+        //         $('#companyPhoneSection small.primary').addClass('is-visible');
+        //         registerCompanyPhone = 0;
+        //     } else {
+        //         if ($('#phoneTable .isPrimary:checked').is(':visible')) {
+        //             $('#companyPhoneSection small.primary').removeClass('is-visible');
+        //             registerCompanyPhone = 1;
+        //         } else {
+        //             $('#companyPhoneSection small.primary').addClass('is-visible');
+        //             registerCompanyPhone = 0;
+        //         }
+        //     }
+        // }
+
+
+        //User Phone Validation
+        if ($('#userPhoneTable tbody tr:visible').length > 0) {
+            $('#userPhoneSection small.onePhone').removeClass('is-visible');
+
+            $('#userPhoneTable tbody tr:visible').each(function(){
+                if ($(this).find('td input.Phone').val() == '' || $(this).find('td select').val() == '') {
+                    $('#userPhoneSection small.fullPhone').addClass('is-visible');
+                    registerCompanyUserPhone = 0;
+                } else {
+                    if ($(this).find('td input.Phone').val().length < 14) {
+                         $('#userPhoneSection small.fullPhone').addClass('is-visible');
+                         registerCompanyUserPhone = 0;
+                    } else {
+                        $('#userPhoneSection small.fullPhone').removeClass('is-visible');
+                        registerCompanyUserPhone = 1;
+                    }
+                }
+            }); 
+
+            if (registerCompanyUserPhone == 1) {
+                if ($('#userPhoneTable .isPrimary:checked').length < 1) {
+                    $('#userPhoneSection small.primary').addClass('is-visible');
+                    registerCompanyUserPhone = 0;
+                } else {
+                    if ($('#userPhoneTable .isPrimary:checked').is(':visible')) {
+                        $('#userPhoneSection small.primary').removeClass('is-visible');
+                        registerCompanyUserPhone = 1;
+                    } else {
+                        $('#userPhoneSection small.primary').addClass('is-visible');
+                        registerCompanyUserPhone = 0;
+                    }
+                }
+            }
+
+        } else {
+            $('#userPhoneSection small.onePhone').addClass('is-visible');
+            registerCompanyUserPhone = 0;
+        }
+
+
+        //Company Phone Validation
+        if ($('#phoneTable tbody tr:visible').length > 0) {
+            $('#companyPhoneSection small.onePhone').removeClass('is-visible');
+
+            $('#phoneTable tbody tr:visible').each(function(){
+                if ($(this).find('td input.Phone').val() == '' || $(this).find('td input.Description').val() == '') {
+                    $('#companyPhoneSection small.fullPhone').addClass('is-visible');
+                    registerCompanyPhone = 0;
+                } else {
+                    if ($(this).find('td input.Phone').val().length < 14) {
+                         $('#companyPhoneSection small.fullPhone').addClass('is-visible');
+                         registerCompanyPhone = 0;
+                    } else {
+                        $('#companyPhoneSection small.fullPhone').removeClass('is-visible');
+                        registerCompanyPhone = 1;
+                    }
+                }
+            }); 
+
+            if (registerCompanyPhone == 1) {
+                if ($('#phoneTable .isPrimary:checked').length < 1) {
+                    $('#companyPhoneSection small.primary').addClass('is-visible');
+                    registerCompanyPhone = 0;
+                } else {
+                    if ($('#phoneTable .isPrimary:checked').is(':visible')) {
+                        $('#companyPhoneSection small.primary').removeClass('is-visible');
+                        registerCompanyPhone = 1;
+                    } else {
+                        $('#companyPhoneSection small.primary').addClass('is-visible');
+                        registerCompanyPhone = 0;
+                    }
+                }
+            }
+
+        } else {
+            $('#companyPhoneSection small.onePhone').addClass('is-visible');
+            registerCompanyPhone = 0;
+        }
+
+
+
+
+        $('input[name="cardNumber"]').validateCreditCard(function(result) {
+            //console.log(result.card_type);
+            if (result.valid == true) {
+                $('input[name="cardNumber"]').parent().find('.error-match').removeClass('is-visible');
+                registerCompanyCard = 1;
+            } else {
+                $('input[name="cardNumber"]').parent().find('.error-match').addClass('is-visible');
+                registerCompanyCard = 0;
+
+            }
+        });
+
+        var registerCompanyCardDate = validateCreditCardDate();
+        var registerCompanyCardCode = validateCreditCardCode();
+
+        if (registerCompanyLabels == 1 &&
+            registerCompanyUserPhone == 1 &&
+            registerCompanyPhone == 1 &&
+            registerCompanyCard == 1 &&
+            registerCompanyCardDate == 1 &&
+            registerCompanyCardCode == 1) {
+            //console.log('Execute Register');
+            $('#loading-image').show();
+
+            if ($('#addressChecked').val() == 'true') {
+                registerCompanySubmit();
+            } else {
+                mapAddress(); 
+            }
+           
+        }
+    };
+
+    var validateCreditCardDate = function(){
+        var cardDate = $('input[name="expirationDate"]').val();
+
+        if (cardDate != '') {
+            if ($('input[name="expirationDate"]').val().length == 5) {
+                $('input[name="expirationDate"]').parent().find('.error-match').removeClass('is-visible');
+
+                cardDate = cardDate.split('/');
+
+                var cardMonth = cardDate[0].trim();
+                var cardYear = cardDate[1].trim();
+
+                var currentYear = '<?php echo $currentYear; ?>'; 
+
+                if (currentYear <= cardYear) { 
+                    $('input[name="expirationDate"]').parent().find('.error-match').removeClass('is-visible');
+
+                    if (cardMonth <= 12) {
+                        $('input[name="expirationDate"]').parent().find('.error-match').removeClass('is-visible');
+                        var registerCompany = 1;
+                        return registerCompany;
+                    } else {
+                        $('input[name="expirationDate"]').parent().find('.error-match').addClass('is-visible');
+                        var registerCompany = 0;
+                        return registerCompany;
+                    }
+
+                }   else {
+                    $('input[name="expirationDate"]').parent().find('.error-match').addClass('is-visible');
+                    var registerCompany = 0;
+                    return registerCompany;
+                }
+
+            } else {
+                $('input[name="expirationDate"]').parent().find('.error-match').addClass('is-visible');
+                var registerCompany = 0;
+                return registerCompany;
+            }
+
+        } else {
+            $('input[name="expirationDate"]').parent().find('.error-match').addClass('is-visible');
+            var registerCompany = 0;
+            return registerCompany;
+        }
+        
+    };
+
+
+    var validateCreditCardCode = function(){
+        var cardCode = $('input[name="cardCode"]').val();
+
+        if (cardCode != '') {
+            if ($('input[name="cardCode"]').val().length >= 3) {
+                $('input[name="cardCode"]').parent().find('.error-match').removeClass('is-visible');
+                var registerCompany = 1;
+                return registerCompany;
+            } else {
+                $('input[name="cardCode"]').parent().find('.error-match').addClass('is-visible');
+                var registerCompany = 0;
+                return registerCompany;
+            }
+        } else {
+            $('input[name="cardCode"]').parent().find('.error-match').addClass('is-visible');
+            var registerCompany = 0;
+            return registerCompany;
+        }
+        
+    };
+
+    var registerCompanySubmit = function() {
+        $('#loading-image').show();
+
+        var companyID = $('input[name="companyID"]').val();
+        var userID = $('input[name="userID"]').val();
+        var userFirstName = $('input[name="userFirstName"]').val();
+        var userLastName = $('input[name="userLastName"]').val();
+        var companyName = $('input[name="companyName"]').val();
+        var companyAddress1 = $('input[name="companyAddress1"]').val();
+        var companyAddress2 = $('input[name="companyAddress2"]').val();
+        var companyCity = $('input[name="companyCity"]').val();
+        var companyState = $('select[name="companyState"]').val();
+        var companyZip = $('input[name="companyZip"]').val();
+        var companyBillingAddress1 = $('input[name="companyBillingAddress1"]').val();
+        var companyBillingAddress2 = $('input[name="companyBillingAddress2"]').val();
+        var companyBillingCity = $('input[name="companyBillingCity"]').val();
+        var companyBillingState = $('select[name="companyBillingState"]').val();
+        var companyBillingZip = $('input[name="companyBillingZip"]').val();
+        var companyWebsite = $('input[name="companyWebsite"]').val();
+        // var companyColor = $('input[name="companyColor"]').val();
+        // var companyColorHover = $('input[name="companyColorHover"]').val();
+        // var companyEmailFrom = $('input[name="companyEmailFrom"]').val();
+        // var companyEmailReply = $('input[name="companyEmailReply"]').val();
+        // var defaultInvoices = $('input[name="defaultInvoices"]').val();
+        // var invoiceSplitBidAcceptance = $('input[name="invoiceSplitBidAcceptance"]').val();
+        // var invoiceSplitProjectComplete = $('input[name="invoiceSplitProjectComplete"]').val();
+        var timezone = $('select[name="timezone"]').val();
+        var latitude = $('input[name="latitude"]').val();
+        var longitude = $('input[name="longitude"]').val();
+        var timezone = $('select[name="timezone"]').val();
+        var subscriptionPricingID = $('input[name="subscriptionPricingID"]:checked').val();
+        var cardNumber = $('input[name="cardNumber"]').val();
+        var expirationDate = $('input[name="expirationDate"]').val();
+        var cardCode = $('input[name="cardCode"]').val();
+
+        //invoiceSplitBidAcceptance = invoiceSplitBidAcceptance / 100;
+        //invoiceSplitProjectComplete = invoiceSplitProjectComplete / 100;
+
+        if ($('input[name="daylightSavings"]').is(':checked')) {
+            var daylightSavings = 1;
+        } else {
+            var daylightSavings = 0;
+        }
+
+
+        var companyPhoneArray = storeCompanyPhoneTableData();
+
+            function storeCompanyPhoneTableData() {
+                var phoneTableData = new Array();
+                $('#phoneTable tbody tr').each(function(row,tr){
+                    phoneTableData[row]={
+                        "phoneDescription":$(tr).find('td:eq(0)').find('input').val(),
+                        "phoneNumber":$(tr).find('td:eq(1)').find('input').val(),
+                        "isPrimary":$(tr).find('td:eq(2)').find('input:checked').val()
+                    };
+                });
+                phoneTableData.shift();
+                var companyPhoneTableArray = phoneTableData;
+                return companyPhoneTableArray = JSON.stringify(companyPhoneTableArray);
+                
+            }
+
+         var userPhoneArray = storeUserPhoneTableData();
+
+        function storeUserPhoneTableData() {
+            var userPhoneTableData = new Array();
+            $('#userPhoneTable tbody tr').each(function(row,tr){
+                userPhoneTableData[row]={
+                    "phoneDescription":$(tr).find('td:eq(0)').find('select').val(),
+                    "phoneNumber":$(tr).find('td:eq(1)').find('input').val(),
+                    "isPrimary":$(tr).find('td:eq(2)').find('input:checked').val()
+                };
+            });
+            userPhoneTableData.shift();
+            var userPhoneTableArray = userPhoneTableData;
+            return userPhoneTableArray = JSON.stringify(userPhoneTableArray);       
+
+        }
+
+
+        // var formdata = new FormData();
+        // formdata.append('userFirstName', userFirstName);
+        // formdata.append('userLastName', userLastName);
+        // formdata.append('companyName', companyName);
+        // formdata.append('companyAddress1', companyAddress1);
+        // formdata.append('companyAddress2', companyAddress2);
+        // formdata.append('companyCity', companyCity);
+        // formdata.append('companyState', companyState);
+        // formdata.append('companyZip', companyZip);
+        // formdata.append('companyBillingAddress1', companyBillingAddress1);
+        // formdata.append('companyBillingAddress2', companyBillingAddress2);
+        // formdata.append('companyBillingCity', companyBillingCity);
+        // formdata.append('companyBillingState', companyBillingState);
+        // formdata.append('companyBillingZip', companyBillingZip);
+        // formdata.append('companyWebsite', companyWebsite);
+        // //formdata.append('companyColor', companyColor);
+        // //formdata.append('companyColorHover', companyColorHover);
+        // //formdata.append('companyEmailFrom', companyEmailFrom);
+        // //formdata.append('companyEmailReply', companyEmailReply);
+        // //formdata.append('defaultInvoices', defaultInvoices);
+        // //formdata.append('invoiceSplitBidAcceptance', invoiceSplitBidAcceptance);
+        // //formdata.append('invoiceSplitProjectComplete', invoiceSplitProjectComplete);
+        // formdata.append('timezone', timezone);
+        // formdata.append('daylightSavings', daylightSavings);
+        // formdata.append('latitude', latitude);
+        // formdata.append('longitude', longitude);
+        // formdata.append('subscriptionPricingID', subscriptionPricingID);
+        // formdata.append('cardNumber', cardNumber);
+        // formdata.append('expirationDate', expirationDate);
+        // formdata.append('cardCode', cardCode);
+        // formdata.append('companyPhoneArray', companyPhoneArray);
+        // formdata.append('userPhoneArray', userPhoneArray);
+        //formdata.append('file', $('input[name="companyLogo"]')[0].files[0]);  
+
+        // for (var pair of formdata.entries()) {
+        //     console.log(pair[0]+ ', ' + pair[1]); 
+        // }
+
+        $.ajax({
+            url: 'company-register.php',
+            dataType: "json",
+            contentType: 'application/json',
+            type: "POST",
+            contentType: "application/x-www-form-urlencoded",
+            data: {
+                userFirstName: userFirstName,
+                userLastName: userLastName,
+                companyName: companyName,
+                companyAddress1: companyAddress1,
+                companyAddress2: companyAddress2,
+                companyCity: companyCity,
+                companyState: companyState,
+                companyZip: companyZip,
+                companyBillingAddress1: companyBillingAddress1,
+                companyBillingAddress2: companyBillingAddress2,
+                companyBillingCity: companyBillingCity,
+                companyBillingState: companyBillingState,
+                companyBillingZip: companyBillingZip,
+                companyWebsite: companyWebsite,
+                timezone: timezone,
+                daylightSavings: daylightSavings,
+                latitude: latitude,
+                longitude: longitude,
+                subscriptionPricingID: subscriptionPricingID,
+                cardNumber: cardNumber,
+                expirationDate: expirationDate,
+                cardCode: cardCode,
+                companyPhoneArray: companyPhoneArray,
+                userPhoneArray: userPhoneArray
+            },
+            success: function(response) {
+                console.log(response);
+                if (response == 'true') {
+                    //var response = jQuery.parseJSON(response);
+                    //console.log('done');
+                    $('#loading-image').hide();
+                    window.location.href = "index.php";
+                } else {
+                    $('#loading-image').hide();
+                    $('#errorModal p#errorMessage').text(response);
+                    $('#errorModal').foundation('open');
+                }
+            },
+             error: function(jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+                console.log(jqXHR.responseText);
+            }
+        });
+    };
+
+
+    var mapAddress = function () {
+        var map = null;
+      
+        map = new MapSet($('#calendarMap')[0], 0.00000000, 0.00000000);
+   
+       if ($('input[name="companyAddress1"]').val().length > 0 || $('input[name="companyCity"]').val().length > 0 || $('select[name="companyState"] > option:selected').val().length > 0 || $('input[name="companyZip"]').val().length > 0) {
+            
+            addressLast = $('input[name="companyAddress1"]').val();
+            cityLast = $('input[name="companyCity"]').val();
+            stateLast = $('select[name="companyState"] > option:selected').val()
+            zipLast = $('input[name="companyZip"]').val();
+            map.MapAddress(addressLast, cityLast, stateLast, zipLast, 'useAddress', setLatLng);
+           
+        }
+        
+    };
+
+    var setLatLng = function(mapset){
+
+        if(mapset.location.lat != null && mapset.location.lng != null){     
+            $('#latitude').val(mapset.location.lat);
+            $('#longitude').val(mapset.location.lng);
+
+            $('#addressChecked').val('true');
+
+            registerCompanySubmit();
+        }
+        else{
+            $('#latitude').val('');
+            $('#longitude').val('');
+
+            if ($('#latitude').val() == '' || $('#longitude').val() == ''){
+
+                if (mapset.address.length > 0) {
+                    address = $('input[name="companyAddress1"]').val();
+                    address2 = $('input[name="companyAddress2"]').val();
+                    city = $('input[name="companyCity"]').val();
+                    state = $('select[name="companyState"]').val();
+                    zip = $('input[name="companyZip"]').val();
+
+                    if (address2 == '') {
+                        var typedAddress = address + ', ' + city + ', ' + state + ' ' + zip;
+                    } else {
+                        var typedAddress = address + ', ' + address2 + ', ' + city + ', ' + state + ' ' + zip;
+                    }
+
+                    $('#addressPartialText').text(typedAddress);
+                    $('#addressFullText').text(mapset.address[0].title);
+                    $('#partialMatchLatitude').text(mapset.address[0].position.lat);
+                    $('#partialMatchLongitude').text(mapset.address[0].position.lng);
+
+                    $('#addressChecked').val('true');
+
+                    $('#loading-image').hide();
+
+                    $('#latLongModal').foundation('open');
+                } else {
+                    registerCompanySubmit();
+                }
+
+            }
+        }
+
+    };
+
+
+    var usePartialAddress = function(){
+
+        $('#latLongModal').foundation('close');
+
+        registerCompanySubmit();
+
+    };
+
+    var useCompleteAddress = function(){
+        var formattedAddress = $('#addressFullText').text();
+
+        var newLat = $('#partialMatchLatitude').text();
+        var newLng = $('#partialMatchLongitude').text();
+
+        var a = formattedAddress.split(',');
+
+        useAddress(a[0].trim() , a[1].trim() , a[2].trim().split(' ')[0] , a[2].trim().split(' ')[1] , newLat , newLng);
+    };
+
+    
+    var useAddress = function (a, c, s, z, lat, lng) {
+
+        $('input[name="companyAddress1"]').val(a);
+        $('input[name="companyCity"]').val(c);
+        $('select[name="companyState"]').val(s);
+        $('input[name="companyZip"]').val(z);
+        $('#latitude').val(lat);
+        $('#longitude').val(lng);
+
+        registerCompanySubmit();
+
+        $('#latLongModal').foundation('close');
+    }
+
+
+   </script> 
+   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDVYIV3RYj9RJGqLjZNgA7-Dhwt5pTJrT0" async defer></script>
+</head>
+  <body>
+    <style>
+    body {
+        background-color: #ffffff;
+        }
+    .callout {
+        border:none;
+        background: #ffffff;
+        border: 1px solid #4e4e4e;
+        padding: 1rem;
+        }
+    .loginTitle {
+        color:#2089ca;
+         margin-bottom: 0;
+         margin-top:0;
+        }
+    .page-content-text {
+        color:#999999;
+        }
+    .page-content-text small {
+        color:#999999;
+        }
+    .errorMsg {
+        color: #0069b4;
+        font-size: .8rem;
+        /*height: .8rem;*/
+        margin: .8rem 0;
+        }
+    div.loadingImage {
+    position: fixed;
+    z-index: 1500;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #eee;
+    opacity: 0.5;
+    text-align: center;
+    }
+    div.loadingImage {
+        display: none;
+    }
+    div.loadingImage > img {
+        position: absolute;
+        top: 40%;
+    }
+    /*.is-invalid-input:not(:focus) {
+     background-color: rgba(236, 88, 64, 0.5); 
+    border-color: #ec5840;
+    }       */
+    </style>
+    <div id="loading-image" class="loadingImage">
+        <img src="images/ajax-loader.gif" />
+    </div>
+    <div class="row">
+        <div class="small-2 columns" style="margin-top:1rem;">
+            <img src="images/FoundationAcceleratorLogo.png">
+        </div>
+        <div class="small-10 columns text-right">
+            <h4 class="loginTitle" style="margin-top: 5.5rem;">Register</h4>
+        </div>
+    </div>
+    <div class="row">
+        <div class="small-12 columns">
+            <div class="callout" style="padding-top: .5rem;margin-top: 1rem;">
+                <h5>User Information</h5>
+                <div class="row">
+                    <div class="small-5 columns">
+                        <label>
+                            First Name <small>required</small>
+                            <input name="userFirstName" type="text" value="" required="">
+                            <small class="form-error">First Name is required.</small>
+                        </label>
+                    </div>
+                    <div class="small-5 columns">
+                        <label>
+                            Last Name <small>required</small>
+                            <input name="userLastName" type="text" value="" required="">
+                            <small class="form-error">Last Name is required.</small>
+                        </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="large-9 columns" id="userPhoneSection">
+                        <table id="userPhoneTable" class="phoneTable" cellpadding="0" cellspacing="0">
+                            <thead style="background:none;">
+                                <tr>
+                                    <th width="30%" style="text-align:left;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"><label>User Phone <small>required</small></label></th>
+                                    <th width="40%" style="text-align:center;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"></th>
+                                    <th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">Primary</th>
+                                    <th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">
+                                     <a class="addPhone"><img src="images/icons/phone_add.png" /></a>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="display:none;">
+                                   <td class="description" style="color:#36413e;text-align:center;">
+                                        <select class="Description no-margin" sort="" name="description[]">
+                                            <option value=""></option>
+                                            <option value="Cell">Cell</option>
+                                            <option value="Home">Home</option>
+                                            <option value="Work">Work</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </td>
+                                    <td class="number" style="color:#36413e;">
+                                        <input class="Phone no-margin" class="phone" sort="" name="phone[]" type="text" value="" placeholder="Number">
+                                    </td>
+                                    <td class="primary" style="color:#36413e;text-align:center;">
+                                        <input class="isPrimary no-margin" sort="" name="isPrimary[]" type="checkbox" value="1">
+                                    </td>
+                                    <td class="delete" style="color:#36413e;text-align:center;">
+                                        <a class="deletePhone"><img src="images/icons/phone_delete.png" /></a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <small style="margin-left: .5rem;" class="error-match onePhone">At least one phone is required.</small> 
+                        <small style="margin-left: .5rem;" class="error-match fullPhone">Description and complete phone number are required.</small>
+                        <small style="margin-left: .5rem;" class="error-match primary">Please mark one phone number as primary.</small> 
+                    </div>
+                </div>
+                <h5>Company Information</h5>
+                <div class="row">
+                    <div class="small-6 columns">
+                        <label>
+                            Company Name <small>required</small>
+                            <input name="companyName" type="text" value="" required="">
+                            <small class="form-error">Company Name is required.</small>
+                        </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="medium-6 columns">
+                        <label>
+                            Address <small>(Street Address, P.O. Box) required</small>
+                            <input name="companyAddress1" type="text" value="" required="">
+                            <small class="form-error">Address is required.</small>
+                        </label>
+                    </div>
+                    <div class="medium-3 columns">
+                        <label>
+                            Address 2 <small>(Apt, Suite, Unit)</small>
+                            <input name="companyAddress2" type="text" value="">
+                        </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="medium-4 columns">
+                        <label>
+                            City <small>required</small>
+                            <input name="companyCity" type="text" value="" required="">
+                            <small class="form-error">City is required.</small>
+                        </label>
+                    </div>
+                    <div class="medium-3 columns">
+                        <label>
+                            State <small>required</small>
+                            <select name="companyState" required="">      
+                                <?php echo $stateOptions;  ?>                          
+                            </select>
+                            <small class="form-error">State is required.</small>
+                        </label>
+                    </div>
+                    <div class="medium-3 columns">
+                        <label>
+                            Zip <small>required</small>
+                            <input name="companyZip" type="text" value="" required="">
+                            <small class="form-error">Zip is required.</small>
+                        </label>
+                    </div>
+                </div>
+                <div class="row" style="margin:.5rem 0 1rem 0;">
+                    <div class="large-10 columns">
+                        <label>
+                            <input type="checkBox" id="addCCBillingAddress">Is credit card billing address different?
+                        </label>
+                    </div>
+                </div>
+                <div class="row" id="CCBillingAddress" style="display: none; margin-left: 1rem;">
+                    <div class="medium-6 columns">
+                        <label>Billing Address 
+                            <small>(Street Address, P.O. Box) required</small>
+                            <input name="companyBillingAddress1" type="text" value="">
+                            <small class="form-error">Billing Address is required.</small>
+                        </label>
+                    </div>
+                    <div class="medium-4 columns">
+                        <label>Billing Address 2 
+                            <small>(Apt, Suite, Unit)</small>
+                            <input name="companyBillingAddress2" type="text" value="">
+                        </label>
+                    </div>
+                    <div class="medium-4 columns">
+                        <label>Billing City 
+                            <input name="companyBillingCity" type="text" value="">
+                            <small class="form-error">Billing City is required.</small>
+                        </label>
+                    </div>
+                    <div class="medium-3 columns">
+                        <label>Billing State 
+                            <select  name="companyBillingState">
+                                <?php echo $stateOptions;  ?>                          
+                            </select>
+                            <small class="form-error">Billing State is required.</small>
+                        </label>
+                    </div>
+                    <div class="medium-3 columns">
+                        <label>Billing Zip 
+                            <input name="companyBillingZip" type="text" value="">
+                            <small class="form-error">Billing Zip is required.</small>
+                        </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="medium-6 columns">
+                        <label>
+                            Website <small>required</small>
+                            <input name="companyWebsite" type="text" value="" required="">
+                            <small class="form-error">Website is required.</small>
+                        </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="large-9 columns" id="companyPhoneSection">
+                        <table id="phoneTable" class="phoneTable" cellpadding="0" cellspacing="0">
+                            <thead style="background:none;">
+                                <tr>
+                                    <th width="30%" style="text-align:left;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"><label>Company Phone <small>required</small></label></th>
+                                    <th width="40%" style="text-align:center;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"></th>
+                                    <th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">Primary</th>
+                                    <th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">
+                                     <a class="addPhone"><img src="images/icons/phone_add.png" /></a>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="display:none;">
+                                    <td class="description" style="color:#36413e;text-align:center;">
+                                        <input class="Description no-margin" sort="" name="description[]" type="text" value="" placeholder="Description">
+                                    </td>
+                                    <td class="number" style="color:#36413e;">
+                                        <input class="Phone no-margin" class="phone" sort="" name="phone[]" type="text" value="" placeholder="Number">
+                                    </td>
+                                    <td class="primary" style="color:#36413e;text-align:center;">
+                                        <input class="isPrimary no-margin" sort="" name="isPrimary[]" type="checkbox" value="1">
+                                    </td>
+                                    <td class="delete" style="color:#36413e;text-align:center;">
+                                        <a class="deletePhone"><img src="images/icons/phone_delete.png" /></a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <small style="margin-left: .5rem;" class="error-match onePhone">At least one phone is required.</small> 
+                        <small style="margin-left: .5rem;" class="error-match fullPhone">Description and complete phone number are required.</small>
+                        <small style="margin-left: .5rem;" class="error-match primary">Please mark one phone number as primary.</small> 
+                    </div>
+                </div>
+                <div class="row" style="margin-bottom: 2rem;">
+                    <div class="medium-4 columns">
+                        <label>Timezone <small>required</small>
+                            <select name="timezone" required="">
+                                <option value="">--</option>
+                                <option value="-18000">Eastern Time Zone</option>
+                                <option value="-21600">Central Time Zone</option>
+                                <option value="-25200">Mountain Time Zone</option>
+                                <option value="-28800">Pacific Time Zone</option>
+                                <option value="-32400">Alaska Time Zone</option>
+                                <option value="-36000">Hawaii Time Zone</option>
+                            </select>
+                            <small class="form-error">Timezone is required.</small>
+                        </label>
+                    </div>
+                    <div class="medium-4 columns">
+                        <label style="margin-top: 1.7rem;">
+                            <input type="checkbox" name="daylightSavings" value="1"  />
+                            Daylight Savings <span data-tooltip aria-haspopup="true" class="has-tip top" data-disable-hover="false" tabindex="1" title="Check if you recognize daylight savings time."><img src="images/icons/info.png" /></span> 
+                       </label> 
+                    </div>
+                </div>
+                <h5>Subscription</h5>
+                <div class="row align-center" style="margin-bottom: 1rem;">
+                    <?php echo $pricingDisplay; ?>
+                </div>
+                <h5>Payment Information</h5>
+                <div class="row">
+                    <div class="small-6 columns">
+                        <label>
+                            Card Number <small>required</small>
+                            <input name="cardNumber" type="text" value="" required="">
+                            <small class="form-error">Card Number is required.</small>
+                            <small class="error-match">Card Number is invalid.</small>
+                        </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="small-3 columns">
+                        <label>
+                            Expiration Date <small>required</small>
+                            <input name="expirationDate" class="expiration" type="text" value="" required="">
+                            <small class="form-error">Expiration Date is required.</small>
+                            <small class="error-match">Date is invalid.</small>
+                        </label>
+                    </div>
+                    <div class="small-3 columns">
+                        <label>
+                            Code on Back of Card <small>required</small>
+                            <input name="cardCode" class="cardCode" type="text" value="" required="">
+                            <small class="form-error">3 digit code is required.</small>
+                            <small class="error-match">Code is invalid.</small>
+                        </label>
+                    </div>
+                </div>
+                <div id="paymentTotal" class="callout primary" style="margin: 1rem 0 1.5rem 0; display: none;">
+                    <h5>Payment Total</h5>
+                    <p class="no-margin paymentText">
+                        Subscription
+                    </p>
+                    <div class="row">
+                        <div class="medium-10 columns">
+                            <p class="text-right paymentBreakdown">
+                                
+                            </p>
+                        </div>
+                        <div class="medium-2 columns">
+                            <p class="text-right paymentTotal">
+                                
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="tiny reveal" id="errorModal" data-reveal>
+                    <h3 class="text-center">Error</h3>
+                    <div class="row">
+                        <div class="medium-12 columns">
+                            <p id="errorMessage" class="text-center">
+                                
+                            </p>
+                            <p class="text-center no-margin">
+                                <button class="button" data-close>OK</button>
+                            </p> 
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="latitude" name="latitude" value="" />
+                <input type="hidden" id="longitude" name="longitude" value="" />
+                <input type="hidden" id="addressChecked" name="addressChecked" value="" />
+                <div class="row" style="margin-top:1rem;">
+                    <div class="small-12 columns">
+                       <button class="button" id="registerCompany">Submit</button> 
+                    </div>
+                </div>
+                <div id="calendarMap" style="display:none;height:500px;width:500px"></div>
+                <div id="latLongModal" class="reveal small" data-reveal data-close-on-click="false" data-close-on-esc="false">
+                    <p class="lead text-center">Your address cannot be verified.</p>
+                    <p id="addressPartial" class="is-invalid-input" data-invalid="" style="padding: 0 .5rem .5rem .5rem;">
+                        <br>You entered </br>
+                        <span id="addressPartialText"></span>
+                        <button id="usePartial" class="button right" style="margin-top: -1rem">Use</button>
+                    </p>
+                    <p id="addressFull" style="padding: 0 .5rem .5rem .5rem;">
+                        <br>We suggest </br>
+                        <span id="addressFullText"></span>
+                        <button id="useComplete" class="button right" style="margin-top: -1rem">Use</button>
+                    </p>
+                    <input type="hidden" id="partialMatchLatitude" name="partialMatchLatitude" value="" />
+                    <input type="hidden" id="partialMatchLongitude" name="partialMatchLongitude" value="" />
+                    <p class="text-center">
+                        <button id="cancelAddress" class="button secondary" style="margin-top: 1rem;margin-bottom: .5rem;">Cancel</button>
+                    </p>
+                </div>
+            </div> 
+        </div>
+        <div class="reveal small" id="refundPolicy" data-reveal data-close-on-esc="false" data-close-on-click="false">
+            <h3 class="text-center">Refund Policy</h3>
+            <div class="row">
+                <div class="medium-12 columns">
+                    <ul>
+                        <li>Cancel at any time</li>
+                        <li>Subscription will not be renewed if cancelled.  E.g. If your subscription is monthly and you cancel you can access the system for the remainder of that month.  When your cancellation becomes effective, you will no longer be billed for the service or have access to your account.</li>
+                        <li>If your payment fails for any reason, you will not be able to access your account until your account is current.</li>
+                        <li>All Subscriptions are automatically renewed unless cancelled.</li>
+                    </ul>
+                    <p class="text-center no-margin">
+                        <button class="button" data-close>OK</button>
+                    </p> 
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="small-2 columns">  
+            <a id="viewRefundPolicy">Refund Policy</a>
+        </div>
+        <div class="small-10 columns">
+            <!-- (c) 2005, 2016. Authorize.Net is a registered trademark of CyberSource Corporation --> 
+            <div class="AuthorizeNetSeal" style="margin-bottom: 1rem;float: right;"> 
+                <script type="text/javascript" language="javascript">var ANS_customer_id="aca1ca9a-a2b7-4a07-a554-d0288519bee9";</script> 
+                <script type="text/javascript" language="javascript" src="//verify.authorize.net/anetseal/seal.js" ></script> 
+                <a href="http://www.authorize.net/" id="AuthorizeNetText" target="_blank">Merchant Services</a> 
+            </div>
+        </div>
+    </div>
+    <script src="js/foundation.min.js"></script>
+    <script>
+      $(document).foundation();
+    </script>
+    <script type="text/javascript" src="js/jquery.mask.min.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            $('.Phone').mask('(000) 000-0000');
+            $('.date').mask('11/11/1111');
+            $('.expiration').mask('00/00');
+            $('.cardCode').mask('0000');
+            $('.time').mask('Hh:Mm Pp',
+               {
+                   'translation': {
+                       H: { pattern: /[0-1]/ },
+                       h: { pattern: /[0-9]/ },
+                       M: { pattern: /[0-5]/ },
+                       m: { pattern: /[0-9]/ },
+                       P: { pattern: /[AaPp]/ },
+                       p: { pattern: /[Mm]/ }
+                   }
+               });
+        });
+
+    </script>
+  </body>
+</html>

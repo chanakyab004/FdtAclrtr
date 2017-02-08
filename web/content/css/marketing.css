@@ -1,0 +1,57 @@
+#dateFilterFrom, #dateFilterTo{
+	width: 45%;
+	margin-right: .5rem;
+	display: inline-block;
+}
+
+.detailsToggle {
+	max-height: 18px;
+	max-width: 18px;
+}
+
+.arrowDown {
+	display: none;
+	vertical-align: middle;
+	margin-top: -.1rem;
+}
+
+.arrowRight{
+	vertical-align: middle;
+	margin-top: -.09rem;
+}
+
+.source {
+	background-color: #dff1fc;
+	padding: 0.5rem;
+}
+
+.subsource {
+	background-color: #F6F7FB;
+	/*padding: 0.25rem 0rem 0.25rem 0rem;*/
+	display: none;
+	padding: 0.15rem;
+	/*margin: .5rem 0;*/
+}
+
+
+.subsource-actions{
+	text-align: right;
+	/*width: 30%;*/
+}
+
+.spendrow{
+	display: none;
+	background-color: white;
+	padding: 0.15rem;
+}
+
+.subsourceHeading{
+	padding-left: 2rem;
+}
+
+.spendrowHeading{
+	padding-left: 5rem;
+}
+
+
+

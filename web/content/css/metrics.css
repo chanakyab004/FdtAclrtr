@@ -1,0 +1,49 @@
+#marketingReport {
+	max-width: 115rem;
+}
+#marketingReport table {
+	font-size: 0.8em;
+	border-collapse: ;
+	border: 1px solid black;
+}
+
+#marketingReport table td {
+	border: 1px solid black;
+	color: black;
+}
+
+#heading {
+	font-size: 1.3em;
+	font-weight: bold;
+}
+
+#allMarketing {
+	background-color: #dff1fc;
+	font-weight: bold;
+	font-size: 1rem;
+}
+
+[name="leadSource"] {
+	text-align: left;
+}
+
+[class="subsourceName"][name="leadSource"] {
+	text-indent: 1rem;
+}
+
+[name="totalMarketingCosts"], [name="grossSales"], [name="costPerLead"], [name="costPerSale"], [name="revenuePerLead"]{
+	text-align: right;
+}
+
+#heading td {
+	text-align: center;
+}
+
+.ui-tooltip-content {
+    font-size:0.7rem;
+}
+
+.source {
+	background-color: #dff1fc;
+	font-weight: bold;
+}

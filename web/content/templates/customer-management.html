@@ -1,0 +1,1401 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
+<title>Foundation Accelerator</title>
+<link rel="stylesheet" href="css/foundation.css" /><link rel="stylesheet" href="css/custom.css" />
+<link rel="stylesheet" href="css/customer-management.css" />
+<link rel="stylesheet" href="css/motion-ui.css" />
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+<link href='css/fullcalendar.css' rel='stylesheet' />
+<link href='css/scheduler.css' rel='stylesheet' />
+<link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
+<script src="js/jquery.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+<script src='js/moment.min.js'></script>
+<script src='js/fullcalendar.min.js'></script>
+<script src='js/scheduler.min.js'></script>
+<script src='js/jquery.tablesorter.min.js'></script>
+<script src='js/setup-progress.js'></script>
+<script src='js/zen.js'></script>
+<script>
+    $(document).keypress(function (e) {
+        if (e.which == 13) {
+            if ($('input[name="customer"]').val() != '') {
+                searchCustomers();
+            }
+        }
+    });
+
+    $(document).ready(function () {
+
+            userInfo = {
+                name: "<?php echo $userFirstName;  ?>" + " <?php echo $userLastName;  ?>",
+                email: "<?php echo $userEmail;  ?>"
+            }
+        //Show Setup Modal if Clicked in Top Nav
+        $('#showSetup').click(showSetupModal);
+
+        //Show Setup Modal On Page Load if it Hasn't Been Viewed Since Yesterday
+        showSetupModal('true');
+
+        //Update Last Viewed When Modal Opens
+        $('#setupModal').on('open.zf.reveal', function() {
+            $.ajax({
+                url: 'setupProgressUpdate.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "POST",
+                contentType: "application/x-www-form-urlencoded",
+                data: {
+                    updateSetupNotice: 'true'
+                },
+                success: function (response) {
+                    //console.log(response);
+                    // if (response == 'true') {
+                    // }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            });
+
+        });
+
+        //Update Checkmarks When Clicked
+        $('img.setupProgressCheckmark').click(updateChecks);
+
+        //Stop Showing Setup Modal
+        $('#setupComplete').click(setupComplete);
+
+        //Add Phone Row on Click
+        $('#phoneTable .addPhone').click(addPhoneRow);
+
+        //Edit Customer Modal
+        $('#editCustomerInfo').click(editCustomer);
+
+        //Close Customer Modal
+        $('#closeEditCustomerModal').click(closeEditCustomer);
+
+        //Save Customer Modal
+        $('#saveEditCustomerModal').click(saveEditCustomer);
+
+        //Move Property Modal
+        $('.callout.primary #moveProperty').each(function(){
+            $(this).click(movePropertyModal);
+        });
+
+        //Close Move Property Modal
+        $('#closeMovePropertyNew').click(closeMoveProperty);
+        $('#closeMovePropertyExisting').click(closeMoveProperty);
+        
+
+        $('#existingCustomer').click(function(){
+            if (!$('#existingCustomer').hasClass('active')) {
+                $('#existingCustomer').addClass('active');
+                $('#newCustomer').removeClass('active');
+                $('#existingCustomerSection').show();
+                $('#newCustomerSection').hide();
+            }
+        });
+        
+        $('#newCustomer').click(function(){
+            if (!$('#newCustomer').hasClass('active')) {
+                $('#newCustomer').addClass('active');
+                $('#existingCustomer').removeClass('active');
+                $('#newCustomerSection').show();
+                $('#existingCustomerSection').hide();
+
+                //Add Row For Phone
+                addPhoneRowUser();
+
+                $('#userPhoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+            }
+        });
+
+        $('#searchCustomers').click(searchCustomers);
+
+        $('#userPhoneTable .addPhone').click(addPhoneRowUser);
+        $('#userPhoneTable .deletePhone').click(deletePhoneRowUser);
+        $('#userPhoneTable input.isPrimary').change(isPrimaryCheckUser);
+
+        $('.movePropertyToExisting').click(movePropertyToExisting);
+
+        $('#movePropertyToNew').click(movePropertyToNew);
+
+        $('#newCustomerSection input[required], #newCustomerSection select[required]').change(function(){
+            if ($(this).val() == ''){
+                $(this).parent().addClass('is-invalid-label');
+                $(this).addClass('is-invalid-input');
+                $(this).parent().find('.form-error').addClass('is-visible');
+            } else {
+                $(this).parent().removeClass('is-invalid-label');
+                $(this).removeClass('is-invalid-input');
+                $(this).parent().find('.form-error').removeClass('is-visible');
+            }
+        });
+
+        //Enable/Disable Email Field On Click
+        $('#editCustomerModal input[name="noEmailRequired"]').change(function (){
+            if ($('#editCustomerModal input[name="noEmailRequired"]:checked').length > 0){
+                $('#editCustomerModal input[name="email"]').prop('disabled', true);
+                $('#editCustomerModal input[name="email"]').val('');
+                $('#editCustomerModal input[name="email"]').removeClass('customerRequired');
+                $('#editCustomerModal input[name="email"]').parent().removeClass('is-invalid-label');
+                $('#editCustomerModal input[name="email"]').removeClass('is-invalid-input');
+                $('#editCustomerModal input[name="email"]').parent().find('.form-error').removeClass('is-visible');
+            } else {
+                $('#editCustomerModal input[name="email"]').prop('disabled', false);
+                $('#editCustomerModal input[name="email"]').val($('#fetchedEmail').text());
+                $('#editCustomerModal input[name="email"]').addClass('customerRequired');
+            }
+        });
+
+        $('#editCustomerModal input.customerRequired').change(function () {
+             if ($(this).val() == '') {
+                $(this).parent().addClass('is-invalid-label');
+                $(this).addClass('is-invalid-input');
+                $(this).parent().find('.form-error').addClass('is-visible');
+            } else {
+                $(this).parent().removeClass('is-invalid-label');
+                $(this).removeClass('is-invalid-input');
+                $(this).parent().find('.form-error').removeClass('is-visible');
+            }
+        });
+        //remove required if no email is required
+        if ('<?php echo $noEmailRequired; ?>' == 1){
+            $('#editCustomerModal input[name="email"]').removeClass('customerRequired');
+        }
+    }); //end of document ready
+
+    var decodeEntities = function (encodedString) {
+        var textArea = document.createElement('textarea');
+        textArea.innerHTML = encodedString;
+        return textArea.value;
+    }
+
+    var movePropertyModal = function(){
+        var idToMove = $(this).parent().parent().attr('id');
+        
+        $('#movePropertyModal #idToMove').val(idToMove);
+
+        $('#movePropertyModal').foundation('open');
+    };
+
+
+    var closeMoveProperty = function(){
+        $('#existingCustomer').addClass('active');
+        $('#newCustomer').removeClass('active');
+        $('#existingCustomerSection').show();
+        $('#newCustomerSection').hide();
+
+        $('input[name="customer"]').val('');
+        $('input[name="firstName"]').val('');
+        $('input[name="lastName"]').val('');
+        $('input[name="email"]').val('');
+        $('input[name="ownerAddress"]').val('');
+        $('input[name="ownerAddress2"]').val('');
+        $('input[name="ownerCity"]').val('');
+        $('select[name="ownerState"]').val('');
+        $('input[name="ownerZip"]').val('');
+
+         $('.accordion').foundation('up', $('.accordion .accordion-item.is-active .accordion-content'));
+
+        $('#userPhoneTable tbody tr').not(':first').remove();
+        $('#existingCustomersTable tbody tr').not(':first').remove();
+        $('#existingCustomerDisplay').hide();
+
+        $('#movePropertyModal #idToMove').val('');
+        $('#movePropertyModal').foundation('close');
+    };
+
+
+    var addPhoneRowUser = function () {
+
+        //oldRow = $('#userPhoneTable').find('tbody > tr:last-child input.isPrimary').attr('value');
+        //var newRow = parseFloat(oldRow) + 1;
+
+        $cloneBlankRow = $('#userPhoneTable').find('tbody tr:first').clone().css('display', '');
+        $('#userPhoneTable').find('tbody').append($cloneBlankRow);
+        $('#userPhoneTable').find('tbody > tr:last-child input.isPrimary').change(isPrimaryCheckUser);
+        $('#userPhoneTable').find('tbody > tr:last-child .delete > a').click(deletePhoneRowUser);
+
+        $('#userPhoneTable').find('tbody > tr:last-child input.Phone').mask('(000) 000-0000');
+
+       //if ($('#userPhoneTable input.isPrimary').is(':not(:checked)')) {
+        if (!$('#userPhoneTable input.isPrimary:checked')) {
+             $('#userPhoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+         }
+    };
+
+
+    var deletePhoneRowUser = function () {
+
+        if ($(this).parent().parent().hasClass('dbRow')) {
+            $(this).parent().parent().find('select').attr('delete','delete');
+            $(this).parent().parent().css('display','none');
+
+             if ($(this).parent().parent().find('input.isPrimary').is(':checked'))
+                $('#userPhoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+
+            if ($('#userPhoneTable tbody').children().length == 1)
+                addPhoneRowUser();
+        } else {
+            $(this).parent().parent().remove();
+
+            if ($(this).parent().parent().find('input.isPrimary').is(':checked'))
+                $('#userPhoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+
+            if ($('#userPhoneTable tbody').children().length == 1)
+               addPhoneRowUser();
+        }
+
+    };
+
+
+    var isPrimaryCheckUser = function () {
+
+        $('#userPhoneTable').find('input.isPrimary').prop('checked', false);
+        $(this).prop('checked', true);
+
+    };
+
+
+    var searchCustomers = function () {
+        $('#existingCustomerDisplay').css('display', '');
+
+        $('#existingCustomersTable tbody tr').not(':first').remove();
+
+        var keyword = $('input[name="customer"]').val();
+        //console.log(keyword);
+
+        if (keyword != '') {
+            $.ajax({
+                url: 'getCustomerOnlySearch.php',
+                dataType: 'json',
+                contentType: 'application/json',
+                type: 'POST',
+                contentType: 'application/x-www-form-urlencoded',
+                data: {
+                    keyword: keyword
+                },
+                success: function (response) {
+                    
+                    if (!response == '') {
+                        $('input[name="customer"]').blur(); 
+                        
+                        $.each(response, function (i, item) {
+                            var nameDisplay = '';
+                            var addressDisplay = '';
+                            var phoneDisplay = '';
+                            var descriptonDisplay = '';
+
+                            
+                            if (item.firstName != null){
+                                nameDisplay += item.firstName + ' ';
+                            }
+                            if (item.lastName != null){
+                                nameDisplay += item.lastName + ' ';
+                            }
+                            if (item.ownerAddress != null){
+                                addressDisplay += item.ownerAddress + ' ';
+                            }
+                            if (item.ownerAddress2 != null){
+                                addressDisplay += item.ownerAddress2+ ' ';
+                            }
+                            if (item.ownerCity != null){
+                                addressDisplay += item.ownerCity + ', ';
+                            }
+                            if (item.ownerState != null){
+                                addressDisplay += item.ownerState  + ', ';
+                            }
+                            if (item.ownerZip != null){
+                                addressDisplay += item.ownerZip;
+                            }
+
+                            $cloneRow = $('#existingCustomersTable tbody tr:first').clone().css('display', '');
+
+                            $cloneRow.find('td.name').text(nameDisplay);
+
+                            $cloneRow.find('td.address').text(addressDisplay);
+
+                            $cloneRow.find('td.phone').text(item.phoneNumber);
+
+                            $cloneRow.find('td.email').text(item.email);
+
+                            if (item.customerID != null){
+                                $cloneRow.find('td.link').html('<a class="button xtiny movePropertyToExisting" id="' + item.customerID + '">Move</a>');
+                            }
+
+                            $('#existingCustomersTable tbody').append($cloneRow);
+
+                            $('#existingCustomersTable tbody tr:last-child a.movePropertyToExisting').click(movePropertyToExisting);
+                            
+                        });
+                    }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            });
+        }
+    };
+
+    var movePropertyToExisting = function(){
+        $('#loading-image').show();
+
+        var newCutomerID = $(this).attr('id');
+        var propertyIDMove = $('#movePropertyModal #idToMove').val();
+
+        $.ajax({
+            url: 'movePropertyToNewCustomer.php',
+            dataType: 'json',
+            contentType: 'application/json',
+            type: 'POST',
+            contentType: 'application/x-www-form-urlencoded',
+            data: {
+                newCustomerID: newCutomerID,
+                propertyIDMove: propertyIDMove
+            },
+            success: function (response) {
+                if (response == 'true') {
+                    $('#loading-image').hide();
+                    window.location.href = "customer-management.php?cid="+newCutomerID;
+                }
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+                console.log(jqXHR.responseText);
+            }
+        });
+
+    };
+
+
+    var movePropertyToNew = function() {
+        var addNewCustomer;
+
+        $('#newCustomerSection input[required], #newCustomerSection select[required]').each(function(){
+            if ($.trim( $(this).val() ) == '') {
+            //if ($(this).val() == '') {
+                $(this).parent().addClass('is-invalid-label');
+                $(this).addClass('is-invalid-input');
+                $(this).parent().find('.form-error').addClass('is-visible');
+            } else {
+                $(this).parent().removeClass('is-invalid-label');
+                $(this).removeClass('is-invalid-input');
+                $(this).parent().find('.form-error').removeClass('is-visible');
+            }
+
+        });
+
+
+        if ($(".is-invalid-label")[0]){
+            addNewCustomer = 0;
+
+        } 
+
+        // if ($('#userPhoneTable tbody tr:last td input.Phone:visible, #userPhoneTable tbody tr:last td select:visible').is(':visible')) {
+        //     if ($('#userPhoneTable tbody tr:last td input.Phone:visible').val() == '' && $('#userPhoneTable tbody tr:last td select:visible').val() == '') {
+        //         $('#userPhoneSection small.onePhone').addClass('is-visible');
+        //         addNewCustomer = 0;
+        //     } else {
+        //         $('#userPhoneSection small.onePhone').removeClass('is-visible');
+        //         if ($('#userPhoneTable .isPrimary:checked').length < 1) {
+        //             $('#userPhoneSection small.primary').addClass('is-visible');
+        //             addNewCustomer = 0;
+        //         } else {
+        //             if ($('#userPhoneTable .isPrimary:checked').is(':visible')) {
+        //                 $('#userPhoneSection small.primary').removeClass('is-visible');
+        //                 addNewCustomer = 1;
+        //             } else {
+        //                 $('#userPhoneSection small.primary').addClass('is-visible');
+        //                 addNewCustomer = 0;
+        //             }
+        //         }
+        //     }
+        // } else {
+        //     $('#userPhoneSection small.onePhone').addClass('is-visible');
+        //     addNewCustomer = 0;
+        // }
+
+        // if ($('#userPhoneTable tbody tr:visible').eq(0).find('td input.Phone').val() == '' || $('#userPhoneTable tbody tr:visible').eq(0).find('td select').val() == '') {
+        //     $('small.onePhone').addClass('is-visible');
+        // } else {
+        //     $('small.onePhone').removeClass('is-visible');
+        //     if ($('#userPhoneTable .isPrimary:checked').length < 1) {
+        //         $('small.primary').addClass('is-visible');
+                
+        //     } else {
+        //         if ($('#userPhoneTable .isPrimary:checked').is(':visible')) {
+        //             $('small.primary').removeClass('is-visible');
+        //             addNewCustomer = 1;
+        //         } else {
+        //             $('small.primary').addClass('is-visible');
+        //         }
+        //     }
+        // }
+
+        if ($('#userPhoneTable tbody tr:visible').length > 0) {
+            $('small.onePhone').removeClass('is-visible');
+
+            $('#userPhoneTable tbody tr:visible').each(function(){
+                if ($(this).find('td input.Phone').val() == '' || $(this).find('td select').val() == '') {
+                    $('small.fullPhone').addClass('is-visible');
+                    addNewCustomer = 0;
+                } else {
+                    if ($(this).find('td input.Phone').val().length < 14) {
+                         $('small.fullPhone').addClass('is-visible');
+                         addNewCustomer = 0;
+                    } else {
+                        $('small.fullPhone').removeClass('is-visible');
+                        addNewCustomer = 1;
+                    }
+                }
+            }); 
+
+            if (addNewCustomer == 1) {
+                if ($('#userPhoneTable .isPrimary:checked').length < 1) {
+                    $('small.primary').addClass('is-visible');
+                    addNewCustomer = 0;
+                } else {
+                    if ($('#userPhoneTable .isPrimary:checked').is(':visible')) {
+                        $('small.primary').removeClass('is-visible');
+                        addNewCustomer = 1;
+                    } else {
+                        $('small.primary').addClass('is-visible');
+                        addNewCustomer = 0;
+                    }
+                }
+            }
+
+        } else {
+            $('small.onePhone').addClass('is-visible');
+            addNewCustomer = 0;
+        }
+
+        if ($(".is-visible")[0]){
+            addNewCustomer = 0;
+        }
+
+
+        if (addNewCustomer == 1) {
+            $('#loading-image').show();
+
+            var firstName = $('#newCustomerSection input[name="firstName"]').val();
+            var lastName = $('#newCustomerSection input[name="lastName"]').val();
+
+            var ownerAddress = $('#newCustomerSection input[name="ownerAddress"]').val();
+            var ownerAddress2 = $('#newCustomerSection input[name="ownerAddress2"]').val();
+            var ownerCity = $('#newCustomerSection input[name="ownerCity"]').val();
+            var ownerState = $('#newCustomerSection select[name="ownerState"]').val();
+            var ownerZip = $('#newCustomerSection input[name="ownerZip"]').val();
+
+            var email = $('#newCustomerSection input[name="email"]').val();
+
+            var propertyIDMove = $('#movePropertyModal #idToMove').val();
+            var projectDescription = $('#newCustomerSection input[name="projectDescription"]').val();
+
+
+            var userPhoneArray = storeUserPhoneTableData();
+            function storeUserPhoneTableData() {
+                var userPhoneTableData = new Array();
+                $('#userPhoneTable tbody tr').each(function(row,tr){
+                    userPhoneTableData[row]={
+                        "phoneDescription":$(tr).find('td:eq(0)').find('select').val(),
+                        "phoneNumber":$(tr).find('td:eq(1)').find('input').val(),
+                        "isPrimary":$(tr).find('td:eq(2)').find('input:checked').val()
+                    };
+                });
+                userPhoneTableData.shift();
+                var userPhoneTableArray = userPhoneTableData;
+                userPhoneTableArray = JSON.stringify(userPhoneTableArray);       
+
+                $.ajax({
+                    url: 'customer-add-new-project.php',
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    type: 'POST',
+                    contentType: 'application/x-www-form-urlencoded',
+                    data: {
+                        firstName: firstName,
+                        lastName: lastName,
+                        ownerAddress: ownerAddress,
+                        ownerAddress2: ownerAddress2,
+                        ownerCity: ownerCity,
+                        ownerState: ownerState,
+                        ownerZip: ownerZip,
+                        email: email,
+                        propertyIDMove: propertyIDMove,
+                        projectDescription: projectDescription,
+                        userPhoneTable: userPhoneTableArray
+                    },
+                    success: function (response) {
+                        console.log(response);
+                        if (response != '') {
+                            
+                            var newCutomerID = response;
+                            var propertyIDMove = $('#movePropertyModal #idToMove').val();
+
+                            $.ajax({
+                                url: 'movePropertyToNewCustomer.php',
+                                dataType: 'json',
+                                contentType: 'application/json',
+                                type: 'POST',
+                                contentType: 'application/x-www-form-urlencoded',
+                                data: {
+                                    newCustomerID: newCutomerID,
+                                    propertyIDMove: propertyIDMove
+                                },
+                                success: function (response) {
+                                    if (response == 'true') {
+                                        $('#loading-image').hide();
+                                        window.location.href = "customer-management.php?cid="+newCutomerID;
+                                    }
+                                },
+                                error: function (jqXHR, textStatus, errorThrown) {
+                                    console.log(textStatus, errorThrown);
+                                    console.log(jqXHR.responseText);
+                                }
+                            });
+                        }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                });
+            }
+        }
+    };
+
+    var isPrimaryCheck = function () {
+        $('#phoneTable').find('input.isPrimary').prop('checked', false);
+        $(this).prop('checked', true);
+    };
+
+    var deletePhoneRow = function () {
+        if ($(this).parent().parent().hasClass('dbRow')) {
+            $(this).parent().parent().find('select').attr('delete','delete');
+            $(this).parent().parent().css('display','none');
+
+             if ($(this).parent().parent().find('input.isPrimary').is(':checked'))
+                $('#phoneTable tbody tr:visible').eq(0).find('td.primary input.isPrimary').prop('checked', true);
+
+            if ($('#phoneTable tbody').children().length == 1)
+                addPhoneRow();
+        } else {
+            $(this).parent().parent().remove();
+
+            if ($(this).parent().parent().find('input.isPrimary').is(':checked'))
+                $('#phoneTable tbody tr:visible').eq(0).find('td.primary input.isPrimary').prop('checked', true);
+
+            //$("div a.action:visible").eq(0).addClass("first");
+
+            if ($('#phoneTable tbody').children().length == 1)
+               addPhoneRow();
+        }
+    };
+
+    var addPhoneRow = function () {
+        $cloneBlankRow = $('#phoneTable').find('tbody tr:first').clone().css('display', '');
+        $('#phoneTable').find('tbody').append($cloneBlankRow);
+        $('#phoneTable').find('tbody > tr:last-child input.isPrimary').change(isPrimaryCheck);
+        $('#phoneTable').find('tbody > tr:last-child .delete > a').click(deletePhoneRow);
+
+        $('#userPhoneTable').find('tbody > tr:last-child input.Phone').mask('(000) 000-0000');
+
+        if ($('#phoneTable input.isPrimary:checked').length <= 0) {
+            $('#phoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+        }
+    };
+
+    var editCustomer = function() {
+        //Get Customer Info
+        $.ajax({
+            url: 'getCustomer.php',
+            dataType: "json",
+            contentType: 'application/json',
+            type: "GET",
+            contentType: "application/x-www-form-urlencoded",
+            data: {
+                    customerID: $('#customerID').text()
+            },
+            success: function(response) {
+
+                //console.log(response);
+            
+                $('#editCustomerModal input[name="firstName"]').val(decodeEntities(response.firstName));
+                $('#editCustomerModal input[name="lastName"]').val(decodeEntities(response.lastName));
+                $('#editCustomerModal input[name="address"]').val(decodeEntities(response.ownerAddress));
+                $('#editCustomerModal input[name="address2"]').val(decodeEntities(response.ownerAddress2));
+                $('#editCustomerModal input[name="city"]').val(decodeEntities(response.ownerCity));
+
+                if ($('#editCustomerModal select[name="state"]').has('option[value="' + response.ownerState + '"]').length > 0)
+                    $('#editCustomerModal select[name="state"] > option[value="' + response.ownerState + '"]').prop('selected', true);
+
+                $('#editCustomerModal select[name="state"]').val(response.ownerState);
+                $('#editCustomerModal input[name="zip"]').val(response.ownerZip);
+                $('#editCustomerModal input[name="email"]').val(response.email);
+
+                if (response.unsubscribed == '1') {
+                    $('#editCustomerModal input[name="unsubscribed"]').prop('checked', true);
+                } else {
+                    $('#editCustomerModal input[name="unsubscribed"]').prop('checked', false);
+                }
+
+                if (response.noEmailRequired == '1') {
+                    $('#editCustomerModal input[name="noEmailRequired"]').prop('checked', true);
+                    $('#editCustomerModal input[name="email"]').prop('disabled', true);
+                    $('#editCustomerModal input[name="email"]').val('');
+                } else {
+                    $('#editCustomerModal input[name="noEmailRequired"]').prop('checked', false);
+                    $('#editCustomerModal input[name="email"]').prop('disabled', false);
+                }
+        
+                var customerID = response.customerID;
+
+                //On Success Get Customer Phone 
+                $.ajax({
+                    url: 'getCustomerPhone.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "GET",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        customerID: customerID
+                    },  
+                    success: function(response) {
+                        //console.log(response);
+                        $.each(response, function (i, item) {
+
+                            $cloneRow = $('#editCustomerModal .phoneTable tbody tr:first').clone().css('display', '');
+
+                            $cloneRow.addClass('dbRow');
+
+                            if ($cloneRow.find('select.Description').has('option[value="' + item.phoneDescription + '"]').length > 0)
+                                $cloneRow.find('select.Description > option[value="' + item.phoneDescription + '"]').prop('selected', true);
+
+                            $cloneRow.find('input.Phone').val(item.phoneNumber);
+                          
+                             if (item.isPrimary == '1') {
+                                $cloneRow.find('input.isPrimary').prop('checked', true);
+                            } else {
+                                $cloneRow.find('input.isPrimary').prop('checked', false);
+                            }
+                                
+
+                            $cloneRow.find('select.Description').attr('sort', item.customerPhoneID);
+                            $cloneRow.find('input.Phone').attr('sort', item.customerPhoneID);
+                            $cloneRow.find('input.isPrimary').attr('sort', item.customerPhoneID);
+
+
+                            $('#editCustomerModal .phoneTable tbody').append($cloneRow);
+                            $('#editCustomerModal .phoneTable tbody > tr:last-child input.isPrimary ').click(isPrimaryCheck);
+                            $('#editCustomerModal .phoneTable tbody > tr:last-child a ').click(deletePhoneRow);
+                    
+
+
+                      });
+
+                        //On Success Display Modal
+                        $('#editCustomerModal').foundation('open');
+                            
+                    }, error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                        
+               });     
+                    
+            }, error: function(jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+                console.log(jqXHR.responseText);
+            }
+                
+        });     
+
+
+    };
+
+    var closeEditCustomer = function() {
+        $('#editCustomerModal #phoneTable tbody tr').not(':first').remove();
+
+        $('#editCustomerModal input[name="firstName"]').val('');
+        $('#editCustomerModal input[name="lastName"]').val('');
+        $('#editCustomerModal input[name="address"]').val('');
+        $('#editCustomerModal input[name="address2"]').val('');
+        $('#editCustomerModal input[name="city"]').val('');
+        $('#editCustomerModal select[name="state"]').val('');
+        $('#editCustomerModal input[name="zip"]').val('');
+        $('#editCustomerModal input[name="email"]').val('');
+
+        $('small.fullPhone').removeClass('is-visible');
+        $('small.onePhone').removeClass('is-visible');
+        $('small.primary').removeClass('is-visible');
+       
+        $('#editCustomerModal').foundation('close');
+
+    };
+
+    var saveEditCustomer = function() {
+
+        $('#editCustomerModal input.customerRequired, #editCustomerModal select.customerRequired').each(function () {
+
+             if ($(this).val() == '') {
+                $(this).parent().addClass('is-invalid-label');
+                $(this).addClass('is-invalid-input');
+                $(this).parent().find('.form-error').addClass('is-visible');
+            } else {
+                $(this).parent().removeClass('is-invalid-label');
+                $(this).removeClass('is-invalid-input');
+                $(this).parent().find('.form-error').removeClass('is-visible');
+            }
+
+        });
+
+        
+        if ($('#phoneTable tbody tr:visible').length > 0) {
+            $('small.onePhone').removeClass('is-visible');
+
+            $('#phoneTable tbody tr:visible').each(function(){
+                if ($(this).find('td input.Phone').val() == '' || $(this).find('td select.Description').val() == '') {
+                    $('small.fullPhone').addClass('is-visible');
+                } else {
+                    if ($(this).find('td input.Phone').val().length < 14) {
+                         $('small.fullPhone').addClass('is-visible');
+                    } else {
+                        $('small.fullPhone').removeClass('is-visible');
+                    }
+                }
+            }); 
+        } else {
+            $('small.onePhone').addClass('is-visible');
+        }
+
+        if ($('#phoneTable .isPrimary:checked').length < 1) {
+            $('small.primary').addClass('is-visible');
+            
+        } else {
+            if ($('#phoneTable .isPrimary:checked').is(':visible')) {
+                $('small.primary').removeClass('is-visible');
+            } else {
+                $('small.primary').addClass('is-visible');
+            }
+        }
+
+
+        if (!$('#editCustomerModal input[name="firstName"]').parent().hasClass('is-invalid-label') &&
+            !$('#editCustomerModal input[name="lastName"]').parent().hasClass('is-invalid-label') && 
+            !$('#editCustomerModal input[name="address"]').parent().hasClass('is-invalid-label') && 
+            !$('#editCustomerModal input[name="address2"]').parent().hasClass('is-invalid-label') && 
+            !$('#editCustomerModal input[name="city"]').parent().hasClass('is-invalid-label') &&
+            !$('#editCustomerModal select[name="state"]').parent().hasClass('is-invalid-label') &&
+            !$('#editCustomerModal input[name="zip"]').parent().hasClass('is-invalid-label') &&
+            !$('#editCustomerModal input[name="email"]').parent().hasClass('is-invalid-label') &&
+            !$('small.onePhone').hasClass('is-visible') &&
+            !$('small.fullPhone').hasClass('is-visible') &&
+            !$('small.primary').hasClass('is-visible')
+            ) {
+
+            var firstName = $('#editCustomerModal input[name="firstName"]').val();
+            var lastName = $('#editCustomerModal input[name="lastName"]').val();
+            var address = $('#editCustomerModal input[name="address"]').val();
+            var address2 = $('#editCustomerModal input[name="address2"]').val();
+            var city = $('#editCustomerModal input[name="city"]').val();
+            var state = $('#editCustomerModal select[name="state"]').val();
+            var zip = $('#editCustomerModal input[name="zip"]').val();
+            var email = $('#editCustomerModal input[name="email"]').val();
+            var noEmailRequired = 0;
+            var unsubscribed = 0;
+
+            if ($('#editCustomerModal input[name="noEmailRequired"]:checked').length > 0){
+                noEmailRequired = 1;
+            }
+
+            if ($('#editCustomerModal input[name="unsubscribed"]:checked').length > 0){
+                unsubscribed = 1;
+            }
+
+            storePhoneTableData();
+
+            function storePhoneTableData() {
+                var phoneTableData = new Array();
+                $('#phoneTable tbody tr').each(function(row,tr){
+                    phoneTableData[row]={
+                        "phoneDelete":$(tr).find('td:eq(0)').find('select').attr('delete'),
+                        "customerPhoneID":$(tr).find('td:eq(0)').find('select').attr('sort'),
+                        "phoneDescription":$(tr).find('td:eq(0)').find('select').val(),
+                        "phoneNumber":$(tr).find('td:eq(1)').find('input').val(),
+                        "isPrimary":$(tr).find('td:eq(2)').find('input:checked').val()
+                    };
+                });
+                phoneTableData.shift();
+                var phoneTableArray = phoneTableData;
+               
+                $('loading-image').show();
+                $.ajax({
+                    url: 'edit-customer.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        customerID: $('#customerID').text(),
+                        firstName: firstName,
+                        lastName: lastName,
+                        address: address,
+                        address2: address2,
+                        city: city,
+                        state: state,
+                        zip: zip,
+                        email: email,
+                        phoneArray: phoneTableArray,
+                        noEmailRequired: noEmailRequired,
+                        unsubscribed: unsubscribed,
+                    },
+                    success: function(response) {
+                        // console.log(response);
+                        if (response == 'true') {
+                            $('#phoneTable tbody tr').not(':first').remove();
+
+                            $('#editCustomerModal input[name="firstName"]').val('');
+                            $('#editCustomerModal input[name="lastName"]').val('');
+                            $('#editCustomerModal input[name="address"]').val('');
+                            $('#editCustomerModal input[name="address2"]').val('');
+                            $('#editCustomerModal input[name="city"]').val('');
+                            $('#editCustomerModal select[name="state"]').val('');
+                            $('#editCustomerModal input[name="zip"]').val('');
+                            $('#editCustomerModal input[name="email"]').val('');
+
+                            $('#editCustomerModal').foundation('close');
+                            $('#editCustomerSuccessModal').foundation('open');
+
+                            $('#address').text(address);
+                            $('#city').text(city);
+                            $('#state').text(state);
+                            $('#zip').text(zip);
+
+                            updateCustomerInfo();
+                            map.MapAddress(address, city, state, zip, 'useAddress', setLatLng);
+                            updateCustomerInfo();
+                            $('loading-image').hide();
+
+                        } else {
+                            $('#editCustomerErrorModal p.error-text').text(response);
+                            $('#editCustomerErrorModal').foundation('open');
+                        }
+                    }, error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                });     
+            }
+        }
+    };
+
+    var updateCustomerInfo = function(){
+        //Get Customer Info
+        $.ajax({
+            url: 'getCustomer.php',
+            dataType: "json",
+            contentType: 'application/json',
+            type: "GET",
+            contentType: "application/x-www-form-urlencoded",
+            data: {
+                    customerID: $('#customerID').text()
+            },
+            success: function(response) {
+                var customerAddressDisplay = '<strong>Billing Address</strong><br>' + decodeEntities(response.ownerAddress) + ' ' + decodeEntities(response.ownerAddress2) + '</br>' +  decodeEntities(response.ownerCity) + ', ' + decodeEntities(response.ownerState) + ' ' +  decodeEntities(response.ownerZip);
+                $('#customerAddressDisplay').html(customerAddressDisplay);
+                updateCustomerContactInfo(response.customerID, response.email, response.unsubscribed, response.noEmailRequired);
+                // $('#projectName').html('<strong>Project</strong><br/>' + decodeEntities(response.projectDescription) + '<br/>');
+                $('[class="project-title"').text(decodeEntities(response.firstName) + ' ' + decodeEntities(response.lastName));
+                // updateCustomerContactInfo(response.customerID, response.email, response.unsubscribed, response.noEmailRequired);
+                // updateLatLong($('#latitude').text(), $('#longitude').text(), 'false');
+
+                // $('#unsubscribedStatus').text(response.unsubscribed);
+                // $('#noEmailRequiredStatus').text(response.noEmailRequired);
+
+                // if (response.noEmailRequired == 1 || response.unsubscribed == 1){
+                //     $('[name="resendBidEmailCustomer"]').addClass('disabled');
+                //     $('[name="sendFinalReport"]').addClass('disabled');
+                //     $('[name=resendBidEmail]').addClass('disabled');
+                //     $('[name=resendBidAcceptedEmail]').addClass('disabled');
+                //     $('[name=resendBidRejectedEmail]').addClass('disabled');
+                //     $('[name=resendFinalReportEmail]').addClass('disabled');
+                //     $('[name=resendEvaluationEmail]').addClass('disabled');
+                //     $('[name=resendInstallationEmail]').addClass('disabled');
+                // }
+                // else{
+                //     $('[name="resendBidEmailCustomer"]').removeClass('disabled');
+                //     $('[name="sendFinalReport"]').removeClass('disabled');
+                //     $('[name=resendBidEmail]').removeClass('disabled');
+                //     $('[name=resendBidAcceptedEmail]').removeClass('disabled');
+                //     $('[name=resendBidRejectedEmail]').removeClass('disabled');
+                //     $('[name=resendFinalReportEmail]').removeClass('disabled');
+                //     $('[name=resendEvaluationEmail]').removeClass('disabled');
+                //     $('[name=resendInstallationEmail]').removeClass('disabled');
+                // }
+                
+            }, error: function(jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+                console.log(jqXHR.responseText);
+            }
+                
+        });     
+    };
+
+    var updateCustomerContactInfo = function(customerID, email, unsubscribed, noEmailRequired){
+        var phoneDisplay = '';
+        var primary = '';
+                $.ajax({
+                    url: 'getCustomerPhone.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "GET",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        customerID: customerID
+                    },  
+                    success: function(response) {
+                        $.each(response, function (i, item) {
+                            if (item.isPrimary == 1){
+                                primary = '<span>primary</span>';
+                            } else {
+                                primary = '';
+                            }
+
+                            phoneDisplay += decodeEntities(item.phoneDescription) + ': ' + item.phoneNumber + ' ' + primary + '<br/>';
+                        });
+                        var unsubscribedText = '';
+                        if (unsubscribed == 1) {
+                            unsubscribedText = ' <span>unsubscribed</span>';
+                        } else {
+                            unsubscribedText = '';
+                        }
+                        if (noEmailRequired == 1) {
+                            unsubscribedText = ' <span>no email</span>';
+                        }
+                        var emailDisplay = 'Email: <a href="' + email + '">' + email + '</a>' + unsubscribedText;
+                        $('#contactInfoCustomer').html('<strong>Contact Information</strong><br />' + phoneDisplay + emailDisplay );
+
+                    }, error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                        
+               });  
+    };
+
+</script>
+</head>
+<style>
+    #propertyLocationMap, #propertyLocationStreetview  {
+        height: 320px;
+		border:1px solid #000;
+    }
+    #calendarMap {
+        height: 320px;
+        border:1px solid #000;
+    } 
+</style>
+<body>
+    <?php  include_once 'header.html'  ?>
+    <div id="loading-image" class="loadingImage">
+        <img src="images/ajax-loader.gif" />
+    </div>
+    <div class="row expanded first-row" style="background-color:#f6f7fb;">
+        <div class="medium-12 columns">
+            <div class="row expanded">
+            <div class="medium-9 columns" id="user">
+                <h1 class="project-title"><?php echo $firstName; ?> <?php echo $lastName; ?></h1>
+        	</div>
+            <?php echo $backToProject; ?>
+            
+    </div>
+      	</div>
+           </div>
+
+     <div class="row expanded" style="margin-bottom: 4rem;margin-top:1rem;">
+     	<div class="medium-12 columns">
+     		<div class="row expanded">
+                <div class="medium-3 columns" style="padding-left:2rem;">
+               	    <p id="customerAddressDisplay">
+                        <strong>Billing Address</strong><br>
+                        <?php echo $ownerAddress;  ?> <?php echo $ownerAddress2;  ?><br/>
+					    <?php echo $ownerCity;  ?>, <?php echo $ownerState;  ?> <?php echo $ownerZip;  ?>
+             		</p>
+                	<p id="contactInfoCustomer" style="margin-bottom: 2rem;">
+                		<strong>Contact Information</strong><br/>
+                    	<?php echo $phoneDisplay;  ?>
+                   	    Email: <a href="mailto:<?php echo $email;  ?>"><?php echo $email;  ?><?php echo $unsubscribedText;  ?></a>
+               	    </p>
+                    <p>
+                        <button id="editCustomerInfo" class="button">Edit Info</button> 
+                        <a target="_blank" href="statement.php?cid=<?php echo $customerID;  ?>" class="button">View Statement</a>
+                    </p>
+        		</div>
+                <div class="medium-9 columns" style="border-left: 1px dotted #cbcacf;padding-left: 2rem;padding-right: 2rem;">
+                    <div class="row expanded">
+                        <div class="medium-10 columns"> 
+                    	   <h4>Properties</h4>
+                        </div>
+                        <div class="medium-2 columns" style="margin-top:0.5rem"> 
+                            <a href="customer-add.php?cid=<?php echo $customerID;  ?>" class="button xtiny" style="float:right;">Add Property</a>
+                        </div>
+                        <div class="medium-12 columns">
+                      	     <?php echo $propertyDisplay;  ?>
+					    </div>
+                    </div>
+                </div> 
+            </div>  
+  	     </div>
+   	</div>
+    <div id="movePropertyModal" class="reveal large" data-reveal data-close-on-esc="false" data-close-on-click="false">
+        <h2 id="modalTitle" style="text-align:center;margin-bottom: 0;">Move Property</h2>
+        <p class="text-center" style="margin-bottom:1.5rem;">Move property to an existing or new customer.</p>
+        <div class="row expanded">
+            <div class="medium-12 columns">
+                <div class="button-group text-center">
+                    <input type="hidden" id="idToMove" name="idToMove" value="">
+                    <a id="existingCustomer" class="button bar left active">Existing</a>
+                    <a id="newCustomer" class="button bar right">New Customer</a>
+                </div>
+            </div>
+        </div>
+        <div id="existingCustomerSection">
+            <div class="row align-center">
+                <div class="medium-6 columns" style="padding-right: .5rem;">
+                    <label>Search Existing Customer</label>
+                    <span role="status" aria-live="polite" class="ui-helper-hidden-accessible"></span><input class="auto ui-autocomplete-input" type="text" name="customer" value="" autocomplete="off">
+                </div>
+                <div class="medium-1 columns" style="padding-left: .5rem;padding-top:1.5rem;">
+                    <input id="searchCustomers" class="button xtiny search" type="image" src="images/search.png" border="0">
+                </div>
+            </div>
+            <div class="row expanded" id="existingCustomerDisplay" style="display:none;margin-bottom:4rem;">
+                <div class="medium-12 columns no-pad">
+                    <table id="existingCustomersTable" cellpadding="0" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Address</th>
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="display:none;">
+                                <td class="name"></td>
+                                <td class="address"></td>
+                                <td class="phone"></td>
+                                <td class="email"></td>
+                                <td class="link"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="row">
+                <div class="medium-12 columns text-center">
+                    <button class="button secondary" id="closeMovePropertyExisting">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div id="newCustomerSection" style="display:none;">
+            <div class="row" style="margin-top: 1rem;">
+                <div class="large-4 columns">
+                    <label>
+                        Customer First Name <small>required</small>
+                        <input name="firstName" type="text" value="" required  />
+                        <small class="form-error">First name is required.</small>
+                    </label>
+                </div>
+                <div class="large-4 columns">
+                    <label>
+                        Customer Last Name <small>required</small>
+                        <input name="lastName" type="text" value="" required  />
+                        <small class="form-error">Last Name is required.</small>
+                    </label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="large-11 columns">
+                    <ul class="accordion" data-accordion data-allow-all-closed="true" style="margin-left: 0; margin-bottom: 1rem;">
+                        <li class="accordion-item" data-accordion-item>
+                            <a class="accordion-title">Is the owner address different than property address? <small>Click to Add</small></a>
+                            <div class="accordion-content" data-tab-content style="background:none;">
+                                <div class="row">
+                                    <div class="large-7 columns">
+                                        <label>
+                                            Owner Address
+                                            <input name="ownerAddress" id="ownerAddress" type="text" value="" />
+                                        </label>
+                                    </div>
+                                    <div class="large-4 columns">
+                                        <label>
+                                            Owner Address 2 <small>(Apt, Suite, Unit)</small>
+                                            <input name="ownerAddress2" id="ownerAddress2" type="text" value="" />
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="large-4 columns">
+                                        <label>
+                                            Owner City
+                                            <input name="ownerCity" id="ownerCity" type="text" value="" />
+                                        </label>
+                                    </div>
+                                    <div class="large-4 columns">
+                                        <label>
+                                            Owner State
+                                            <select name="ownerState" id="ownerState" style="margin:0 0 0 0 !important;">
+                                                <?php echo $ownerStateOptions;  ?>
+                                            </select>
+                                        </label>
+                                    </div>
+                                    <div class="large-3 columns">
+                                        <label>
+                                            Owner Zip
+                                            <input name="ownerZip" id="ownerZip" type="text" value="" />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row">
+                <div class="large-6 columns">
+                    <label>
+                        Email <small>required</small>
+                        <input name="email" type="text" value="" required  />
+                        <small class="form-error">Email is required.</small>
+                    </label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="large-8 columns" id="userPhoneSection" style="margin-bottom:1rem;">
+                    <table id="userPhoneTable" class="phoneTable" cellpadding="0" cellspacing="0" style="margin: 1rem 0;">
+                        <thead style="background:none;">
+                            <tr>
+                                <th width="30%" style="text-align:left;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"><label>Phone</label></th>
+                                <th width="40%" style="text-align:center;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"></th>
+                                <th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">Primary</th>
+                                <th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">
+                                    <a class="addPhone"><img src="images/icons/phone_add.png" /></a>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="display:none;">
+                                <td class="description" style="color:#36413e;text-align:center;">
+                                    <select class="no-margin" name="description[]" >
+                                        <option></option>
+                                        <option value="Cell">Cell</option>
+                                        <option value="Home">Home</option>
+                                        <option value="Work">Work</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </td>
+                                <td class="number" style="color:#36413e;">
+                                    <input class="no-margin Phone" name="phone[]" type="text" value="" >
+                                </td>
+                                <td class="primary" style="color:#36413e;text-align:center;">
+                                    <input class="isPrimary no-margin" name="isPrimary[]" type="checkbox" value="1">
+                                </td>
+                                <td class="delete" style="color:#36413e;text-align:center;">
+                                    <a class="deletePhone"><img src="images/icons/phone_delete.png" /></a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <small style="margin-left: .5rem;" class="form-error onePhone">At least one phone is required.</small> 
+                    <small style="margin-left: .5rem;" class="error-match fullPhone">Description and complete phone number are required.</small>
+                    <small style="margin-left: .5rem;" class="form-error primary">Please mark one phone number as primary.</small> 
+                </div>
+                <div class="large-3 columns"></div>
+            </div>
+            <div class="row">
+                <div class="large-6 columns">
+                    <label>
+                        Project Description (House, Garage, etc.) <small>required</small>
+                        <input name="projectDescription" type="text" value="" required  />
+                        <small class="form-error">Description is required.</small>
+                    </label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="medium-12 columns text-center">
+                    <button id="movePropertyToNew" class="button">Save</button>
+                    <button class="button secondary" id="closeMovePropertyNew">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="reveal" id="editCustomerModal" data-reveal data-close-on-esc="false" data-close-on-click="false">
+        <h3 class="text-center">Edit Customer</h3>
+        <div class="row">
+            <div class="medium-6 columns">
+                <label>First Name <small>required</small>
+                    <input class="customerRequired" name="firstName" type="text" value="" />
+                    <small class="form-error">First name is required.</small>
+                </label>
+            </div>
+            <div class="medium-6 columns">
+                <label>Last Name <small>required</small>
+                    <input class="customerRequired" name="lastName" type="text" value="" />
+                    <small class="form-error">Last name is required.</small>
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-8 columns">
+                <label>Billing Address <small>required</small>
+                    <input class="customerRequired" name="address" type="text" value="" />
+                    <small class="form-error">Address is required.</small>
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-8 columns">
+                <label>Billing Address 2 <small>(Apt, Suite, Unit)</small>
+                    <input name="address2" type="text" value="" />
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-4 columns">
+                <label>City <small>required</small>
+                    <input class="customerRequired" name="city" type="text" value="" />
+                    <small class="form-error">City is required.</small>
+                </label>
+            </div>
+            <div class="medium-4 columns">
+                <label>State <small>required</small>
+                    <select class="customerRequired" name="state">
+                        <?php echo $stateOptions;  ?>
+                    </select>
+                    <small class="form-error">State is required.</small>
+                </label>
+            </div>
+            <div class="medium-3 columns">
+                <label>Zip <small>required</small>
+                    <input class="customerRequired" name="zip" type="text" value="" />
+                    <small class="form-error">Zip is required.</small>
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-8 columns">
+                <label>Email <small>required</small>
+                    <input class="customerRequired" name="email" type="text" value="" />
+                    <small class="form-error">Email is required.</small>
+                </label>
+            </div>
+            <div class="medium-2 columns">
+                <label>No Email</label>
+                <input name="noEmailRequired" type="checkbox" style="margin-left: 1.1rem; margin-top: 0.7rem">
+            </div>
+            <div class="medium-2 columns">
+                <label>Unsubscribe</label>
+                <input name="unsubscribed" type="checkbox" style="margin-left: 1.9rem; margin-top: 0.7rem"">
+            </div>
+        </div>
+        <div class="row">
+            <div class="large-9 columns">
+                <table id="phoneTable" class="phoneTable" cellpadding="0" cellspacing="0">
+                    <thead style="background:none;">
+                        <tr>
+                            <th width="30%" style="text-align:left;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"><label>Phone</label></th>
+                            <th width="40%" style="text-align:center;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"></th>
+                            <th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">Primary</th>
+                            <th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">
+                             <a class="addPhone"><img src="images/icons/phone_add.png" /></a>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="display:none;">
+                            <td class="description" style="color:#36413e;text-align:center;">
+                                <select class="Description no-margin" sort="" name="description[]">
+                                    <option></option>
+                                    <option value="Cell">Cell</option>
+                                    <option value="Home">Home</option>
+                                    <option value="Work">Work</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </td>
+                            <td class="phoneNumber" style="color:#36413e;">
+                                <input class="Phone no-margin phone" sort="" name="phone[]" type="text" value="" />
+                            </td>
+                            <td class="primary" style="color:#36413e;text-align:center;">
+                                <input class="isPrimary no-margin" sort="" name="isPrimary[]" type="checkbox" value="1" />
+                            </td>
+                            <td class="delete" style="color:#36413e;text-align:center;">
+                                <a class="deletePhone"><img src="images/icons/phone_delete.png" /></a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <small style="margin-left: .5rem;" class="error-match onePhone">At least one phone is required.</small> 
+                <small style="margin-left: .5rem;" class="error-match fullPhone">Description and complete phone number are required.</small>
+                <small style="margin-left: .5rem;" class="error-match primary">Please mark one phone number as primary.</small> 
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-12 columns">
+                <p class="text-center no-margin">
+                    <button class="button" id="saveEditCustomerModal">Save</button> 
+                    <button class="button secondary" id="closeEditCustomerModal">Cancel</button>
+                </p>
+            </div>
+        </div>
+        <div id="fetchedEmail" class="is-hidden"><?php echo $email; ?></div>
+    </div>
+    <div class="tiny reveal" id="editCustomerErrorModal" data-reveal>
+        <div class="row">
+            <div class="medium-12 columns">
+                <p class="text-center error-text" style="margin-top: 1rem;"></p>    
+                <p class="text-center no-margin">
+                    <button data-open="editCustomerModal" class="button">OK</button>
+                </p> 
+            </div>
+        </div>
+    </div>
+    <div class="tiny reveal" id="editCustomerSuccessModal" data-reveal>
+        <div class="row">
+            <div class="medium-12 columns">
+                <p class="text-center no-margin">
+                    This project has been udpated!
+                    <br/><br/>
+                    <button class="button" data-close>OK</button>
+                </p> 
+            </div>
+        </div>
+    </div>
+    <div id="customerID" class="is-hidden"><?php echo $customerID; ?></div>
+    <?php  include_once 'setup-modal.html'  ?>
+    <?php  include_once 'footer.html'  ?> 
+    
+
+<script src="js/foundation.min.js"></script>
+<script>
+    $(document).foundation();
+</script>
+<script type="text/javascript" src="js/jquery.mask.min.js"></script>
+<script type="text/javascript">
+    $(function() {
+        $('.phone').mask('(000) 000-0000');
+    });
+</script>
+</body>
+</html>

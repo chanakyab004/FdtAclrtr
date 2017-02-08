@@ -1,0 +1,118 @@
+div.loadingImage {
+    position: fixed;
+    z-index: 1500;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #eee;
+    opacity: 0.5;
+    text-align: center;
+}
+div.loadingImage {
+    display: block;
+}
+div.loadingImage > img {
+    position: absolute;
+    top: 40%;
+}
+
+.address-position {
+    position: relative; 
+    z-index: 1500;
+    color:#000000;
+    transition: 
+        left .5s cubic-bezier(.42,-0.3,.78,1.25),
+        top .5s cubic-bezier(.42,-0.3,.78,1.25);
+    display:block;
+    border:1px solid #000000;
+    width:260px;
+    cursor: pointer;
+}
+
+
+.address-position.box-left {
+    text-align: left;
+}
+
+.address-position.box-left:before {
+    content: "";
+    position: absolute;
+    height: 100%;
+    width: 20px;
+    top: -5px;
+    left: -5px;
+    background-image: radial-gradient(circle at center, #000000 3px, transparent 3px);
+    background-size: 10px 10px;
+    background-repeat: no-repeat;
+}
+
+
+.address-position.box-right {
+    text-align: right;
+}
+
+.address-position.box-right:before {
+    content: "";
+    position: absolute;
+    height: 100%;
+    width: 20px;
+    top: -5px;
+    right: -15px;
+    background-image: radial-gradient(circle at center, #000000 3px, transparent 3px);
+    background-size: 10px 10px;
+    background-repeat: no-repeat;
+}
+
+.address-position.box-center {
+    text-align: center;
+}
+
+.address-position.box-center:before {
+    content: "";
+    position: absolute;
+    height: 100%;
+    width: 20px;
+    top: -5px;
+    left: 50%;
+    background-image: radial-gradient(circle at center, #000000 3px, transparent 3px);
+    background-size: 10px 10px;
+    background-repeat: no-repeat;
+}
+
+.address-preview {
+    position: relative; 
+    z-index: 1500;
+    display:block;
+    width:260px;
+}
+
+.deleteItem img {
+    opacity: .3;
+    vertical-align: top;
+    margin-top: .5rem;
+    margin-left: .5rem;
+}
+
+.deleteItem img:hover {
+    opacity: 1;
+    }
+
+.addUser img {
+    cursor: pointer;
+}
+
+.quickbooks-connect {
+    height: 2.4rem;
+    width: 7rem;
+    background: url(../images/icons/qb-connect.png) no-repeat;
+    background-position: 0 0px;
+    cursor: pointer;
+}
+
+.quickbooks-connect:hover {
+    height: 2.4rem;
+    width: 7rem;
+    background: url(../images/icons/qb-connect.png) no-repeat;
+    background-position: 0 -38px;
+}

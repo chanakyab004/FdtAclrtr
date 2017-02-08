@@ -1,0 +1,88 @@
+div.loadingImage {
+    position: fixed;
+    z-index: 1500;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #eee;
+    opacity: 0.5;
+    text-align: center;
+}
+div.loadingImage {
+    display: none;
+}
+div.loadingImage > img {
+    position: absolute;
+    top: 40%;
+}
+
+div.loadingImageSmall {
+    position: absolute;
+    z-index: 1500;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: none;
+    opacity: 0.5;
+    text-align: center;
+}
+div.loadingImageSmall {
+    display: none;
+}
+div.loadingImageSmall > img {
+    position: absolute;
+    top: 35%;
+}
+
+#scheduledStartDate, #scheduledEndDate, #scheduledStartTime, #scheduledEndTime  {
+    background-color: #fefefe;
+    cursor: default;
+
+}
+
+
+.invoiceNumber.is-invalid-input {
+    margin-bottom:1rem;
+}
+
+.form-error {
+    text-align: left;
+}
+
+
+.pinNote {
+    width:20px; 
+    height:20px; 
+    background-size:20px 20px;
+}
+
+.pinNote.on {
+    background-image:url("../images/icons/pin-on.png");
+}
+
+.pinNote.off {
+    background-image:url("../images/icons/pin-off.png");
+}
+ #to-customer {
+  float: left; }
+  #to-customer > a {
+    display: block;
+    padding: 1.25rem .8rem;
+    line-height: 1;
+    font-size: .9rem;
+    font-weight: bold;
+    background: #e9e9eb;
+    text-transform: uppercase;
+    border-left: 1px solid #ffffff;
+    text-align: center;
+    }
+#to-customer > a:hover {
+  background: #fefefe; }
+#to-customer > a:focus,
+ #to-customer > a[aria-selected='true'] {
+    background: #0d4777;
+    color:#ffffff;
+    border-left: none; }
+

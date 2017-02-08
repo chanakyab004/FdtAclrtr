@@ -1,0 +1,2 @@
+ALTER TABLE  `company` ADD  `companyCoverLetter` TEXT NULL AFTER  `companyEmailFinalPacketLastUpdated`
+ALTER TABLE  `company` ADD  `companyCoverLetterLastUpdated` DATETIME NULL DEFAULT NULL AFTER  `companyCoverLetter`

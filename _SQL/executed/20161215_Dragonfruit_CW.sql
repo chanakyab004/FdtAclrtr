@@ -1,0 +1,1 @@
+ALTER TABLE  `evaluationDisclaimer` CHANGE  `section`  `section` ENUM(  'piering',  'wall',  'water',  'crack',  'posts',  'mudjacking',  'polyurethane',  'general' ) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL

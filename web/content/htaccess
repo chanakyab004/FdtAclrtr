@@ -1,0 +1,10 @@
+<IfModule mod_php5.c>
+    #Session timeout
+    php_value session.gc_maxlifetime 86400
+    php_value post_max_size ?M
+    php_value session.cookie_secure true
+</IfModule>
+
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Headers "origin, x-requested-with, content-type"
+Header set Access-Control-Allow-Methods "PUT, GET, POST, DELETE, OPTIONS"

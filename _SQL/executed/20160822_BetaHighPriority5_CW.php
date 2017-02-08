@@ -1,0 +1,1 @@
+`ALTER TABLE projectDocuments DROP PRIMARY KEY`

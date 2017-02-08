@@ -1,0 +1,372 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Foundation Accelerator</title>
+    <link rel="stylesheet" href="css/foundation.css" />
+    <link rel="stylesheet" href="css/custom.css" />
+    <link rel="stylesheet" href="css/customer-add.css" />
+    <link rel="stylesheet" href="css/motion-ui.css" />
+    <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+    <link href='css/fullcalendar.css' rel='stylesheet' />
+    <link href='css/scheduler.css' rel='stylesheet' />
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
+    <script src="js/jquery.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+    <script src='js/moment.min.js'></script>
+    <script src='js/fullcalendar.min.js'></script>
+    <script src='js/scheduler.min.js'></script>
+    <script src='js/jquery.tablesorter.min.js'></script>
+    <script src='js/map.js'></script>
+    <script src='js/setup-progress.js'></script>
+    <script src='js/zen.js'></script>
+
+    <script>
+
+        $(document).keypress(function (e) {
+            if (e.which == 13) {
+                if ($('input[name="customer"]').val() != '') {
+                    searchCustomers();
+                }
+            }
+        });
+       
+        $(function () {
+            //autocomplete
+            $('.auto').autocomplete({
+                source: function (request, response) {
+                    $.ajax({
+                        url: 'getCustomerNames.php',
+                        dataType: 'json',
+                        contentType: 'application/json',
+                        type: 'POST',
+                        contentType: 'application/x-www-form-urlencoded',
+                        data: {
+                            keyword: $('.auto').val()
+                        },
+                        success: function (data) {
+                            response($.map(data, function (item) {
+                                var result = '';
+                                if (item.firstName != null){
+                                    result += item.firstName + ' ';
+                                }
+                                if (item.lastName != null){
+                                    result += item.lastName;
+                                }
+                                result = result.trim();
+                                if (result.length > 0){
+                                    return {
+                                        label: decodeEntities(result)
+                                    };
+                                }
+                            }));
+                        }
+                    });
+                },
+                minLength: 1,
+                autoFocus: true,
+                open: function () {
+                    $('.ui-autocomplete').removeClass('ui-corner-all');
+                    $('.ui-menu-item a').removeClass('ui-corner-all');
+                }
+            });
+        });
+
+            var decodeEntities = function (encodedString) {
+                var textArea = document.createElement('textarea');
+                textArea.innerHTML = encodedString;
+                return textArea.value;
+            }
+
+        $(document).ready(function () {
+
+            //needed for Zendesk Help Ticket
+            userInfo = {
+                name: "<?php echo $userFirstName;  ?>" + " <?php echo $userLastName;  ?>",
+                email: "<?php echo $userEmail;  ?>"
+            }
+            
+            $('#searchCustomers').click(searchCustomers);
+         
+            $('#existing').click(existingCustomer);
+
+
+            //Show Setup Modal if Clicked in Top Nav
+            $('#showSetup').click(showSetupModal);
+
+            //Show Setup Modal On Page Load if it Hasn't Been Viewed Since Yesterday
+            showSetupModal('true');
+
+            //Update Last Viewed When Modal Opens
+            $('#setupModal').on('open.zf.reveal', function() {
+                $.ajax({
+                    url: 'setupProgressUpdate.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        updateSetupNotice: 'true'
+                    },
+                    success: function (response) {
+                        //console.log(response);
+                        // if (response == 'true') {
+                        // }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                });
+
+            });
+
+            //Update Checkmarks When Clicked
+            $('img.setupProgressCheckmark').click(updateChecks);
+
+            //Stop Showing Setup Modal
+            $('#setupComplete').click(setupComplete);
+        
+        });
+
+
+        var searchCustomers = function () {
+            $('#newCustomerDisplay').css('display', 'none');
+            $('#existingCustomerDisplay').css('display', '');
+
+            $('#existingCustomersTable tbody tr').not(':first').remove();
+
+            var keyword = $('input[name="customer"]').val();
+            keyword = keyword.replace(/'/g, " ");
+
+            if (keyword != '') {
+                $.ajax({
+                    url: 'getCustomerSearch.php',
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    type: 'POST',
+                    contentType: 'application/x-www-form-urlencoded',
+                    data: {
+                        keyword: keyword
+                    },
+                    success: function (response) {
+                        if (!response == '') {
+                            $('input[name="customer"]').blur(); 
+                            
+                            $.each(response, function (i, item) {
+                                var nameDisplay = '';
+                                var addressDisplay = '';
+                                var phoneDisplay = '';
+                                var descriptionDisplay = '';
+
+                                if (item.searchResult == 'customer'){
+                                    if (item.firstName != null){
+                                        nameDisplay += item.firstName + ' ';
+                                    }
+                                    if (item.lastName != null){
+                                        nameDisplay += item.lastName + ' ';
+                                    }
+                                    if (item.ownerAddress != null){
+                                        addressDisplay += item.ownerAddress + ' ';
+                                    }
+                                    if (item.ownerAddress2 != null){
+                                        addressDisplay += item.ownerAddress2+ ' ';
+                                    }
+                                    if (item.ownerCity != null){
+                                        addressDisplay += item.ownerCity + ', ';
+                                    }
+                                    if (item.ownerState != null){
+                                        addressDisplay += item.ownerState  + ', ';
+                                    }
+                                    if (item.ownerZip != null){
+                                        addressDisplay += item.ownerZip;
+                                    }
+
+                                    $cloneRow = $('#existingCustomersTable tbody tr:first').clone().css('display', '');
+
+                                    nameDisplay = decodeEntities(nameDisplay);
+
+                                    $cloneRow.find('td.name').text(nameDisplay);
+
+                                    addressDisplay = decodeEntities(addressDisplay);
+
+                                    $cloneRow.find('td.address').text(addressDisplay);
+
+                                    $cloneRow.find('td.phone').text(item.phoneNumber);
+
+                                    $cloneRow.find('td.email').text(item.email);
+
+                                    if (item.customerID != null){
+                                        $cloneRow.find('td.link').html('<a class="button xtiny secondary" href="customer-management.php?cid=' + item.customerID + '">View Customer</a>');
+                                    }
+
+                                    $('#existingCustomersTable tbody').append($cloneRow);
+                                }
+
+                                if (item.searchResult == 'project'){
+                                    if (item.firstName != null){
+                                        nameDisplay += item.firstName + ' ';
+                                    }
+                                    if (item.lastName != null){
+                                        nameDisplay += item.lastName + ' ';
+                                    }
+                                    if (item.address != null){
+                                        addressDisplay += item.address + ' ';
+                                    }
+                                    if (item.address2 != null){
+                                        addressDisplay += item.address2+ ' ';
+                                    }
+                                    if (item.city != null){
+                                        addressDisplay += item.city + ', ';
+                                    }
+                                    if (item.state != null){
+                                        addressDisplay += item.state  + ', ';
+                                    }
+                                    if (item.zip != null){
+                                        addressDisplay += item.zip;
+                                    }
+
+                                    if (item.projectDescription != null){
+                                        descriptionDisplay += item.projectDescription;
+                                    }
+
+                                    $cloneRow = $('#existingCustomersTable tbody tr:first').clone().css('display', '');
+
+                                    nameDisplay = decodeEntities(nameDisplay);
+
+                                    $cloneRow.find('td.name').text(nameDisplay);
+
+                                    addressDisplay = decodeEntities(addressDisplay);
+
+                                    $cloneRow.find('td.address').text(addressDisplay);
+
+                                    $cloneRow.find('td.phone').text(item.phoneNumber);
+
+                                    $cloneRow.find('td.email').text(item.email);
+
+                                    descriptionDisplay = decodeEntities(descriptionDisplay);
+
+                                    $cloneRow.find('td.description').text(descriptionDisplay);
+
+                                    if (item.customerID != null){
+                                        $cloneRow.find('td.link').html('<a class="button xtiny" href="project-management.php?pid=' + item.projectID + '">View Project</a>');
+                                    }
+
+                                    $('#existingCustomersTable tbody').append($cloneRow);
+                                }
+                            });
+                        }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                });
+            }
+        };
+
+
+        var existingCustomer = function () {
+            if ($('#addNew').hasClass('active')) cancelCustomer();
+            else {
+                $('#newCustomerDisplay, #calendarShow').css('display', 'none');
+                $('#searchCustomerDisplay').css('display', '');
+                $('#addNew').removeClass('active');
+                $('#existing').addClass('active');
+                window.history.replaceState(null, '', 'customer-add.php')
+            }
+        };
+
+
+    </script>
+    <style>
+        #calendarMap {
+            height: 320px;
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <?php  include_once 'header.html'  ?>
+    <div class="row expanded first-row">
+        <div class="medium-12 columns">
+            <div class="medium-12 columns">
+                <h1 class="project-title" style="margin-bottom:1rem;">Customer Information</h1>
+            </div>
+        </div>
+    </div>
+    <div class="row expanded" id="customerButtons">
+        <div class="medium-12 columns">
+            <div class="button-group text-center">
+                <a id="existing" class="button bar left active">Existing</a>
+                <a href="customer-add.php" class="button bar right">New Customer</a>
+            </div>
+        </div>
+    </div>
+    <div class="row align-center" id="searchCustomerDisplay" style="margin-bottom:1rem;">
+        <div class="medium-8 columns" style="padding-right: .5rem;">
+            <label>Search Existing</label>
+            <input class="auto" type="text" name="customer" value="">
+        </div>
+        <div class="medium-1 columns" style="padding-left: .5rem;padding-top:1.5rem;">
+            <input id="searchCustomers" class="button xtiny search" type="image" src="images/search.png" border="0" />
+        </div>
+    </div>
+    <div class="row expanded" id="existingCustomerDisplay" style="display:none;margin-bottom:4rem;">
+        <div class="medium-12 columns no-pad">
+            <table id="existingCustomersTable" cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Address</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>Description</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="display:none;">
+                        <td class="name"></td>
+                        <td class="address"></td>
+                        <td class="phone"></td>
+                        <td class="email"></td>
+                        <td class="description"></td>
+                        <td class="link"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <?php  include_once 'setup-modal.html'  ?>
+    <?php  include_once 'footer.html'  ?>
+
+
+
+    <script src="js/foundation.min.js"></script>
+    <script>
+        $(document).foundation();
+    </script>
+    <script type="text/javascript" src="js/jquery.mask.min.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            $('.phone').mask('(000) 000-0000');
+            $('.date').mask('11/11/1111');
+            $('.time').mask('Hh:Mm Pp',
+               {
+                   'translation': {
+                       H: { pattern: /[0-1]/ },
+                       h: { pattern: /[0-9]/ },
+                       M: { pattern: /[0-5]/ },
+                       m: { pattern: /[0-9]/ },
+                       P: { pattern: /[AaPp]/ },
+                       p: { pattern: /[Mm]/ }
+                   }
+               });
+        });
+    </script>
+</body>
+</html>

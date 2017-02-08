@@ -1,0 +1,58 @@
+body {
+  background-color: #4e4e4e;
+}
+.callout {
+    border:none;
+    background: #000000;
+    color: rgba(0, 3, 3, 0.5);
+    padding: 1rem;
+    }
+.loginTitle {
+    color:#999999 !important;
+     margin-bottom: 1rem !important;
+     margin-top:.7rem;
+    }
+.page-content-text {
+    color:#999999;
+    }
+.page-content-text small {
+    color:#999999;
+    }
+.errorMsg {
+    color: red;
+    font-size: .8rem;
+    height: .8rem;
+    margin: .8rem 0;
+}
+.home-login {
+   color: #999999;
+   font-size: .7rem;
+}
+.home-instruction {
+   color: #ffffff;
+   font-size: .8rem;
+   text-align:center;
+   margin: .5rem 0 0 0;
+}
+.is-invalid-input:not(:focus) {
+   background-color: rgb(236, 88, 64); 
+  border-color: #ec5840;
+  }       
+  div.loadingImage {
+  position: fixed;
+  z-index: 1500;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #eee;
+  opacity: 0.5;
+  text-align: center;
+}
+div.loadingImage {
+    display: none;
+}
+div.loadingImage > img {
+    position: absolute;
+    top: 40%;
+}

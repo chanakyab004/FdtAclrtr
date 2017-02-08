@@ -1,0 +1,1 @@
+ALTER TABLE  `company` ADD  `usersPaid` INT NULL AFTER  `subscriptionExpiration`

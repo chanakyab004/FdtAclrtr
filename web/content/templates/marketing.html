@@ -1,0 +1,1588 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Foundation Accelerator</title>
+    <link rel="stylesheet" href="css/foundation.css" />
+    <link rel="stylesheet" href="css/custom.css" />
+    <link rel="stylesheet" href="css/motion-ui.css" />
+    <!-- <link rel="stylesheet" href="css/project-management.css" /> -->
+    <link rel="stylesheet" href="css/wickedpicker.css" />
+
+    <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+    <!-- <link href='css/fullcalendar.css' rel='stylesheet' /> -->
+    <!-- <link href='css/scheduler.css' rel='stylesheet' /> -->
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
+    <script src="js/jquery.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+    <script src='js/moment.min.js'></script>
+    <!-- // <script src='js/fullcalendar.min.js'></script> -->
+    <!-- // <script src='js/scheduler.min.js'></script> -->
+    <!-- // <script src='js/jquery.tablesorter.min.js'></script> -->
+    <!-- // <script src='js/map.js'></script> -->
+    <script src='js/setup-progress.js'></script>
+    <script src='js/zen.js'></script>
+    <script src='js/wickedpicker.js'></script>
+    <link rel="stylesheet" href="css/marketing.css" />
+    <script>
+        function getMarketingMetrics(dateFrom, dateTo){
+        $('#loading-image').show();
+            $.ajax({
+                url: 'getMarketingMetrics.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "POST",
+                contentType: "application/x-www-form-urlencoded",
+                data: {
+                    dateFrom: dateFrom,
+                    dateTo: dateTo
+                },
+                success: function (response) {
+                    if(response != '' && response !="false"){
+                            populateMarketingData(response);
+                             $('#date-range-noData').hide();
+                        }
+                        else{
+                            $('#marketingMetricsDiv').html('');
+                            $('#date-range-noData').show();
+                        }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            });
+            $('#loading-image').hide();
+        }
+
+        function getSubSourceByID(subSourceID){
+
+            $('#loading-image').show();
+            var idToEdit = subSourceID;
+            $.ajax({
+                    url: 'getMarketingSubSourceByID.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        subSourceID: subSourceID,
+                    },
+                    success: function (response) {
+
+                        $('#subSourceModalTitle').html("Edit Subsource");
+                        $('#subSourceName').val(response[0]['marketingTypeName']);
+                        $('#subsourceID').val(response[0]['marketingTypeID']);
+
+                        var parentTypeSelection = document.getElementById("parentTypeSelection");
+                        parentTypeSelection.remove(0);  //by default these have 'select' in them..remove this
+                        for(i=0; i<response[1].length; i++){
+                            var option = document.createElement("option");
+
+                            parentTypeSelection.add(option);
+                            option.text = response[1][i]['marketingTypeName'];
+                            option.value = response[1][i]['marketingTypeID'];
+                        }
+
+                        var optionToSelect = response[0]['parentMarketingTypeID'];
+                        $('#parentTypeSelection').val(optionToSelect);
+                        $('#parentTypeID').val(optionToSelect);
+                        $('#setupSubSourceModal').foundation('open');
+                        $('#loading-image').hide();
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                        $('#loading-image').hide();
+                    }
+                });
+        };
+
+
+    function setupAdSpend(parentID, subSourceID){
+        $.ajax({
+                    url: 'getAllMarketingSubSourcesByParentID.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data:{
+                        parentID: parentID,
+                        returnParentNames: 'true'  //set this to true if you want the parent names & ID's in position[1] of the result set
+                    },
+                    success: function (response) {
+                        //populate the parent type combo & select
+                        //the correct option
+
+                        // console.log(response);
+
+                        var parentTypeSelection = document.getElementById("adParentTypeSelection");
+                        parentTypeSelection.remove(0);  //by default these have 'select' in them..remove this
+                        for(i=0; i<response[1].length; i++){
+                            var option = document.createElement("option");
+
+                            parentTypeSelection.add(option);
+                            option.text = response[1][i]['marketingTypeName'];
+                            option.value = response[1][i]['marketingTypeID'];
+                        }
+
+                        var optionToSelect = parentID;
+                        $('#adParentTypeSelection').val(optionToSelect);
+                        $('#adParentTypeID').val(optionToSelect);
+
+                        //populate the sub-source Combo;
+                        var subSourceSelect = document.getElementById('adSubSourceSelection');
+
+                        subSourceSelect.remove(0);
+
+                        for(i=0; i<response[0].length; i++){
+                            var subSourceOption = document.createElement('option');
+                            subSourceOption.text = response[0][i]['marketingTypeName'];
+                            subSourceOption.value = response[0][i]['marketingTypeID'];
+                            subSourceSelect.add(subSourceOption);
+                        }
+
+                        $('#adSubSourceSelection').val(subSourceID);
+                        $('#adSubsourceID').val(subSourceID);
+
+
+                        $('#addSpendModal').foundation('open');
+                        $('#loading-image').hide();
+
+                        
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                        $('#loading-image').hide();
+                    }
+                });
+
+
+    };
+      
+    function populateMarketingData(allData){
+        $('#loading-image').show();
+        var metricsHTML = "";
+        for(var i in allData){
+            var deleteButton = '|<a class="deleteSource"> Delete </a>';
+            if (allData[i]['isRepeatBusiness']){
+                deleteButton = '';
+            }
+            //this is a new 'Source' so add a source row
+            //Include the total for this row.
+            var thisSourceTotal = new Intl.NumberFormat('us-US', { style: 'currency', currency: 'USD' }).format(allData[i].spendAmount);
+
+            //source row
+            metricsHTML +='<div class="row source clickable" id="' + allData[i]['marketingTypeID'] + '" data-itemToShow="subsource"> '+
+                   '<div class="medium-6 columns">' +
+                    '<img class="arrowRight detailsToggle" src="/images/icons/arrow-right.png" /><img class="arrowDown detailsToggle" src="/images/icons/arrow-down.png" /></button> <Strong>' + allData[i]['marketingTypeName'] +'</strong>' +
+                    '</div> ' +
+                    '<div class="medium-2 columns spend">' + 
+                       thisSourceTotal +
+                    '</div>'+
+                    '<div class="medium-4 columns text-right" style="padding-right: 0.6rem;">'+
+                     '<span style="margin-left: .2rem">&nbsp;</span><a parentID="' + allData[i]['marketingTypeID'] + '" class="addSubSource" target="_blank">Add Source</a> | <a class="editSource" source="' + allData[i]['marketingTypeID'] +'"" >Edit</a> ' + deleteButton +
+                   ' </div> </div>';
+
+            for(var j in allData[i]['subsources']){
+                var subsource = allData[i]['subsources'][j];
+                var deleteButton = '|<a class="deleteSubSource"> Delete </a>'; 
+                if (subsource['isRepeatBusiness']){
+                    deleteButton = '';
+                }
+                
+                var thisSourceTotal = new Intl.NumberFormat('us-US', { style: 'currency', currency: 'USD' }).format(subsource['spendAmount']);
+                metricsHTML +='<div class="row subsource clickable" id="' + subsource['marketingTypeID'] + '" data-belongsTo="' + subsource['parentMarketingTypeID'] + '" data-itemToShow="spendrow">' +
+                                        '<div class="medium-6 columns">' +
+                                            '<p class="subsourceHeading ">'+
+                                               ' <img class="arrowRight detailsToggle" src="/images/icons/arrow-right.png" />'+
+                                                '<img class="arrowDown detailsToggle" src="/images/icons/arrow-down.png" />'+ 
+                                                '<Strong>' + subsource['marketingTypeName'] + '</strong>' +
+                                                 '</p>'+
+                                        '</div>'+
+                                        '<div class="medium-2 columns spend">'+
+                                           thisSourceTotal +
+                                        '</div>' +
+                                       ' <div class="medium-4 columns text-right">' +
+                                            '<a style="margin-left: 2.2rem;" onclick="setupAdSpend('+ subsource['parentMarketingTypeID'] + ',' + subsource['marketingTypeID'] + ')">Add Spend</a> |<a onclick="getSubSourceByID('+ subsource['marketingTypeID'] + ')"> Edit</a> ' + deleteButton +
+                                        '</div></div>';
+
+                for(var k in subsource){
+                    if (typeof(subsource[k]) == 'object' && subsource[k] != null){
+                        //Add Spend Rows
+                        var spendAmount = new Intl.NumberFormat('us-US', { style: 'currency', currency: 'USD' }).format(subsource[k]['spendAmount']);
+                        var allDates = defaultDates(subsource[k]['startDate'],subsource[k]['endDate']);
+                        var spendStart = allDates['startDate'];
+                        var spendEnd = allDates['endDate'];
+
+                        if (subsource[k]['marketingSpendID'] != null){
+                            metricsHTML += '<div class="row spendrow clickable" id="' + subsource[k]['marketingSpendID'] +'" data-belongsTo="' + subsource['marketingTypeID'] + '">' +
+                                '<div class="medium-6 columns">' +
+                                   '<p class="spendrowHeading"> ' +
+                                        '<Strong>' + spendStart + " to " + spendEnd + '</strong>' + 
+                                   ' </p>' +
+                                '</div>' +
+                                '<div class="medium-2 columns spend">' +
+                                    spendAmount +
+                                '</div>' +
+                                '<div class="medium-4 columns text-right">' +
+                                    '<a style="margin-left: 7.95rem" onclick="editSpendRow('+ subsource[k]['marketingSpendID'] + ',' +
+                                        + subsource['marketingTypeID'] + ',' + subsource['parentMarketingTypeID'] + ')">Edit</a> |<a class="deleteSpend"> Delete </a>'+
+                               ' </div>' +
+                            '</div>';   
+                        }
+                    }
+                }
+            }
+        }    
+        $('#loading-image').hide();
+        $('#marketingMetricsDiv').html('');
+        $('#marketingMetricsDiv').append(metricsHTML);
+        //open all sections
+        $('.arrowRight').click();
+    };
+
+        function defaultDates(startDate, endDate){
+            //returns a startDate & endDate
+            //if no dates are provided it will return the first day & last day of the current month
+            //if dates are provided, it will return those dates as 'M/dd/YYYY'
+            //based on dates returned from server as string.
+            var  monthArray = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+            startTimeStamp = Date.parse(startDate);
+            endTimeStamp = Date.parse(endDate);
+
+            if(isNaN(startTimeStamp)===true){
+                //invalid date was passed so just set it to the
+                //1st of the current month.
+                var today = new Date();
+                var month = monthArray[today.getMonth()]; //date returns months 0 indexed...
+                var year = today.getFullYear();
+                var defaultStartDate = month + '/01/' + year;
+
+            }else{
+                var today = new Date (startDate);
+                var month = monthArray[today.getMonth()]; 
+                var year = today.getFullYear();
+                var date = today.getDate();
+                defaultStartDate = month + "/" + date + "/" + year;
+            };
+
+            if(isNaN(endTimeStamp)===true){
+                //invalid date was passed so just set it to the 
+                //end of the current month
+                var defaultEndDate = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59); //last day of the current month
+                var lastDay = defaultEndDate.getDate();
+                defaultEndDate = month + "/" + lastDay + "/" + year;
+
+            }else{
+                var today = new Date (endDate);
+                var month = monthArray[today.getMonth()]; 
+                var year = today.getFullYear();
+                var date = today.getDate();
+                defaultEndDate = month + "/" + date + "/" + year;
+
+            };
+                var defaultDates ={};
+                    defaultDates['startDate']=defaultStartDate;
+                    defaultDates['endDate']=defaultEndDate;
+                return defaultDates;                
+            
+        }
+
+        function marketingMetricsEditSpend(adEditSpendID, adEditTypeID, adEditPaidDate, adEditStartDate, adEditEndDate, adEditSpendAmount){
+
+            $.ajax({
+                    url: 'marketing-editSpend.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data:{
+                        adEditSpendID: adEditSpendID,
+                        adEditTypeID: adEditTypeID,
+                        adEditPaidDate: adEditPaidDate,
+                        adEditStartDate: adEditStartDate,
+                        adEditEndDate: adEditEndDate,
+                        adEditSpendAmount:adEditSpendAmount
+                    },
+                    success: function (response) {
+                        //populate the parent type combo & select
+                        //the correct option
+                        var allDates = defaultDates();
+                        var defaultStartDate = allDates['startDate'];
+                        var defaultEndDate = allDates['endDate'];
+
+                        $('#closeAdEditSpend').trigger('click');
+
+                         getMarketingMetrics($('#dateFilterFrom').val(), $('#dateFilterTo').val()); 
+                         $('#loading-image').hide();
+
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                        $('#loading-image').hide();
+                    }
+                });
+        }
+
+       function marketingMetricsAddSpend(adTypeID, adPaidDate, adStartDate, adEndDate, adSpendAmount){
+
+            //ajax call.
+
+             $.ajax({
+                    url: 'marketing-AddSpend.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data:{
+                        adTypeID: adTypeID,
+                        adPaidDate: adPaidDate,
+                        adStartDate: adStartDate,
+                        adEndDate: adEndDate,
+                        adSpendAmount:adSpendAmount
+                    },
+                    success: function (response) {
+                        //populate the parent type combo & select
+                        //the correct option
+                        var allDates = defaultDates();
+                        var defaultStartDate = allDates['startDate'];
+                        var defaultEndDate = allDates['endDate'];
+
+                        $('#closeAdSpend').trigger('click');
+
+                         getMarketingMetrics($('#dateFilterFrom').val(), $('#dateFilterTo').val()); 
+                         $('#loading-image').hide();
+
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                        $('#loading-image').hide();
+                    }
+                });
+
+
+
+       }
+
+       function editSpendRow(spendRowID, typeID, parentTypeID){
+            //get the spendRow with all relevant other data by ID
+            $.ajax({
+                url:'getSpendRowByID.php',
+                dataType:'JSON',
+                contentType:'application/json',
+                type:'POST',
+                contentType:'application/x-www-form-urlencoded',
+                data:{
+                    spendRowID: spendRowID,
+                    parentTypeID: parentTypeID
+                },
+                success: function(response){
+                    //response[0] is the spend row record
+                    //response[1] is the list of all top-level marketing types (sources)
+                    //response[2] is the list of all sub-sources;
+
+                    //open the adEditSpendModal
+                    var parentTypeSelection = document.getElementById("adEditParentTypeSelection");
+                        parentTypeSelection.remove(0);  //by default these have 'select' in them..remove this
+                        for(i=0; i<response[1].length; i++){
+                            var option = document.createElement("option");
+
+                            parentTypeSelection.add(option);
+                            option.text = response[1][i]['marketingTypeName'];
+                            option.value = response[1][i]['marketingTypeID'];
+                        }
+
+                        var optionToSelect = parentTypeID;
+                        $('#adEditParentTypeSelection').val(optionToSelect);
+                        $('#adEditParentTypeID').val(optionToSelect);
+
+                        //populate the sub-source Combo;
+                        var subSourceSelect = document.getElementById('adEditSubSourceSelection');
+
+                        subSourceSelect.remove(0);
+
+                        for(i=0; i<response[2].length; i++){
+                            var subSourceOption = document.createElement('option');
+                            subSourceOption.text = response[2][i]['marketingTypeName'];
+                            subSourceOption.value = response[2][i]['marketingTypeID'];
+                            subSourceSelect.add(subSourceOption);
+                        }
+
+                        $('#adEditSubSourceSelection').val(typeID);
+                        $('#adEditSubsourceID').val(typeID);
+
+                        var allDates = defaultDates(response[0]['spendDate']);
+                        var paidDateFormatted = allDates['startDate'];
+
+                        if(paidDateFormatted=='12/31/1969'){
+                            paidDateFormatted ='';
+                        }
+
+                        var allDates = defaultDates(response[0]['startDate'],response[0]['endDate'] );
+
+                        var startDateFormatted = allDates['startDate'];
+                        var endDateFormatted = allDates['endDate'];
+
+                        $('#adEditPaidDate').val(paidDateFormatted);
+                        $('#adEditStartDate').val(startDateFormatted);
+                        $('#adEditEndDate').val(endDateFormatted);
+                        $('#adEditSpendAmount').val(response[0]['spendAmount']);
+                        $('#adEditSpendRowID').val(spendRowID);
+
+                        $('#editSpendModal').foundation('open');
+                        $('#loading-image').hide();
+                    
+                },
+                error: function(jqXHR, textStatus, errorThrown){
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+
+                }
+
+            });
+
+       }
+
+        //Document Ready Starts
+        $(document).ready(function(){
+            //needed for Zendesk Help Ticket
+            userInfo = {
+                name: "<?php echo $userFirstName;  ?>" + " <?php echo $userLastName;  ?>",
+                email: "<?php echo $userEmail;  ?>"
+                }
+
+            //Show Setup Modal if Clicked in Top Nav
+            $('#showSetup').click(showSetupModal);
+
+            //Show Setup Modal On Page Load if it Hasn't Been Viewed Since Yesterday
+            showSetupModal('true');
+
+            //Update Last Viewed When Modal Opens
+            $('#setupModal').on('open.zf.reveal', function() {
+                $.ajax({
+                    url: 'setupProgressUpdate.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        updateSetupNotice: 'true'
+                    },
+                    success: function (response) {
+                        //console.log(response);
+                        // if (response == 'true') {
+                        // }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                });
+            });
+
+            //Update Checkmarks When Clicked
+            $('img.setupProgressCheckmark').click(updateChecks);
+
+            //Stop Showing Setup Modal
+            $('#setupComplete').click(setupComplete);
+
+            $('#closeAdEditSpend').click(function(){
+                $('#adStartDate').val('');
+                $('.evaluationData, .date-picker').not('#dateFilterFrom').not('#dateFilterTo').each(function(){
+                    $(this).val('');
+                    $(this).removeClass('is-invalid-input');
+
+                    var errorField = '#' + $(this).attr('id') + 'Error';
+                    $(errorField).hide();
+                });
+
+                $('#adEditSubSourceSelection').empty();
+                $('#adEditParentTypeSelection').empty();
+                $('#editSpendModal').foundation('close');
+
+            });
+
+            $('.evaluationData').change(function(){
+                $(this).removeClass('is-invalid-input');
+                var error = '#' + $(this).attr('id') + 'Error';
+                $(error).hide();
+            });
+
+            $('#closeAdSpend').click(function(){
+                $('#adStartDate').val('');
+                $('.evaluationData, .date-picker').not('#dateFilterFrom').not('#dateFilterTo').each(function(){
+                    $(this).val('');
+                    $(this).removeClass('is-invalid-input');
+                })
+
+                $('.form-error').each(function(){
+                    $(this).hide();
+                });
+                $('#adParentTypeSelection').empty();
+                $('#adSubSourceSelection').empty();
+                
+                $('#addSpendModal').foundation('close');
+            });
+
+            $('#adEditParentTypeSelection').change(function(){
+                    $('#adEditParentTypeID').val($(this).val());
+
+                //populate the subsources
+                var parentID = $('#adEditParentTypeID').val();
+
+                $.ajax({
+                    url: 'getAllMarketingSubSourcesByParentID.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data:{
+                        parentID: parentID,
+                        returnParentNames: 'false'  //set this to true if you want the parent names & ID's in position[1] of the result set
+                    },
+                    success: function (response) {
+                        $('#loading-image').show();
+
+                        //populate the sub-source Combo;
+                        var subSourceSelect = document.getElementById('adEditSubSourceSelection');
+                        
+                        $('#adEditSubSourceSelection').empty();
+
+                        subSourceSelect.remove(0);
+
+                        for(i=0; i<response[0].length; i++){
+                            var subSourceOption = document.createElement('option');
+                            subSourceOption.text = response[0][i]['marketingTypeName'];
+                            subSourceOption.value = response[0][i]['marketingTypeID'];
+                            subSourceSelect.add(subSourceOption);
+                        }
+                        $('#adEditSubSourceSelection').val(response[0][1]['marketingTypeID']);
+                        $('#adEditSubsourceID').val(response[0][1]['marketingTypeID']);
+                        $('#loading-image').hide();
+                        
+                    }
+                });
+
+            });
+
+            $('#adParentTypeSelection').change(function(){
+
+                $('#adParentTypeID').val($(this).val());
+               
+                // console.log("parentID " + $('#adParentTypeID').val());
+
+                //populate the subsources
+                var parentID = $('#adParentTypeID').val();
+
+                $.ajax({
+                    url: 'getAllMarketingSubSourcesByParentID.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data:{
+                        parentID: parentID,
+                        returnParentNames: 'false'  //set this to true if you want the parent names & ID's in position[1] of the result set
+                    },
+                    success: function (response) {
+                        $('#loading-image').show();
+
+                        //populate the sub-source Combo;
+                        var subSourceSelect = document.getElementById('adSubSourceSelection');
+                        
+                        $('#adSubSourceSelection').empty();
+
+                        subSourceSelect.remove(0);
+
+                        for(i=0; i<response[0].length; i++){
+                            var subSourceOption = document.createElement('option');
+                            subSourceOption.text = response[0][i]['marketingTypeName'];
+                            subSourceOption.value = response[0][i]['marketingTypeID'];
+                            subSourceSelect.add(subSourceOption);
+                        }
+                        $('#adSubSourceSelection').val(response[0][1]['marketingTypeID']);
+                        $('#adSubsourceID').val(response[0][1]['marketingTypeID']);
+                        $('#loading-image').hide();
+                        
+                    }
+                });
+            });
+            
+            $('#adEditSubSourceSelection').change(function(){
+                $('#adEditSubsourceID').val($(this).val());
+            })
+
+            $('#adSubSourceSelection').change(function(){
+                $('#adSubsourceID').val($(this).val());
+                // console.log("subsource ID " + $('#adSubsourceID').val());
+            });
+
+
+            $('#editAdSpend').click(function(){
+
+                     //validate data first
+
+                var saveRecord = 0;
+                var adEditSpendRowID = $('#adEditSpendRowID').val();
+
+                var adEditParentTypeID = $('#adEditParentTypeID').val();
+                var adEditTypeID = $('#adEditSubsourceID').val();
+                var adEditPaidDate = $('#adEditPaidDate').val();
+                var adEditStartDate = Date.parse($('#adEditStartDate').val());
+                var adEditEndDate = Date.parse($('#adEditEndDate').val());
+                var adEditSpendAmount = $('#adEditSpendAmount').val();
+                
+
+                if (isNaN(adEditStartDate)===true){
+                    $('#adEditStartDateError').show();
+                    $('#adEditStartDate').addClass("is-invalid-input");
+                        saveRecord -=1;
+                }else{
+                    $('#adEditStartDateError').hide();
+                    $('#adEditStartDate').removeClass();("is-invalid-input");
+                        saveRecord +=1;
+                        adEditStartDate = $('#adEditStartDate').val();
+
+                }
+
+                if(isNaN(adEditEndDate)===true){
+                    $('#adEditEndDateError').show();
+                    $('#adEditEndDate').addClass('is-invalid-input');
+                        saveRecord -=1;
+                }else{
+                    $('#adEditEndDateError').hide();
+                    $('#adEditEndDate').removeClass('is-invalid-input');
+                        saveRecord +=1;
+                        adEditEndDate = $('#adEditEndDate').val();
+                }
+
+                if(isNaN(adEditSpendAmount)===true || adEditSpendAmount==''){
+                    $('#adEditSpendAmountError').show();
+                    $('#adEditSpendAmount').addClass('is-invalid-input');
+                        saveRecord -=1;
+                }else{
+                    $('#adEditSpendAmountError').hide();
+                    $('#adEditSpendAmount').removeClass('is-invalid-input');
+                        saveRecord +=1;
+                }
+
+                if (saveRecord<3){
+                    return false;
+                }
+
+                //if you get here, validation passed.
+                marketingMetricsEditSpend(adEditSpendRowID, adEditTypeID, adEditPaidDate, adEditStartDate, adEditEndDate, adEditSpendAmount);
+
+            });
+
+
+            $('#saveAdSpend').click(function(){
+
+                //validate data first
+
+                var saveRecord = 0;
+
+                var adParentTypeID = $('#adParentTypeID').val();
+                var adTypeID = $('#adSubsourceID').val();
+                var adPaidDate = $('#adPaidDate').val();
+                var adStartDate = Date.parse($('#adStartDate').val());
+                var adEndDate = Date.parse($('#adEndDate').val());
+                var adSpendAmount = $('#adSpendAmount').val();
+
+                if (isNaN(adStartDate)===true){
+                    $('#adStartDateError').show();
+                    $('#adStartDate').addClass("is-invalid-input");
+                        saveRecord -=1;
+                }else{
+                    $('#adStartDateError').hide();
+                    $('#adStartDate').removeClass();("is-invalid-input");
+                        saveRecord +=1;
+                        adStartDate = $('#adStartDate').val();
+
+                }
+
+                if(isNaN(adEndDate)===true){
+                    $('#adEndDateError').show();
+                    $('#adEndDate').addClass('is-invalid-input');
+                        saveRecord -=1;
+                }else{
+                    $('#adEndDateError').hide();
+                    $('#adEndDate').removeClass('is-invalid-input');
+                        saveRecord +=1;
+                        adEndDate = $('#adEndDate').val();
+                }
+
+                if(isNaN(adSpendAmount)===true || adSpendAmount==''){
+                    $('#adSpendAmountError').show();
+                    $('#adSpendAmount').addClass('is-invalid-input');
+                        saveRecord -=1;
+                }else{
+                    $('#adSpendAmountError').hide();
+                    $('#adSpendAmount').removeClass('is-invalid-input');
+                        saveRecord +=1;
+                }
+
+                if (saveRecord<3){
+                    return false;
+                }
+
+                //if you get here, validation is successful.
+                $('#loading-image').show();
+
+                // console.log(adTypeID + " " + adPaidDate +" "+ adStartDate +" "+ adEndDate + " " + adSpendAmount);
+
+                    marketingMetricsAddSpend(adTypeID, adPaidDate, adStartDate, adEndDate, adSpendAmount);
+
+
+            });
+            
+            $('#closeSubSource').click(function(){
+                $('#parentTypeSelection').empty();
+                $('#setupSubSourceModal').foundation('close');
+
+            })
+
+        $('#sourceName').change(function(){
+            if ($('#sourceName').val()!=''){
+                $('#sourceNameError').hide();
+                 $('#sourceNameError').removeClass("is-invalid-input");
+                $('#sourceNameLabel').removeClass("is-invalid-label");
+            }
+        })
+
+        $('#saveSubSource').click(function(){
+            
+            var subSourceID = $('#subsourceID').val();
+            var sourceID = $('#parentTypeID').val();
+            var subSourceName = $('#subSourceName').val();
+
+            if(!subSourceName==''){
+                $('#sourceNameError').hide();
+                 $('#sourceNameError').removeClass("is-invalid-input");
+                $('#sourceNameLabel').removeClass("is-invalid-label");
+                $.ajax({
+                    url: 'marketingSubSource-edit.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        subSourceID: subSourceID,
+                        sourceID: sourceID,
+                        subSourceName: subSourceName
+                    },
+                    success: function (response) {
+                        // console.log(response);
+                        if(response=="OK"){
+                            $('#updateMessageText').html('');
+                            $('#updateMessageText').html('Update was successful.');
+                            $('#updateMessage').foundation('open');
+
+                        }else{
+                            $('#updateMessageText').html('');
+                            $('#updateMessageText').html('There was a problem with the update.');
+                            $('#updateMessage').foundation('open');
+                        }
+
+                        getMarketingMetrics($('#dateFilterFrom').val(), $('#dateFilterTo').val()); 
+
+                        $('#parentTypeSelection').empty();
+                        
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                });
+            }else{
+                $('#sourceNameError').show();
+                $('#sourceNameError').addClass("is-invalid-input");
+                $('#sourceNameLabel').addClass("is-invalid-label");
+            }
+
+        })
+
+        $('#parentTypeSelection').change(function(){
+            $('#parentTypeID').val($('#parentTypeSelection').val());
+        })
+               $(function () {  
+
+                    allDates = defaultDates();
+
+                    defaultEndDate = allDates['endDate'];
+                    defaultStartDate = allDates['startDate'];
+
+
+                    $("#dateFilterFrom").datepicker({
+                        defaultDate:defaultStartDate,
+                        changeMonth: true,
+                        numberOfMonths: 1,
+                        onSelect: function() {
+                            $(this).change();
+                        }
+                    });
+
+                    $('#dateFilterFrom').val(defaultStartDate);
+
+                    $("#dateFilterTo").datepicker({
+                        defaultDate: defaultEndDate,
+                        changeMonth: true,
+                        numberOfMonths: 1,
+                        onSelect: function() {
+                            $(this).change();
+                        }
+                    });
+
+                    $('#dateFilterTo').val(defaultEndDate);
+
+                    $('#adPaidDate').datepicker({
+                        defaultDate: defaultStartDate,
+                        changeMonth: true,
+                        numberOfMonths: 1,
+                        onSelect: function() {
+                            $(this).change();
+                        }
+                    });
+
+                    $('#adStartDate').datepicker({
+                        changeMonth: true,
+                        numberOfMonths: 1,
+                        onSelect: function() {
+                            $(this).change();
+                        }
+                    });
+
+                    $('#adEndDate').datepicker({
+                        changeMonth: true,
+                        numberOfMonths: 1,
+                        onSelect: function() {
+                            $(this).change();
+                        }
+                    });
+
+                    $('#adEditPaidDate').datepicker({
+                        changeMonth: true,
+                        numberOfMonths: 1,
+                        onSelect: function() {
+                            $(this).change();
+                        }
+                    });
+
+                    $('#adEditStartDate').datepicker({
+                        defaultDate: defaultStartDate,
+                        changeMOnth: true,
+                        numberOfMonths: 1,
+                        onSelect: function() {
+                            $(this).change();
+                        }
+                    });
+
+                    $('#adEditEndDate').datepicker({
+                        changeMonth:true,
+                        numberOfMonths: 1,
+                        onSelect: function() {
+                            $(this).change();
+                        }
+                    });
+
+                    //have the form populated with the current months data automatically when the page is loaded
+                    getMarketingMetrics($('#dateFilterFrom').val(), $('#dateFilterTo').val());  
+                });
+
+    $('#dateFilterFrom').change(function(){
+
+        var fromDate = new Date($(this).val());
+        var toDate = new Date ($('#dateFilterTo').val());
+
+
+        if (fromDate > toDate){
+                var  monthArray = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+                var month = monthArray[fromDate.getMonth()]; //date returns months 0 indexed...
+                var year = fromDate.getFullYear();
+                var defaultStartDate = month + '/01/' + year;
+                var defaultEndDate = new Date(fromDate.getFullYear(), fromDate.getMonth() + 1, 0, 23, 59, 59); 
+
+                var lastDay = defaultEndDate.getDate();
+                defaultEndDate = month + "/" + lastDay + "/" + year;
+
+                $('#dateFilterTo').val(defaultEndDate);
+                $('#dateFilterFrom').val(defaultStartDate);
+
+                getMarketingMetrics(defaultStartDate, defaultEndDate);
+                $('#date-range-error').show(); 
+        }else{            
+            getMarketingMetrics(fromDate, toDate);
+                $('#date-range-error').hide();
+        }
+    });
+
+        $('#dateFilterTo').change(function(){
+       
+        var fromDate = new Date($('#dateFilterFrom').val());
+        var toDate = new Date ($(this).val());
+
+            if (toDate < fromDate){
+                    var  monthArray = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+                    var month = monthArray[toDate.getMonth()]; //date returns months 0 indexed...
+                    var year = toDate.getFullYear();
+                    var defaultStartDate = month + '/01/' + year;
+                    var defaultEndDate = new Date(toDate.getFullYear(), toDate.getMonth() + 1, 0, 23, 59, 59); 
+
+                    var lastDay = defaultEndDate.getDate();
+                    defaultEndDate = month + "/" + lastDay + "/" + year;
+                    
+                    $('#dateFilterTo').val(defaultEndDate);
+                    $('#dateFilterFrom').val(defaultStartDate);
+                    
+                    getMarketingMetrics(defaultStartDate, defaultEndDate);
+                    $('#date-range-error').show(); 
+            }else{            
+                getMarketingMetrics(fromDate, toDate);
+                    $('#date-range-error').hide();
+            }
+    })
+
+    $("#marketingMetricsDiv, .detailsToggle").on('click', '.detailsToggle',function(e){
+        var rowToHide = $(this).closest('.clickable');
+        $(".clickable").removeClass("active");
+        rowToHide.addClass("active");
+        $(".clickable.active").find(".arrowRight, .arrowDown").toggle();
+        rowToHide.removeClass("active");
+
+        var adTypeID = rowToHide.prop("id");
+        var itemToShow = rowToHide.attr('data-itemToShow');
+        var temp = $('.clickable.'+itemToShow + '[data-belongsTo="'  + adTypeID + '"]');
+        if (itemToShow != undefined){
+            temp.each(function(){
+                var displayStatus = $(this).css('display');
+                if(displayStatus=='flex'){
+                    $(this).css('display','none');
+                    if ($(this).hasClass('subsource')){
+                        //if you are closing a sub-source, you need to hide all those spendrows that are open as well'
+
+                         //reset arrows on subsource
+                         var rightArrow = $(this).find(".arrowRight");
+
+                         if (rightArrow.css('display')!='inline-block'){
+                            $(this).find(".arrowRight, .arrowDown").toggle();
+                         }
+
+                         //close all spendrows 
+                            $('.clickable.spendrow[data-belongsTo="' + $(this).attr('id') + '"]').each(function(){
+                                $(this).css('display', 'none');
+                            }) 
+                        }  
+                    }
+                else{
+                    $(this).css('display','flex');
+                }
+            });
+        }
+    });
+
+    $('#addParentTypeSelection').focusout(function(){
+        if($(this).find('option:selected').val()!='0'){
+            $(this).next().removeClass('is-visible');
+            $(this).removeClass("required");
+            $(this).removeClass("is-invalid-input");
+            $(this).parent().removeClass('is-invalid-label');
+            
+        }
+    });
+
+    $('#addSubSourceName').focusout(function(){
+        if($(this).val()!=''){
+            $(this).next().removeClass('is-visible');
+            $(this).removeClass("required");
+            $(this).removeClass("is-invalid-input");
+            $(this).parent().removeClass('is-invalid-label');
+            
+        }
+    });
+
+    $('#editSourceName').focusout(function(){
+        if($(this).val()!=''){
+            $(this).next().removeClass('is-visible');
+            $(this).removeClass("required");
+            $(this).removeClass("is-invalid-input");
+            $(this).parent().removeClass('is-invalid-label');
+            
+        }
+    });
+
+    $('#addSourceName').focusout(function(){
+        if($(this).val()!=''){
+            $(this).next().removeClass('is-visible');
+            $(this).removeClass("required");
+            $(this).removeClass("is-invalid-input");
+            $(this).parent().removeClass('is-invalid-label');
+            
+        }
+    });
+
+    var addSubSource = function (parentID) {
+        $.ajax({
+            url: 'getMarketingSources.php',
+            dataType: "json",
+            contentType: 'application/json',
+            type: "GET",
+            contentType: "application/x-www-form-urlencoded",
+            success: function (response) {
+                $('#addParentTypeSelection').empty();
+                $('#addParentTypeSelection').append('<option value="0">Select</option>');
+                if (response != null){
+                    $.each(response, function (i, item) {
+                        $('#addParentTypeSelection').append('<option value="' + item.marketingTypeID + '">' + item.marketingTypeName + '</option>');
+                    });
+                }
+                $('#addParentTypeSelection').find('option[value="' + parentID + '"]').prop('selected', true);
+                $('#addSubSourceModal').foundation('open');
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+                console.log(jqXHR.responseText);
+            }
+        });
+    };
+
+    var saveAddSubSource = function () {
+        var parentMarketingTypeID = $('#addParentTypeSelection option:selected').val();
+        var marketingTypeName = $('#addSubSourceName').val();
+        var validated = true;
+
+        if (parentMarketingTypeID == 0){
+            $('#addParentTypeSelection').addClass('is-invalid-input');
+            validated = false;
+        }
+
+        if (marketingTypeName == ''){
+            $('#addSubSourceName').addClass('is-invalid-input');
+            validated = false;
+        }
+        if (validated){
+            $.ajax({
+                url: 'saveNewSubSource.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "POST",
+                contentType: "application/x-www-form-urlencoded",
+                data: {
+                    parentMarketingTypeID: parentMarketingTypeID,
+                    marketingTypeName: marketingTypeName,
+                },
+                success: function (response) {
+                    getMarketingMetrics($('#dateFilterFrom').val(), $('#dateFilterTo').val()); 
+                    $('#addSubSourceName').val('');
+                    $('#addSubSourceModal').foundation('close');
+                    $('#updateMessage').foundation('open');
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            });
+        }
+    };
+
+    var editSource = function (sourceID) {
+        var sourceName = $('[source="' + sourceID + '"]').parent().parent().find('strong').text();
+        $('#editSourceName').val(sourceName);
+        $('#sourceID').val(sourceID);
+        $('#editSourceModal').foundation('open');
+    };
+
+    var saveEditSource = function () {
+        var marketingTypeName = $('#editSourceName').val();
+        var marketingTypeID = $('#sourceID').val();
+        var validated = true;
+
+        if (marketingTypeName == ''){
+            $('#editSourceName').addClass('is-invalid-input');
+            validated = false;
+        }
+        if (validated){
+            $.ajax({
+                url: 'editSource.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "POST",
+                contentType: "application/x-www-form-urlencoded",
+                data: {
+                    marketingTypeID: marketingTypeID,
+                    marketingTypeName: marketingTypeName,
+                },
+                success: function (response) {
+                    $('[source="' + marketingTypeID + '"]').parent().parent().find('strong').text(marketingTypeName);
+                    $('#editSourceModal').foundation('close');
+                    $('#updateMessage').foundation('open');
+                    getMarketingMetrics($('#dateFilterFrom').val(), $('#dateFilterTo').val()); 
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            });
+        }
+    };
+
+    var saveAddSource = function () {
+        var marketingTypeName = $('#addSourceName').val();
+        var validated = true;
+
+        if (marketingTypeName == ''){
+            $('#addSourceName').addClass('is-invalid-input');
+            validated = false;
+        }
+        if (validated){
+            $.ajax({
+                url: 'saveNewSource.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "POST",
+                contentType: "application/x-www-form-urlencoded",
+                data: {
+                    marketingTypeName: marketingTypeName,
+                },
+                success: function (response) {
+                    getMarketingMetrics($('#dateFilterFrom').val(), $('#dateFilterTo').val()); 
+                    $('#date-range-noData').hide();
+                    $('#addSourceName').val('');
+                    $('#addSourceModal').foundation('close');
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            });
+        }
+    };
+
+    var deleteMarketingItem = function (itemID, itemType) {
+        $.ajax({
+            url: 'deleteMarketingItem.php',
+            dataType: "json",
+            contentType: 'application/json',
+            type: "POST",
+            contentType: "application/x-www-form-urlencoded",
+            data: {
+                itemID: itemID,
+                itemType: itemType,
+            },
+            success: function (response) {
+                getMarketingMetrics($('#dateFilterFrom').val(), $('#dateFilterTo').val()); 
+                $('#deleteItemModal').foundation('close');
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+                console.log(jqXHR.responseText);
+            }
+        });
+    };
+
+    $('body').on('click', '.editSource',function(){
+        editSource($(this).attr('source'));
+    });
+
+    $('#saveEditSource').click(saveEditSource);
+
+    $('body').on('click', '.addSubSource',function(){
+        addSubSource($(this).attr('parentID'));
+    });
+
+    $('#saveAddSubSource').click(saveAddSubSource);
+
+    $('#addSource').click(function(){
+        $('#addSourceModal').foundation('open');
+    });
+    $('#saveAddSource').click(saveAddSource);
+
+    $('#cancelAddSource').click(function (){
+        $('#addSourceName').val('');
+        $('#addSourceModal').foundation('close');
+    });
+
+    $('#cancelAddSubSource').click(function (){
+        $('#addSubSourceName').val('');
+        $('#addSubSourceModal').foundation('close');
+    });
+
+    $('body').on('click', '.deleteSource',function(){
+        var marketingTypeID = $(this).parent().parent().attr('id');
+        var name = $(this).parent().parent().find('strong').text();
+
+        $('#deleteItemModal h3').text('Delete Category');
+        $('#deleteItemModal p').text('Are you sure you want to delete the category "' + name + '"? All sources tied to this category and its spend items will also be deleted.');
+        $('#itemID').val(marketingTypeID);
+        $('#itemType').val('source');
+
+        $('#deleteItemModal').foundation('open');
+    });
+
+    $('body').on('click', '.deleteSubSource',function(){
+        var marketingTypeID = $(this).parent().parent().attr('id');
+        var name = $(this).parent().parent().find('strong').text();
+
+        $('#deleteItemModal h3').text('Delete Source');
+        $('#deleteItemModal p').text('Are you sure you want to delete the source "' + name + '"? All spend items tied to this source will also be deleted.');
+        $('#itemID').val(marketingTypeID);
+        $('#itemType').val('subsource');
+
+        $('#deleteItemModal').foundation('open');
+    });
+    
+    $('body').on('click', '.deleteSpend',function(){
+        var marketingSpendID = $(this).parent().parent().attr('id');
+        var parentMarketingTypeID = $(this).parent().parent().attr('data-belongsto');
+        var name = $('#' + parentMarketingTypeID).find('strong').text();
+        var date = $(this).parent().parent().find('strong').text();
+        var amount = $(this).parent().parent().find('.spend').text();
+
+        $('#deleteItemModal h3').text('Delete Marketing Spend');
+        $('#deleteItemModal p').text('Are you sure you want to delete the marketing spend "' + name + '" from ' + date + ' (' + amount + ')' + '?');
+        $('#itemID').val(marketingSpendID);
+        $('#itemType').val('spend');
+
+        $('#deleteItemModal').foundation('open');
+    });   
+
+    $('#yesDeleteItem').click(function(){
+        var itemID = $('#itemID').val();
+        var itemType = $('#itemType').val();
+        $('#itemID').val('');
+        $('#itemType').val('');
+
+        deleteMarketingItem(itemID, itemType);
+    });
+
+    $('#cancelDeleteItem').click(function (){
+        $('#itemID').val('');
+        $('#itemType').val('');
+        $('#deleteItemModal').foundation('close');
+    });
+
+    //Document Ready Ends          
+    });
+    </script>
+    <style>
+        div.loadingImage {
+            position: fixed;
+            z-index: 1500;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #eee;
+            opacity: 0.5;
+            text-align: center;
+        }
+        div.loadingImage {
+            display: none;
+        }
+        div.loadingImage > img {
+            position: absolute;
+            top: 40%;
+        }
+    </style>
+
+</head>
+<body>
+<?php  include_once 'header.html'  ?>
+<div id="loading-image" class="loadingImage">
+        <img src="images/ajax-loader.gif" />
+</div>
+
+    <div class="row expanded first-row" style="background-color:#f6f7fb;">
+        <div class="medium-12 columns">
+            <div class="medium-12 columns">
+                <h1 class="project-title">Marketing</h1>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="small-10 columns">
+            <h4 style="margin-top: .5rem;"> Marketing Spend for</h4> 
+        </div>
+        <div class="medium-7 columns text-left">
+           <input id="dateFilterFrom" style="margin-bottom: .2rem;" class="evaluationData date-picker date" type="text" name="dateFilterFrom" placeholder="Start Date"/>
+           <input id="dateFilterTo" style="margin-bottom: .2rem;" class="evaluationData date-picker date" type="text" name="dateFilterTo" placeholder="End Date" />
+        </div>
+        <div class="medium-5 columns text-right">
+            <p>
+                <button id="addSource" class="button">Add Category</button>
+            </p>
+        </div>
+        <div class="row">
+            <div class="small-12 columns">
+                <div class="small-12 columns">
+                    <span id="date-range-noData" class="form-error">
+                        <small>There is no data available. Add a category to view marketing data.</small>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row" style="display: ; padding-bottom: 5rem;">
+        <div id="marketingMetricsDiv" class="small-12 columns" style="margin: 0 0 .5rem 0;">
+            <!-- all marketingMetric divs will appear here -->
+
+        </div> 
+    </div> 
+    <!-- add source modal -->
+    <div id="addSourceModal" class="reveal medium" data-reveal>
+        <h2 id="addSourceModalTitle" style="text-align:center;margin-bottom:0rem;">Add Category</h2>
+        <div class="row align-center" style="margin-bottom: 1rem;"></div>
+        <div class="row">
+            <div class="medium-12 columns">
+                    <label>Category Name
+                        <input type="Text" id="addSourceName"/>
+                        <small class="form-error">Category name is Required</small>
+                    </label>
+                    <p class="form-error" id="sourceNameError">Category name cannot be blank</p>
+                <div class="medium-12 columns text-center">
+                        <button class="button primary" id="saveAddSource">Save</button>
+                        <button class="button" id="cancelAddSource">Cancel</button>
+                </div>
+            </div>
+            <div class="medium-6 columns">&nbsp;</div>
+        </div>
+    </div>
+    <!-- edit source modal -->
+    <div id="editSourceModal" class="reveal medium" data-reveal>
+        <h2 id="editSourceModalTitle" style="text-align:center;margin-bottom:0rem;">Edit Category</h2>
+        <div class="row align-center" style="margin-bottom: 1rem;"></div>
+        <div class="row">
+            <div class="medium-12 columns">
+                    <label>Category Name
+                        <input type="Text" id="editSourceName"/>
+                        <small class="form-error">Category name is Required</small>
+                    </label>
+                    <input id="sourceID" type="hidden" value="" />
+                    <p class="form-error" id="sourceNameError">Category name cannot be blank</p>
+                <div class="medium-12 columns text-center">
+                        <button class="button primary" id="saveEditSource">Save</button>
+                        <button class="button" data-close>Cancel</button>
+                </div>
+            </div>
+            <div class="medium-6 columns">&nbsp;</div>
+        </div>
+    </div>
+    <!-- add subsource modal -->
+    <div id="addSubSourceModal" class="reveal medium" data-reveal>
+        <h2 id="subSourceModalTitle" style="text-align:center;margin-bottom:0rem;">Add Source</h2>
+        <div class="row align-center" style="margin-bottom: 1rem;"></div>
+        <div class="row">
+            <div class="medium-12 columns">
+                    <label>Parent Category
+                        <select id="addParentTypeSelection" name="sourceNames">
+                            <option value="0">Select</option>
+                        </select>
+                        <small class="form-error">Parent category is Required</small>
+                    </label>
+                    <label>Source Name
+                        <input type="Text" id="addSubSourceName" name="subSourceName"/>
+                        <small class="form-error">Source name is Required</small>
+                    </label>
+                    <p class="form-error" id="sourceNameError">Source Name Cannot be blank</p>
+                <div class="medium-12 columns text-center">
+                        <button class="button primary" id="saveAddSubSource">Save</button>
+                        <button class="button" id="cancelAddSubSource">Cancel</button>
+                </div>
+            </div>
+            <div class="medium-6 columns">&nbsp;</div>
+        </div>
+    </div>
+    <!-- edit subsource modal -->
+    <div id="setupSubSourceModal" class="reveal medium" data-reveal>
+           
+        <h2 id="subSourceModalTitle" style="text-align:center;margin-bottom:0rem;">Edit Source</h2>
+        <div class="row">
+            <div class="medium-12 columns">
+                <form name="editSubSource" action="">
+                <label>Parent Category
+                    <select id="parentTypeSelection" name="sourceNames">
+                        <option>Select</option>
+                    </select>
+                </label>
+                    <label id="sourceNameLabel">Source Name
+                        <input class="evaluation-data" type="Text" id="subSourceName" name="subSourceName"   />
+                    </label>
+                    <p class="form-error" id="sourceNameError">Source name cannot be blank</p>
+                    <input class="evaluation-data" type="hidden" id="subsourceID" name="subsourceID" disabled />
+                    <input class="evaluation-data" type="hidden" id="parentTypeID" name="parentTypeID " disabled />
+                </form>
+                <div class="medium-12 columns text-center">
+                        <button class="button primary" id="saveSubSource">Save</button>
+                        <button class="button secondary" id="closeSubSource">Cancel</button>
+                </div>
+            </div>
+            <div class="medium-6 columns">&nbsp;</div>
+        </div>
+    </div>
+
+    <!-- Add Spend modal -->
+    <div id="addSpendModal" class="reveal medium" data-reveal data-close-on-esc="false" data-close-on-click="false">
+           
+        <h2 id="addSpendSourceModalTitle" style="text-align:center;margin-bottom:0rem;">Add Marketing Spend</h2>
+            <div class="row align-center" style="margin-bottom: 1rem;">
+                <small>Add any marketing &amp; advertising expenses here.</span></small>
+            </div>
+        <div class="row">
+                    <div class="medium-12 columns">
+                            
+                                <label>Category
+                                    <select id="adParentTypeSelection" name="adSourceNames">
+                                        <option>Select</option>
+                                    </select>
+                                </label>
+                                <label>Source
+                                    <select id="adSubSourceSelection" name="adSubSourceNames">
+                                        <option>Select</option>
+                                    </select>
+                                </label>
+                                <label id="lblAdPaidDate">Marketing Paid Date
+                                   <input id="adPaidDate"  class="evaluationData date-picker date" type="text" name="adPaidDate" />
+                                </label>
+
+                                <label id="lblAdStartDate">Marketing Start Date <small> Required </small>
+                                    <input id="adStartDate"  class="evaluationData date-picker date" type="text" name="adStartDate"  />
+                                </label>
+                                <p id= "adStartDateError" class="form-error">You must choose a Marketing Start Date</p>
+
+                                <label id="lblAdEndDate">Marketing End Date<small> Required</small>
+                                     <input id="adEndDate"  class="evaluationData date-picker date" type="text" name="adEndDate"  />
+                                </label>
+                                <p id= "adEndDateError" class="form-error">You must choose a Marketing End Date</p>
+
+                                <label id="lblSpendAmount">Total Marketing Spend Amount<small> Required</small>
+                                     <input id="adSpendAmount"  class="evaluationData" type="text" name="adSpendAmount" />
+                                </label>
+                                <p id= "adSpendAmountError" class="form-error">You must enter a Marketing Spend Amount</p>
+
+
+                                <input class="evaluation-data" type="hidden" id="adSubsourceID" name="subsourceID" disabled />
+                                <input class="evaluation-data" type="hidden" id="adParentTypeID" name="parentTypeID " disabled />
+                            <!-- <div class="medium-2 columns">&nbsp;</div> -->
+
+                        <div class="row">
+                             <div class="medium-12 columns">
+                                <p class="text-center no-margin">
+                                    <button class="button primary" id="saveAdSpend">Save</button>
+                                    <button class="button secondary" id="closeAdSpend">Cancel</button>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+            <div class="medium-6 columns">&nbsp;</div>
+        </div>
+    </div>
+
+
+ <!-- Edit Spend modal -->
+    <div id="editSpendModal" class="reveal medium" data-reveal data-close-on-esc="false" data-close-on-click="false">
+        
+        <h2 id="addSpendSourceModalTitle" style="text-align:center;margin-bottom:0rem;">Edit Marketing Spend</h2>
+            <div class="row align-center" style="margin-bottom: 1rem;">
+                <small>Make changes to the selected marketing &amp; advertising expenses here.</span></small>
+            </div>
+        <div class="row">
+                    <div class="medium-12 columns">
+                            
+                                <label>Category
+                                    <select id="adEditParentTypeSelection" name="adEditSourceNames">
+                                        <option>Select</option>
+                                    </select>
+                                </label>
+                                <label>Source
+                                    <select id="adEditSubSourceSelection" name="adEditSubSourceNames">
+                                        <option>Select</option>
+                                    </select>
+                                </label>
+
+                                <label id="lblAdEditPaidDate">Marketing Paid Date
+                                   <input id="adEditPaidDate"  class="evaluationData date-picker date" type="text" name="adEditPaidDate" />
+                                </label>
+
+                                <label id="lblAdEditStartDate">Marketing Start Date<small> Required </small>
+                                    <input id="adEditStartDate"  class="evaluationData date-picker date" type="text" name="adEditStartDate"  />
+                                </label>
+                                <p id= "adEditStartDateError" class="form-error">You must choose a Marketing Start Date</p>
+
+                                <label id="lblAdEditEndDate">Marketing End Date<small> Required</small>
+                                     <input id="adEditEndDate"  class="evaluationData date-picker date" type="text" name="adEditEndDate"  />
+                                </label>
+                                <p id= "adEditEndDateError" class="form-error">You must choose a Marketing End Date</p>
+
+                                <label id="lblEditSpendAmount">Total Marketing Spend Amount<small> Required</small>
+                                     <input id="adEditSpendAmount"  class="evaluationData" type="text" name="adEditSpendAmount" />
+                                </label>
+                                <p id= "adEditSpendAmountError" class="form-error">You must enter a Marketing Spend Amount</p>
+
+
+                                <input class="evaluation-data" type="hidden" id="adEditSubsourceID" name="adEditSubsourceID" disabled />
+                                <input class="evaluation-data" type="hidden" id="adEditParentTypeID" name="editParentTypeID " disabled />
+                                 <input class="evaluation-data" type="hidden" id="adEditSpendRowID" name="editSpendRowID " disabled />
+
+                            <!-- <div class="medium-2 columns">&nbsp;</div> -->
+
+                        <div class="row">
+                             <div class="medium-12 columns">
+                                <p class="text-center no-margin">
+                                    <button class="button primary" id="editAdSpend">Save</button>
+                                    <button class="button secondary" id="closeAdEditSpend">Cancel</button>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+            <div class="medium-6 columns">&nbsp;</div>
+        </div>
+    </div>
+<!-- update success modal -->
+    <div class="tiny reveal" id="updateMessage" data-reveal>
+        <div class="row">
+            <div class="medium-12 columns">
+                <p class="text-center no-margin" id="updateMessageText">
+                    Update was successful.
+                    <br/>
+                </p> 
+                <p class="text-center no-margin">
+                    <br/>
+                    <button class="button" data-close>OK</button>
+                </p>
+            </div>
+        </div>
+    </div>
+<!-- delete item modal -->
+<div class="tiny reveal" id="deleteItemModal" data-reveal data-close-on-esc="false" data-close-on-click="false">
+    <h3 class="text-center">Delete</h3>
+    <div class="row">
+        <div class="medium-12 columns text-center">
+            <p class="text-center no-margin">
+            </p>
+            <input id="itemType" type="hidden" value="" />
+            <input id="itemID" type="hidden" value="" />
+            <br />
+            <button class="button" id="yesDeleteItem">Yes</button>
+            <button class="button secondary" id="cancelDeleteItem">Cancel</button>
+        </div>
+    </div>
+</div>
+<?php  include_once 'footer.html'  ?>
+
+    <!-- <input id="currentDate" type="hidden" name="currentDate" value="<?php echo $todaysDateDefault;  ?>" /> -->
+
+    <script src="js/what-input.js"></script>
+    <script src="js/foundation.js"></script>
+    <script>
+        $(document).foundation();
+
+    </script>
+</body>
+</html>  

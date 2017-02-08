@@ -1,0 +1,1616 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Foundation Accelerator</title>
+    <link rel="stylesheet" href="css/foundation.css" />
+	<link rel="stylesheet" href="css/custom.css" />
+	<link rel="stylesheet" href="css/user-profile.css" />
+    <link rel="stylesheet" href="css/motion-ui.css" />
+	<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+	<link href='css/fullcalendar.css' rel='stylesheet' />
+	<link href='css/scheduler.css' rel='stylesheet' />
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
+	<script src="js/jquery.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+	<script src='js/moment.min.js'></script>
+	<script src='js/fullcalendar.min.js'></script>
+	<script src='js/scheduler.min.js'></script>
+	<script src='js/jquery.tablesorter.min.js'></script>
+    <script src='js/setup-progress.js'></script>
+    <script src='js/zen.js'></script>
+
+<script>
+window.location.hash = '';
+history.pushState('', document.title, window.location.href.split("#")[0]);
+
+jQuery(function ($) { $("#datepicker").datepicker( {dateFormat:'yy-mm-dd'} ); });
+
+var decodeEntities = function (encodedString) {
+    var textArea = document.createElement('textarea');
+    textArea.innerHTML = encodedString;
+    return textArea.value;
+}
+
+$(document).ready(function() {
+
+            userInfo = {
+                name: "<?php echo $userFirstName;  ?>" + " <?php echo $userLastName;  ?>",
+                email: "<?php echo $userEmail;  ?>"
+            }
+
+             $('#password').focusin(function(){
+                    $('#passwordInfo').show();
+
+                });
+
+                $('#password').focusout(function(){
+                    $('#passwordInfo').toggle();
+
+                });
+
+   	
+	$('#changePasswordLink').click(function(){
+		$('#changePassword').slideToggle('2000','swing');
+  		$('#changePasswordLink').text($(this).text() == 'Keep Existing Password' ? hidePasswordErrors() : "Change Password");
+  		$('#changePasswordLink').text($(this).text() == 'Keep Existing Password' ? $('#password, #password2, #oldPassword').val('') : "Change Password");
+  		$('#changePasswordLink').text($(this).text() == 'Change Password' ? "Keep Existing Password" : "Change Password");
+
+	});
+
+
+	$('.addPhone').click(addPhoneRow);
+   	$('.deletePhone').click(deletePhoneRow);
+   	$('input.isPrimary').change(isPrimaryCheck);
+   	$('#editUserProfile').click(editUserProfile);
+  	$('#closeEditUserProfile').click(closeEditUserProfile);
+  	$('#saveEditUserProfile').click(saveEditUserProfile);
+  	$('input[name="userPassword2"]').change(checkPassword);
+  	$('input[name="userPassword"]').change(checkPassword);
+  	// $("input.passwordMatch").focusin(checkPassword);
+  	// $("input.passwordMatch").focusout(checkPassword);
+  	// $("input.userPassword").focusin(checkPassword);
+  	// $("input.userPassword").focusout(checkPassword);
+  	
+	
+	//Add new Schedule
+	$('#addSchedule').click(function() {
+		$('#scheduleList').css('display','none');
+		$('#scheduleCalendar').css('display','');
+		$('#cancelSchedule').append('<button id="cancelScheduleButton" class="tiny secondary" style="xtiny;float: right;">Back to Project Schedule</button>');
+		filterCalendar();
+	});
+		
+	//Cancel Adding New Schedule
+	$('#cancelScheduleButton').click(function() {
+		$('#scheduleList').css('display','');
+		$('#scheduleCalendar').css('display','none');
+		$('#cancelScheduleButton').remove();
+		$('#calendar').empty();			
+	});	
+	
+	//Reload Calendar When the Filter is Changed
+	//$('#filterCalendar select').change(filterCalendar);
+		
+	//Add Changed Class to Event Add Modal
+	$('input.evaluationData, select.evaluationData').change(function() {
+  		$(this).addClass('changed');
+	});	
+	
+		
+		// $.ajax({
+		// 	url: 'getResources.php',
+		// 	dataType: "json",
+		// 	contentType: 'application/json',
+		// 	type: "GET",
+		// 	contentType: "application/x-www-form-urlencoded",
+		// 	data: {
+		// 		filter: ''
+		// 	},
+		// 	success: function(response) {
+				
+		// 		//Append to Calendar Filter
+		// 		$('#filterCalendar select').append('<option value="sales">Sales</option>');
+				
+		// 		$.each(response, function (i, item) {
+		// 			if (item.sales == '1') {
+		// 				$('#filterCalendar select').append('<option value="'+item.id+'">&nbsp;&nbsp;&nbsp;'+item.title+'</option>');
+		// 			}
+		// 		});
+				
+		// 		$('#filterCalendar select').append('<option value="installation">Installation</option>');
+				
+		// 		$.each(response, function (i, item) {
+		// 			if (item.installation == '1') {
+		// 				$('#filterCalendar select').append('<option value="'+item.id+'">&nbsp;&nbsp;&nbsp;'+item.title+'</option>');
+		// 			}
+		// 		});
+				
+				
+					
+		// 	}, error: function(jqXHR, textStatus, errorThrown) {
+  // 				console.log(textStatus, errorThrown);
+		// 		console.log(jqXHR.responseText);
+		// 	}
+				
+		// });	
+	
+		
+		// $('.fc-filter-button').empty();
+
+		//Show Setup Modal if Clicked in Top Nav
+        $('#showSetup').click(showSetupModal);
+
+        //Show Setup Modal On Page Load if it Hasn't Been Viewed Since Yesterday
+        showSetupModal('true');
+
+        //Update Last Viewed When Modal Opens
+        $('#setupModal').on('open.zf.reveal', function() {
+            $.ajax({
+                url: 'setupProgressUpdate.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "POST",
+                contentType: "application/x-www-form-urlencoded",
+                data: {
+                    updateSetupNotice: 'true'
+                },
+                success: function (response) {
+                    //console.log(response);
+                    // if (response == 'true') {
+                    // }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            });
+
+        });
+
+        //Update Checkmarks When Clicked
+        $('img.setupProgressCheckmark').click(updateChecks);
+
+        //Stop Showing Setup Modal
+        $('#setupComplete').click(setupComplete);
+		
+		
+	});
+	
+
+// var filterCalendar	 = function() {
+	
+// 	$('#scheduleModalDD select > option').not(':first').remove();
+	
+// 	$('#filterCalendar').foundation('reveal', 'close');
+		
+// 	$('#calendar').fullCalendar('destroy');
+// 	$('#calendar').fullCalendar('render');	
+	
+// 	$('#calendar').fullCalendar({
+// 			customButtons: {
+// 				filter: {
+// 					text: 'Filter',
+// 					click: function() {
+// 						$('#filterCalendar').foundation('reveal', 'open');
+// 					}
+// 				}
+// 			},
+// 			header: {
+// 				left: 'prev,next today filter',
+// 				center: 'title',
+// 				right: 'month,agendaWeek,timelineDay'
+// 			},
+// 			aspectRatio: 0,
+// 			resourceLabelText: ' ',
+// 			resources: {
+// 				url: 'getResources.php',
+// 				data: {
+// 					filter: $("#filterCalendar option:selected").val()
+// 				},
+// 				success: function(response) {
+// 					//$('#script-warning').show();
+// 					//console.log(response);
+// 					$.each(response, function (i, item) {
+// 						$('#scheduleModalDD select').append('<option value="'+item.id+'">'+item.title+'</option>');
+				
+// 					});
+// 				},
+// 				 error: function(jqXHR, textStatus, errorThrown) {
+//   					console.log(textStatus, errorThrown);
+// 					console.log(jqXHR.responseText);
+// 				}
+// 			},
+// 			dayClick: function(date, jsEvent, view) {
+// 				var date = date.format();
+// 				var coordinates = jsEvent.pageX + ',' + jsEvent.pageY;
+// 				var view = view.name;
+				
+// 				if (view != 'timelineDay') {
+// 					$('#calendar').fullCalendar('gotoDate', date);
+// 					$('#calendar').fullCalendar('changeView', 'timelineDay'); 
+					 
+// 				} 
+//     		},
+// 			defaultDate: '<?php echo $todaysDateDefault;  ?>',
+// 			fixedWeekCount: false,
+// 			selectable: true,
+// 			selectHelper: false,
+// 			unselectAuto: false,
+// 			select: function( start, end, jsEvent, view, resource) {
+// 				var view = view.name;
+				
+// 				if (view == 'timelineDay') {
+					
+// 					//Check if event exists already
+// 					if(!$('input[name="tempID"]').val()) {
+					
+// 						//Render Event
+// 						var eventData;
+// 						var firstName = '';
+// 						var lastName = '';
+// 						var eventType = $('#eventType').val();
+						
+// 						eventData = {
+// 							title: firstName + ' ' + lastName + ' ' + eventType,
+// 							start: start,
+// 							end: end,
+// 							resourceId: resource.id,
+// 						};
+						
+// 						$('#calendar').fullCalendar('renderEvent', eventData, true); // stick? = true
+						
+						
+// 						//Get Temporary Event ID
+// 						var clientEvents = $('#calendar').fullCalendar('clientEvents');
+// 						var lastEvent = clientEvents[clientEvents.length-1];
+// 						var lastId = lastEvent._id;
+							
+// 						//console.log(clientEvents);
+// 						//console.log(lastId);
+						
+// 						//Open Add Event Modal
+// 						$('#addEvent').foundation('reveal', 'open');
+// 						$('#addEvent').data('revealInit').close_on_background_click = false;
+// 						$('#addEvent').data('revealInit').close_on_esc = false;
+						
+						
+// 						//Populate Modal with Data from Select Event	
+// 						if ($('input[name="projectScheduleID"]').val() == '') {
+// 							if (eventType == 'Evaluation') {
+// 								$('#addEvent #modalTitle').text('Schedule Evaluation');
+// 								$('#addEvent p.lead').text('Add Appointment');
+// 								$('#addEvent .scheduledTitle').text('Salesperson');
+							
+// 							} else if (eventType == 'Installation') {
+// 								$('#addEvent #modalTitle').text('Schedule Installation');
+// 								$('#addEvent p.lead').text('Add Installation');
+// 								$('#addEvent .scheduledTitle').text('Installer');
+// 							}
+// 						} else {
+// 							if (eventType == 'Evaluation') {
+// 								$('#addEvent #modalTitle').text('Reschedule Evaluation');
+// 								$('#addEvent p.lead').text('Update Appointment');
+// 								$('#addEvent .scheduledTitle').text('Salesperson');
+							
+// 							} else if (eventType == 'Installation') {
+// 								$('#addEvent #modalTitle').text('Reschedule Installation');
+// 								$('#addEvent p.lead').text('Update Installation');
+// 								$('#addEvent .scheduledTitle').text('Installer');
+// 							}
+// 						} 
+						
+// 						var startDate = moment(eventData.start).format("MM/DD/YYYY");
+// 						var startTime = moment(eventData.start).format("hh:mm a");
+// 						$('input[name="scheduledStartDate"]').val(startDate);
+// 						$('input[name="scheduledStartTime"]').val(startTime);
+							
+// 						var endDate = moment(eventData.end).format("MM/DD/YYYY");
+// 						var endTime = moment(eventData.end).format("hh:mm a");
+// 						$('input[name="scheduledEndDate"]').val(endDate);
+// 						$('input[name="scheduledEndTime"]').val(endTime);
+							
+// 						$('select[name="salesperson"]').find("option[value='"+resource.id+"']").attr('selected', true);
+						
+// 						$('input[name="tempID"]').val(lastId);
+							
+							
+// 						// Click Cancel on Modal
+// 						$('#confirmAppointmentNo').click( function() {
+								
+// 							//Get Temporary ID	
+// 							var tempID = $('input[name="tempID"]').val();
+							
+// 							//Remove Last Rendered Event
+// 							$('#calendar').fullCalendar( 'removeEvents' , tempID );
+							
+// 							//Unselect Event on Calendar	
+// 							$('#calendar').fullCalendar('unselect');
+							
+// 							//Remove Temp ID from form
+// 							$('input[name="tempID"]').val('');
+// 							$('input[name="projectScheduleID"]').val('');
+								
+// 							//Close Modal	
+// 							$('#addEvent').foundation('reveal','close');	
+// 						});
+						
+						
+// 						// Click Save on Modal	
+// 						$('#confirmAppointmentYes').click( function() {	
+								
+// 							//Get Temporary ID	
+// 							var tempID = $('input[name="tempID"]').val();
+							
+// 							//Remove Last Rendered Event
+// 							$('#calendar').fullCalendar( 'removeEvents' , tempID );
+							
+							
+// 							//Get Input Start Day and Time
+// 							var newStartDay = $('input[name="scheduledStartDate"]').val();
+// 							var newStartTime = $('input[name="scheduledStartTime"]').val();
+						
+// 								var startHours = newStartTime.split(":")[0];
+// 								var startMinutes = newStartTime.split(":")[1];
+// 								startMinutes = startMinutes.slice(0,-2)
+// 								var startSuffix = newStartTime.split(" ")[1];
+// 								if (startSuffix == "pm") {
+// 									startHours = startHours != "12" ? parseInt(startHours) + parseInt(12) : startHours;
+// 								} 
+						
+// 								var newStartDayFormat = new Date(newStartDay);
+// 								//newStartDayFormat.setUTCHours(startHours, startMinutes);
+// 								newStartDayFormat.setHours(startHours, startMinutes);
+							
+// 							//Get Input End Day and Time
+// 							var newEndDay = $('input[name="scheduledEndDate"]').val();
+// 							var newEndTime = $('input[name="scheduledEndTime"]').val();
+							
+// 								var endHours = newEndTime.split(":")[0];
+// 								var endMinutes = newEndTime.split(":")[1];
+// 								endMinutes = endMinutes.slice(0,-2)
+// 								var endSuffix = newEndTime.split(" ")[1];
+// 								if (endSuffix == "pm") {
+// 									endHours = endHours != "12" ? parseInt(endHours) + parseInt(12) : endHours;
+// 								} 
+							
+// 								var newEndDayFormat = new Date(newEndDay);
+// 								//newEndDayFormat.setUTCHours(endHours, endMinutes);
+// 								newEndDayFormat.setHours(endHours, endMinutes);
+						
+// 							//Get Salesperson (Resource) ID
+// 							var salesId = $('select[name="salesperson"]').val();
+							
+// 							//Set New Event Data
+// 							eventData = {
+// 								title: firstName + ' ' + lastName + ' Appointment',
+// 								start: newStartDayFormat,
+// 								end: newEndDayFormat,
+// 								resourceId: salesId,
+// 							};
+							
+// 							$('#calendar').fullCalendar('renderEvent', eventData, true); // stick? = true
+				
+// 							$('#calendar').fullCalendar('unselect');
+					
+// 							$('#addEvent').foundation('reveal','close');	
+							
+// 							$('#scheduleEvaluationButton').empty();
+// 							$('#evaluationSchedule').empty();
+// 							$('#scheduleInstallationButton').empty();
+// 							$('#installationSchedule').empty();
+								
+// 							if ($('input[name="projectScheduleID"]').val() == '') {
+// 								//Add New Event to DB
+// 								$.ajax({
+// 									url: 'event-add.php',
+// 									dataType: "json",
+// 									contentType: 'application/json',
+// 									type: "POST",
+// 									contentType: "application/x-www-form-urlencoded",
+// 									data: {
+// 										projectID: $('#projectID').attr('value'),
+// 										startDate: $('input[name="scheduledStartDate"]').val(),
+// 										startTime: $('input[name="scheduledStartTime"]').val(),
+// 										endDate: $('input[name="scheduledEndDate"]').val(),
+// 										endTime: $('input[name="scheduledEndTime"]').val(),
+// 										scheduleType: eventType,
+// 										scheduledUserID: $('select[name="salesperson"]').val()
+// 									},
+// 									success: function (response) {
+// 										if (response == 'true') {
+// 											//Remove Calendar and Display Map
+// 											$('#scheduleList, #scheduleMap').css('display','');
+// 											$('#scheduleCalendar').css('display','none');
+// 											$('#cancelScheduleButton').remove();
+// 											$('#calendar').empty();
+// 											$('#scheduleMap').append('<div id="calendarMap"></div>');	
+// 											initializeMap();
+											
+// 											//Get New Project Schedule
+// 											projectSchedule();
+// 										}
+// 									},
+// 									error: function(jqXHR, textStatus, errorThrown) {
+// 										console.log(textStatus, errorThrown);
+// 										console.log(jqXHR.responseText);
+// 									}
+// 								});
+// 							} else {
+// 								//Update Existing Event
+// 								$.ajax({
+// 									url: 'event-edit.php',
+// 									dataType: "json",
+// 									contentType: 'application/json',
+// 									type: "POST",
+// 									contentType: "application/x-www-form-urlencoded",
+// 									data: {
+// 										projectScheduleID: $('input[name="projectScheduleID"]').val(),
+// 										projectID: $('#projectID').attr('value'),
+// 										startDate: $('input[name="scheduledStartDate"]').val(),
+// 										startTime: $('input[name="scheduledStartTime"]').val(),
+// 										endDate: $('input[name="scheduledEndDate"]').val(),
+// 										endTime: $('input[name="scheduledEndTime"]').val(),
+// 										scheduleType: eventType,
+// 										scheduledUserID: $('select[name="salesperson"]').val()
+// 									},
+// 									success: function (response) {
+// 										if (response == 'true') {
+// 											//Remove Calendar and Display Map
+// 											$('#scheduleList, #scheduleMap').css('display','');
+// 											$('#scheduleCalendar').css('display','none');
+// 											$('#cancelScheduleButton').remove();
+// 											$('#calendar').empty();
+// 											$('#scheduleMap').append('<div id="calendarMap"></div>');	
+// 											initializeMap();
+											
+// 											//Get New Project Schedule
+// 											projectSchedule();
+// 										}
+// 									},
+// 									error: function(jqXHR, textStatus, errorThrown) {
+// 										console.log(textStatus, errorThrown);
+// 										console.log(jqXHR.responseText);
+// 									}
+// 								});
+// 							}
+							
+// 						});
+						
+// 					//If Event exists then open existing event	
+// 					} else {
+					
+// 						$('input.evaluationData, select.evaluationData').removeClass('changed')
+						
+// 						$('#addEvent').foundation('reveal', 'open');
+// 						$('#addEvent').data('revealInit').close_on_background_click = false;
+// 						$('#addEvent').data('revealInit').close_on_esc = false;
+// 					}
+					
+// 				}
+// 			},
+// 			editable: false,
+// 			eventLimit: true, // allow "more" link when too many events
+// 			overlap: true,
+// 			businessHours: {
+// 				start: '8:00',
+//    		 		end: '17:00', 
+// 				dow: [ 0, 1, 2, 3, 4, 5, 6]
+// 			},
+// 			events: {
+// 				url: 'getEvents.php',
+// 				data: {
+// 					filter: $("#filterCalendar option:selected").val(),
+// 				},
+// 				success: function(response) {
+// 					//$('#script-warning').show();
+// 					//console.log(response);
+					
+// 				},
+// 				 error: function(jqXHR, textStatus, errorThrown) {
+//   					console.log(textStatus, errorThrown);
+// 					console.log(jqXHR.responseText);
+// 				}
+// 			},
+// 			loading: function(bool) {
+// 				$('#loading').toggle(bool);
+// 			},
+// 			eventClick: function(calEvent, jsEvent, view) {
+				
+// 				if (calEvent.length) {
+// 					$.ajax({
+// 						url: 'getEventDetail.php',
+// 						dataType: "json",
+// 						contentType: 'application/json',
+// 						type: "GET",
+// 						contentType: "application/x-www-form-urlencoded",
+// 						data: {
+// 							eventID: calEvent.id,
+// 							eventType: calEvent.eventType
+// 						},
+// 						success: function(response) {
+// 							//console.log(response);
+// 							$.each(response, function (i, item) {
+								
+// 								if (calEvent.eventType == '1') {
+// 									$('#viewEvent').append('<h2 id="modalTitle">'+item.firstName+ ' ' +item.lastName+' ' +item.scheduleType+'</h2><p>' +item.scheduled+'<br/>Start: ' +item.start+'<br/>End: ' +item.end+' </p><p>' +item.address+ '<br/>' +item.city+ ', ' +item.state+ ' ' +item.zip+ '<br/>' +item.phoneNumber+ '<br/>' +item.email+ '<br/><a href="project-management.php?pid=' +item.projectID+ '">View Project</a><br/><br/>Scheduled by: ' +item.scheduledByFirstName+ ' ' +item.scheduledByLastName+ ' on ' +item.scheduledOn+ '</p><a class="close-reveal-modal" aria-label="Close">&#215;</a>');
+// 								} else {
+// 									$('#viewEvent').append('<h2 id="modalTitle">'+item.scheduledFirstName+ ' ' +item.scheduledLastName+' ' +item.scheduleType+'</h2><p>Start: ' +item.start+'<br/>End: ' +item.end+' </p><p>Scheduled by: ' +item.scheduledByFirstName+ ' ' +item.scheduledByLastName+ ' on ' +item.scheduledOn+ '</p><a class="close-reveal-modal" aria-label="Close">&#215;</a>');
+// 								}
+// 							});
+// 						}, error: function(jqXHR, textStatus, errorThrown) {
+// 							console.log(textStatus, errorThrown);
+// 							console.log(jqXHR.responseText);
+// 						}
+							
+// 					});	
+					
+// 					$('#viewEvent').foundation('reveal', 'open');
+// 					$('#viewEvent').on('closed', function(){
+// 						$('#viewEvent').empty();
+// 					});
+// 				} else {
+// 					$('input.evaluationData, select.evaluationData').removeClass('changed')
+						
+// 						$('#addEvent').foundation('reveal', 'open');
+// 						$('#addEvent').data('revealInit').close_on_background_click = false;
+// 						$('#addEvent').data('revealInit').close_on_esc = false;
+// 				}
+				
+//     		},
+// 			eventRender: function(event, element, view){
+//                 if(event.rendering == 'background'){
+//                     element.append(event.title);
+//                 }
+//             },
+// 			resourceRender: function(resourceObj, labelTds, bodyTds) {
+//                 var role = resourceObj.installation == "1" ? "Installation" : "";
+//                 if(resourceObj.sales == "1"){
+//                     if(role.length > 0) role += ", ";
+//                     role += "Sales";
+//                 }
+//                 labelTds.find('.fc-cell-content').append($('<span class="fc-cell-role"></span>').text(role));
+//             }
+// 		});
+	
+// 		$('.fc-filter-button').empty();
+// 	};
+	
+	
+	var getUserInfo = function() {
+		//Get User General Info
+    	$.ajax({
+			url: 'getUser.php',
+			dataType: "json",
+			contentType: 'application/json',
+			type: "GET",
+			contentType: "application/x-www-form-urlencoded",
+			success: function(response) {
+			
+          		$('.project-title').text(decodeEntities(response.userFirstName) +' '+ decodeEntities(response.userLastName));
+				$('.userEmail').html('Email: <a href="mailto:'+response.userEmail+'">'+response.userEmail+'</a>');
+
+				if (response.userPhoto != '') {
+					$('.userPhoto span').html('<img src="image.php?type=userimage&cid='+response.companyID+'&uid='+response.userID+'&name='+response.userPhoto+'" style="height:10rem;margin-bottom:.5rem;" />');
+
+					if ($('.userPhoto span.noPhoto').length > 0) {
+						$('.userPhoto span.noPhoto').remove();
+					}
+				}
+
+				if (response.userBio != '') {
+					$('.userBio').html('<strong>Bio</strong><br/>' + decodeEntities(response.userBio));
+
+					if ($('.userBio span.noBio').length > 0) {
+						$('.userBio span.noBio').remove();
+					}
+				} else {
+					$('.userBio').html('<strong>Bio</strong><br/><span class="noBio">No bio provided!</span>');
+				}
+
+				//On Success Get User Phone 
+                $.ajax({
+					url: 'getUserPhone.php',
+					dataType: "json",
+					contentType: 'application/json',
+					type: "GET",
+					contentType: "application/x-www-form-urlencoded",
+					data: {
+						userID: '<?php echo $userID;  ?>',
+    				},
+					success: function(response) {
+						$('.userContact').empty();
+						$.each(response, function (i, item) {
+
+							if (item.isPrimary == 1) {
+								$('.userContact').append(''+item.phoneDescription+': '+item.phoneNumber+'<span style="font-size:.7rem;font-style:italic;color:#999999;"> primary</span><br/>');
+							} else {
+								$('.userContact').append(''+item.phoneDescription+': '+item.phoneNumber+'<br/>');
+							}
+
+		                });
+							
+					}, error: function(jqXHR, textStatus, errorThrown) {
+		  				console.log(textStatus, errorThrown);
+						console.log(jqXHR.responseText);
+					}
+						
+				});		
+					
+			}, error: function(jqXHR, textStatus, errorThrown) {
+  				console.log(textStatus, errorThrown);
+				console.log(jqXHR.responseText);
+			}
+				
+		});		
+	};
+	
+	var addPhoneRow = function () {
+
+        //oldRow = $('#phoneTable').find('tbody > tr:last-child input.isPrimary').attr('value');
+        //var newRow = parseFloat(oldRow) + 1;
+
+        $cloneBlankRow = $('#phoneTable').find('tbody tr:first').clone().css('display', '');
+        $('#phoneTable').find('tbody').append($cloneBlankRow);
+        $('#phoneTable').find('tbody > tr:last-child input.isPrimary').change(isPrimaryCheck);
+        $('#phoneTable').find('tbody > tr:last-child .delete > a').click(deletePhoneRow);
+
+        $('#phoneTable').find('tbody > tr:last-child input.Phone').mask('(000) 000-0000');
+
+        if (!$('input.isPrimary:checked'))
+            $('#phoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+    };
+
+
+    var deletePhoneRow = function () {
+
+    	if ($(this).parent().parent().hasClass('dbRow')) {
+    		$(this).parent().parent().find('select').attr('delete','delete');
+    		$(this).parent().parent().css('display','none');
+
+    		 if ($(this).parent().parent().find('input.isPrimary').is(':checked'))
+            	$('#phoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+
+	        if ($('#phoneTable tbody').children().length == 1)
+	           	addPhoneRow();
+    	} else {
+    		$(this).parent().parent().remove();
+
+    		if ($(this).parent().parent().find('input.isPrimary').is(':checked'))
+            	$('#phoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+
+	        if ($('#phoneTable tbody').children().length == 1)
+	           addPhoneRow();
+    	}
+
+    };
+
+
+    var isPrimaryCheck = function () {
+
+        $('#phoneTable').find('input.isPrimary').prop('checked', false);
+        $(this).prop('checked', true);
+
+    };
+
+    var editUserProfile = function () {
+    	//Get User General Info
+    	$.ajax({
+			url: 'getUser.php',
+			dataType: "json",
+			contentType: 'application/json',
+			type: "GET",
+			contentType: "application/x-www-form-urlencoded",
+			success: function(response) {
+			
+          		$('input[name="userFirstName"]').val(decodeEntities(response.userFirstName));
+				$('input[name="userLastName"]').val(decodeEntities(response.userLastName));
+				$('input[name="userEmail"]').val(response.userEmail);
+				$('textarea[name="userBio"]').val(decodeEntities(response.userBio));
+				$('input[name="password"]').val('');
+				$('input[name="password2"]').val('');
+				
+        	
+
+				//On Success Get User Phone 
+                $.ajax({
+					url: 'getUserPhone.php',
+					dataType: "json",
+					contentType: 'application/json',
+					type: "GET",
+					contentType: "application/x-www-form-urlencoded",
+					data: {
+						userID: '<?php echo $userID;  ?>',
+    				},
+					success: function(response) {
+						$.each(response, function (i, item) {
+
+		              		$cloneRow = $('#phoneTable tbody tr:first').clone().css('display', '');
+
+		              		$cloneRow.addClass('dbRow');
+
+		                    if ($cloneRow.find('select.Description').has('option[value="' + item.phoneDescription + '"]').length > 0)
+		                        $cloneRow.find('select.Description > option[value="' + item.phoneDescription + '"]').prop('selected', true);
+
+		                    $cloneRow.find('input.Phone').val(item.phoneNumber);
+		                  
+		                     if (item.isPrimary == '1') {
+		                     	$cloneRow.find('input.isPrimary').prop('checked', true);
+		                     } else {
+		                     	$cloneRow.find('input.isPrimary').prop('checked', false);
+		                     }
+		                        
+
+		                    $cloneRow.find('select.Description').attr('sort', item.userPhoneID);
+		                    $cloneRow.find('input.Phone').attr('sort', item.userPhoneID);
+		                    $cloneRow.find('input.isPrimary').attr('sort', item.userPhoneID);
+
+
+		                    $('#phoneTable tbody').append($cloneRow);
+		                    $('#phoneTable tbody > tr:last-child input.isPrimary ').click(isPrimaryCheck);
+		                    $('#phoneTable tbody > tr:last-child a ').click(deletePhoneRow);
+		                    $('#phoneTable').find('tbody > tr:last-child input.Phone').mask('(000) 000-0000');
+
+
+		                });
+
+						var pageHeight = $( window ).height() * .85;
+						
+						//On Success Display Modal
+		                $('#editUserProfileModal').foundation('open');
+		                $('#editUserProfileModal').css('max-height',pageHeight);	
+							
+					}, error: function(jqXHR, textStatus, errorThrown) {
+		  				console.log(textStatus, errorThrown);
+						console.log(jqXHR.responseText);
+					}
+						
+				});		
+					
+			}, error: function(jqXHR, textStatus, errorThrown) {
+  				console.log(textStatus, errorThrown);
+				console.log(jqXHR.responseText);
+			}
+				
+		});		
+
+    };
+
+
+	var closeEditUserProfile = function() {
+		$('#phoneTable tbody tr').not(':first').remove();
+
+		$('input[name="userFirstName"]').val('');
+		$('input[name="userLastName"]').val('');
+		$('input[name="userEmail"]').val('');
+		$('textarea[name="userBio"]').val('');
+
+		$('input[name="userPassword"]').val('');
+		$('input[name="userPassword2"]').val('');
+		$('input[name="oldPassword"]').val('');
+		$('input[name="userPhoto"]').val('');
+
+		$('small.onePhone').removeClass('is-visible');
+		$('small.fullPhone').removeClass('is-visible');
+		$('small.primary').removeClass('is-visible');
+
+		$('input[name="userPassword"]').parent().find('.error-match').removeClass('is-visible');
+		$('input[name="userPassword2"]').parent().find('.error-match').removeClass('is-visible');
+		// $('#changePassword').hide();
+		// $('#changePasswordLink').text('Change Password');
+		// $('#changePasswordLink').text($(this).text() == 'Keep Existing Password' ? "Change Password" : "Change Password");
+		// hidePasswordErrors();
+		// $('#changePasswordLink').click();
+
+		// 		$('#password').remove;
+		// $('#password2').remove;
+
+		// if($('#passwordLabel').find('#password')){
+		// 	//do not append
+		// }else{
+		// 	$('#passwordLabel').append('<input id="password" type="password" name="userPassword" value="" /> ');
+		// 	$('#passwordCompareLabel').append('<input id="password2" class="passwordMatch" type="password" name="userPassword2" value="" />  ');
+		// }
+
+	
+			$('#changePasswordLink').text($(this).text() == 'Keep Existing Password' ? "Change Password" : "Change Password");
+  			$('#changePassword').hide();
+
+	  		hidePasswordErrors();
+
+	  		$('#editUserProfileModal').foundation('close');
+
+	};
+
+  	var saveEditUserProfile = function() {
+
+  		var password = $('input[name="userPassword"]').val();
+  		var password2 = $('input[name="userPassword2"]').val();
+  		var oldPassword= $('input[name="oldPassword"]').val();
+  		
+  		hidePasswordErrors();
+
+  		if($('#changePassword').css('display')!="none"){
+					
+	  		if (password == '' || password2 == '' || oldPassword == '') {
+
+	  				$('input[name="userPassword"]').parent().addClass('is-invalid-label');
+					$('input[name="userPassword"]').addClass('is-invalid-input');
+					$('input[name="userPassword"]').parent().find('.form-error').addClass('is-visible');
+
+	  				$('input[name="userPassword2"]').parent().addClass('is-invalid-label');
+					$('input[name="userPassword2"]').addClass('is-invalid-input');
+					$('input[name="userPassword2"]').parent().find('.form-error').addClass('is-visible');
+
+	  				$('input[name="oldPassword"]').parent().addClass('is-invalid-label');
+					$('input[name="oldPassword"]').addClass('is-invalid-input');
+					$('input[name="oldPassword"]').parent().find('.form-error').addClass('is-visible');
+					$('#emptyPassword').addClass('is-visible');
+			}else{
+
+					$('input[name="userPassword"]').parent().removeClass('is-invalid-label');
+					$('input[name="userPassword"]').removeClass('is-invalid-input');
+					$('input[name="userPassword"]').parent().find('.form-error').removeClass('is-visible');
+
+	  				$('input[name="userPassword2"]').parent().removeClass('is-invalid-label');
+					$('input[name="userPassword2"]').removeClass('is-invalid-input');
+					$('input[name="userPassword2"]').parent().find('.form-error').addClass('is-visible');
+
+	  				$('input[name="oldPassword"]').parent().removeClass('is-invalid-label');
+					$('input[name="oldPassword"]').removeClass('is-invalid-input');
+					$('input[name="oldPassword"]').parent().find('.form-error').removeClass('is-visible');
+					$('#emptyPassword').removeClass('is-visible');
+			}
+		}
+
+						// errorMessage = '';
+						// errorMessage += " <br> One or more password fields is empty";
+						// var passwordErrorSpan = document.getElementById('passwordErrors');
+						// passwordErrorSpan.innerHTML = '';
+						// passwordErrors = true;
+						// showPasswordErrors(errorMessage);
+
+		  		if ($('input[name="userFirstName"]').val() == '') {
+		  			$('input[name="userFirstName"]').parent().addClass('is-invalid-label');
+					$('input[name="userFirstName"]').addClass('is-invalid-input');
+					$('input[name="userFirstName"]').parent().find('.form-error').addClass('is-visible');
+		  		} else {
+		  			$('input[name="userFirstName"]').parent().removeClass('is-invalid-label');
+					$('input[name="userFirstName"]').removeClass('is-invalid-input');
+					$('input[name="userFirstName"]').parent().find('.form-error').removeClass('is-visible');
+		  		}
+
+		  		if ($('input[name="userLastName"]').val() == '') {
+		  			$('input[name="userLastName"]').parent().addClass('is-invalid-label');
+					$('input[name="userLastName"]').addClass('is-invalid-input');
+					$('input[name="userLastName"]').parent().find('.form-error').addClass('is-visible');
+		  		} else {
+		  			$('input[name="userLastName"]').parent().removeClass('is-invalid-label');
+					$('input[name="userLastName"]').removeClass('is-invalid-input');
+					$('input[name="userLastName"]').parent().find('.form-error').removeClass('is-visible');
+		  		}
+
+		  		if ($('input[name="userEmail"]').val() == '') {
+		  			$('input[name="userEmail"]').parent().addClass('is-invalid-label');
+					$('input[name="userEmail"]').addClass('is-invalid-input');
+					$('input[name="userEmail"]').parent().find('.form-error').addClass('is-visible');
+		  		} else {
+		  			$('input[name="userEmail"]').parent().removeClass('is-invalid-label');
+					$('input[name="userEmail"]').removeClass('is-invalid-input');
+					$('input[name="userEmail"]').parent().find('.form-error').removeClass('is-visible');
+		  		}
+
+
+
+			  	if ($('#phoneTable tbody tr:visible').length > 0) {
+			  		$('small.onePhone').removeClass('is-visible');
+
+			  		$('#phoneTable tbody tr:visible').each(function(){
+		  				if ($(this).find('td input.Phone').val() == '' || $(this).find('td select.Description').val() == '') {
+		                	$('small.fullPhone').addClass('is-visible');
+			            } else {
+			                if ($(this).find('td input.Phone').val().length < 14) {
+		                         $('small.fullPhone').addClass('is-visible');
+		                    } else {
+		                        $('small.fullPhone').removeClass('is-visible');
+		                    }
+			            }
+		  			}); 
+
+		        } else {
+		            $('small.onePhone').addClass('is-visible');
+		        }
+
+		        if ($('#phoneTable .isPrimary:checked').length < 1) {
+		            $('small.primary').addClass('is-visible');
+		            
+		        } else {
+		            if ($('#phoneTable .isPrimary:checked').is(':visible')) {
+		                $('small.primary').removeClass('is-visible');
+		            } else {
+		                $('small.primary').addClass('is-visible');
+		            }
+		        }
+
+		        
+		        if($('#changePassword').css('display')!="none"){
+					checkPassword();
+				}
+		        
+
+		  		if (!$('input[name="userFirstName"]').parent().hasClass('is-invalid-label') &&
+		  			!$('input[name="userLastName"]').parent().hasClass('is-invalid-label') && 
+		  			!$('input[name="userEmail"]').parent().hasClass('is-invalid-label') && 
+		  			!$('input[name="userPassword"]').parent().find('.error-match').hasClass('is-visible') &&
+		  			!$('input[name="userPassword2"]').parent().find('.error-match').hasClass('is-visible') &&
+		  			!$('input[name="userPassword"]').hasClass('is-invalid-label') &&
+		  			!$('input[name="userPassword2"]').hasClass('is-invalid-label') &&
+		  			!$('input[name="userPassword"]').hasClass('is-invalid-input') &&
+		  			!$('input[name="userPassword2"]').hasClass('is-invalid-input') &&
+		  			// !$('input[name="oldPassword"]').hasClass('is-invalid-input') &&
+		  			!$('small.onePhone').hasClass('is-visible') &&
+		  			!$('small.fullPhone').hasClass('is-visible') &&
+		  			!$('small.primary').hasClass('is-visible')
+		  			) {
+
+		  			$('#changePasswordLink').text($(this).text() == 'Keep Existing Password' ? "Change Password" : "Change Password");
+		  			$('#changePassword').hide();
+
+			  		hidePasswordErrors();
+
+		  			$('#loading-image').show();
+
+		  			var userFirstName = decodeEntities($('input[name="userFirstName"]').val());
+					var userLastName = decodeEntities($('input[name="userLastName"]').val());
+					var userEmail = $('input[name="userEmail"]').val();
+					var userBio = decodeEntities($('textarea[name="userBio"]').val());
+
+					var userPassword = $('input[name="userPassword"]').val();
+					var oldPassword = $('input[name="oldPassword"]').val();
+
+					//var userPhoto = $('input[name="userPhoto"]').val();
+
+					storePhoneTableData();
+
+					function storePhoneTableData() {
+				        var phoneTableData = new Array();
+				        $('#phoneTable tbody tr').each(function(row,tr){
+				            phoneTableData[row]={
+				            	"phoneDelete":$(tr).find('td:eq(0)').find('select').attr('delete'),
+				            	"userPhoneID":$(tr).find('td:eq(0)').find('select').attr('sort'),
+				                "phoneDescription":$(tr).find('td:eq(0)').find('select').val(),
+				                "phoneNumber":$(tr).find('td:eq(1)').find('input').val(),
+				                "isPrimary":$(tr).find('td:eq(2)').find('input:checked').val()
+				            };
+				        });
+				        phoneTableData.shift();
+				        var phoneTableArray = phoneTableData;
+				        var phoneTableArray = JSON.stringify(phoneTableArray);
+
+
+				        var formdata = new FormData();
+		                formdata.append('userFirstName', userFirstName);
+		                formdata.append('userLastName', userLastName);
+		                formdata.append('userEmail', userEmail);
+		                formdata.append('userBio', userBio);
+		                formdata.append('userPassword', userPassword);
+		                formdata.append('userOldPassword', oldPassword);
+		                formdata.append('phoneArray', phoneTableArray);
+		                formdata.append('file', $('#editUserProfileModal input[name="userPhoto"]')[0].files[0]);
+
+				        $.ajax({
+				        	url: 'user-edit-profile.php',
+		                    type: "POST",
+		                    data: formdata,
+		                    processData: false,  // tell jQuery not to process the data
+		                    contentType: false,  // tell jQuery not to set contentType
+							success: function(response) {
+				        		response = response.replace('"', '');
+				        		response = response.replace('"', '');
+								//console.log(response);
+				          		if (response == 'true') {
+				          			getUserInfo();
+
+				          			$('#phoneTable tbody tr').not(':first').remove();
+
+									$('input[name="userFirstName"]').val('');
+									$('input[name="userLastName"]').val('');
+									$('input[name="userEmail"]').val('');
+
+									$('input[name="userPassword"]').val('');
+									$('input[name="userPassword2"]').val('');
+									$('input[name="oldPassword"]').val('');
+									$('input[name="userPhoto"]').val('');
+									$('#oldPasswordError').hide();
+									$('#loading-image').hide();
+
+				          			$('#editUserProfileModal').foundation('close');
+								 	$('#successModal').foundation('open');
+				          		} else {
+				          			if(response==999){
+				          				$('#loading-image').hide();
+				          				$('#changePasswordLink').click();
+				          				$('input[name="oldPassword"]').val('');
+				          				$('input[name="oldPassword"]').addClass("is-invalid-input");
+				          				$('#oldPasswordError').show();
+				          				getUserInfo();
+
+
+				          			}else{
+				          				$('#errorModal p.error-text').text(response);
+									 	$('#errorModal').foundation('open');
+				          			}
+				          			
+				          		}
+				        
+							}, error: function(jqXHR, textStatus, errorThrown) {
+				  				console.log(textStatus, errorThrown);
+								console.log(jqXHR.responseText);
+							}
+								
+						});		
+
+				    }
+		  		}		
+	};
+
+	function showPasswordErrors(errorMessage){
+			
+			// $('input[name="userPassword"]').parent().find('.error-match').addClass('is-visible');
+			
+			$('input[name="userPassword2"]').parent().addClass('is-invalid-label');
+			$('input[name="userPassword2"]').addClass('is-invalid-input');
+			$('input[name="userPassword"]').parent().addClass('is-invalid-label');
+			$('input[name="userPassword"]').addClass('is-invalid-input');
+
+			$('input[name="oldPassword"]').parent().addClass('is-invalid-label');
+			$('input[name="oldPassword"]').addClass('is-invalid-input');
+
+			var passwordErrorSpan = document.getElementById('passwordErrors');
+			// passwordErrorSpan.text = '';
+
+			$('#passwordErrors').append(errorMessage);
+			$('#passwordErrors').show();
+
+
+			
+			
+	};
+
+	function hidePasswordErrors(){
+
+			$('input[name="userPassword"]').parent().find('.error-match').removeClass('is-visible');
+			$('input[name="userPassword2"]').parent().find('.error-match').removeClass('is-visible');
+
+			$('input[name="userPassword"]').parent().removeClass('is-invalid-label');
+			$('input[name="userPassword"]').removeClass('is-invalid-input');
+
+
+			$('input[name="userPassword2"]').parent().removeClass('is-invalid-label');
+			$('input[name="userPassword2"]').removeClass('is-invalid-input');
+
+			$('input[name="oldPassword"]').parent().removeClass('is-invalid-label');
+			$('input[name="oldPassword"]').removeClass('is-invalid-input');
+		
+			var passwordErrorSpan = document.getElementById('passwordErrors');
+			passwordErrorSpan.innerHTML = '';
+			$('#passwordErrors').hide();
+			$('#oldPasswordError').hide();
+
+
+			
+
+	};
+
+
+	var checkPassword = function() {
+		// console.log('Chnage');
+		
+		var password = $('input[name="userPassword"]').val();
+		var password2 = $('input[name="userPassword2"]').val();
+		var oldPassword = $('input[name="oldPassword"]').val();
+
+		var errorMessage = '';
+		
+
+
+				// if (password != '' && password2 !='' && oldPassword !=''){
+				// 		hidePasswordErrors();
+				// 		var passwordErrors =false;
+				// 	}
+
+
+			// if (password != '' && password2 != '' && oldPassword != '') {
+			// 	errorMessage = '';
+			// 	errorMessage += " <br> One or more password fields is empty";
+			// 	var passwordErrorSpan = document.getElementById('passwordErrors');
+			// 	passwordErrorSpan.innerHTML = '';
+			// 	passwordErrors = true;
+			// 	showPasswordErrors(errorMessage);
+			// }else{
+			// 	if (password != '' && password2 !='' && oldPassword !=''){
+			// 			hidePasswordErrors();
+			// 			var passwordErrors =false;
+			// 		}
+			// }
+
+		// if(passwordErrors == false){
+
+			hidePasswordErrors();
+
+			if(password !='' && password2 !='' && oldPasswordError !=''){
+				$('#emptyPassword').removeClass('is-visible');
+					$('input[name="userPassword"]').parent().removeClass('is-invalid-label');
+					$('input[name="userPassword"]').removeClass('is-invalid-input');
+					$('input[name="userPassword"]').parent().find('.form-error').removeClass('is-visible');
+
+	  				$('input[name="userPassword2"]').parent().removeClass('is-invalid-label');
+					$('input[name="userPassword2"]').removeClass('is-invalid-input');
+					$('input[name="userPassword2"]').parent().find('.form-error').removeClass('is-visible');
+
+	  				$('input[name="oldPassword"]').parent().removeClass('is-invalid-label');
+					$('input[name="oldPassword"]').removeClass('is-invalid-input');
+					$('input[name="oldPassword"]').parent().find('.form-error').removeClass('is-visible');
+			}
+
+			if(password !='' && password2 !=''){
+						if (password != password2){
+							 errorMessage += " Your Passwords do not match.";
+							$('input[name="userPassword"]').parent().find('.error-match').addClass('is-visible');
+							$('input[name="userPassword2"]').parent().find('.error-match').addClass('is-visible');
+							passwordErrors = true;
+							// showPasswordErrors(errorMessage);
+						}else{
+							$('input[name="userPassword"]').parent().find('.error-match').removeClass('is-visible');
+							$('input[name="userPassword2"]').parent().find('.error-match').removeClass('is-visible');
+							passwordErrors = false;
+							// hidePasswordErrors();
+						}
+				}else{
+					passwordErrors = false;
+				}
+
+		if(passwordErrors !=true){
+			    if (password.length < 8) {
+			    	// echo strlen($userPassword);
+			        errorMessage += " <br> Your password must contain at least 8 characters.";
+			        passwordErrors = true;
+			    }
+			    
+			    if(!password.match("[0-9]")) {
+			        errorMessage += " <br> Your password must contain at least 1 number.";
+			        passwordErrors = true;
+			    }
+
+			    if(!password.match("[A-Z]")) {
+			        errorMessage += " <br> Your password must contain at least 1 capital letter.";
+			        passwordErrors = true;
+			    }
+			    
+			    if(!password.match("[a-z]")) {
+			    	errorMessage += " <br> Your password must contain at least 1 lowercase letter.";
+			    	passwordErrors = true;
+			    }
+			    
+			    if(password.match(' ')) {
+			    	errorMessage += " <br> Your password cannot contain spaces.";
+			    	passwordErrors = true;
+			    }
+
+			    if (passwordErrors == true){
+			    	showPasswordErrors(errorMessage);
+			    }else{
+			    	errorMessage = "";
+			    	hidePasswordErrors();
+			    }
+		 }
+	    	
+	    // console.log(errorMessage);
+		
+		// if (password != password2) {
+		// 	$('input[name="userPassword"]').parent().addClass('is-invalid-label');
+		// 	$('input[name="userPassword"]').addClass('is-invalid-input');
+		// 	$('input[name="userPassword"]').parent().find('.error-match').addClass('is-visible');
+			
+		// 	$('input[name="userPassword2"]').parent().addClass('is-invalid-label');
+		// 	$('input[name="userPassword2"]').addClass('is-invalid-input');
+		// 	$('input[name="userPassword2"]').parent().find('.error-match').addClass('is-visible');
+			
+		// } else {
+		// 	$('input[name="userPassword"]').parent().removeClass('is-invalid-label');
+		// 	$('input[name="userPassword"]').removeClass('is-invalid-input');
+		// 	$('input[name="userPassword"]').parent().find('.error-match').removeClass('is-visible');
+			
+		// 	$('input[name="userPassword2"]').parent().removeClass('is-invalid-label');
+		// 	$('input[name="userPassword2"]').removeClass('is-invalid-input');
+		// 	$('input[name="userPassword2"]').parent().find('.error-match').removeClass('is-visible');
+		// }
+		
+	};	
+
+</script>
+</head>
+<body>
+	<?php  include_once 'header.html'  ?>
+
+	<div id="loading-image" class="loadingImage">
+        <img src="images/ajax-loader.gif" />
+    </div>
+    <div class="row expanded first-row" style="background-color:#f6f7fb;">
+     	<div class="medium-12 columns">
+      		<div class="medium-12 columns">
+        		<h1 class="project-title"><?php echo $userFirstName;  ?> <?php echo $userLastName;  ?></h1>
+        	</div>
+      	</div>
+   	</div>
+    <div class="row expanded" style="margin-bottom: 4rem;">
+     	<div class="medium-12 columns no-pad">
+      		<!-- <ul class="tabs" data-tabs id="project-tabs">
+  				<li style="width:50%" class="tabs-title is-active"><a href="#general" aria-selected="true">General</a></li>
+              	<li style="width:50%;" class="tabs-title"><a href="#schedule">Schedule Time Off</a></li>
+			</ul> -->
+          	<div class="tabs-content" data-tabs-content="project-tabs" style="margin-top:0;">
+  				<div class="tabs-panel is-active" id="general">
+                  	<div class="row expanded">
+                  		<div class="medium-6 columns">
+                    		<div class="row" style="margin:0 1.5rem;">
+                            	<div class="medium-12 columns"> 
+                    				<h4>General Info</h4>
+                 				</div>
+                        		<div class="medium-12 columns">
+                            	 	<p style="margin-bottom:0;">
+                                    	<strong>Contact Information</strong>
+                             		</p>
+                             		<p class="userContact" style="margin-bottom:0;">
+                               			<?php echo $phoneDisplay;  ?>
+                             		</p>
+                             		<p class="userEmail">
+                             			Email: <a href="mailto:<?php echo $userEmail;  ?>"><?php echo $userEmail;  ?></a>
+                             		</p>
+                                	<p>
+                                		<strong>Roles</strong><br/>
+	                                    <?php echo $primary;  ?>
+	                                    <?php echo $projectManagement;  ?>
+	                                    <?php echo $sales;  ?>
+	                                    <?php echo $bidCreation;  ?>
+	                                    <?php echo $bidVerification;  ?>
+	                                    <?php echo $installation;  ?>
+	                                    <?php echo $pierDataRecorder;  ?>
+	                                    <?php echo $timecardApprover;  ?>
+	                                    <?php echo $marketing;  ?>
+                              		</p>
+                                	<p>
+                                		<strong>Calendar Color</strong><br/>
+                                    	<span style="height:3rem;width:3rem;background:<?php echo $calendarBgColor;  ?>;display:block;margin-top:.3rem;border-radius: 30px;"></span>
+                              		</p>
+                              		<p class="userBio">
+                                		<strong>Bio</strong><br/>
+                                		<?php echo $userBio;  ?>
+                              		</p>
+                                	<p class="userPhoto">
+                                		<strong>Photo</strong><br/>
+                                		<span><?php echo $photoDisplay;  ?></span>
+                              		</p>
+                                	<p>
+                               			<button id="editUserProfile" class="button">Edit Info</button>
+                             		</p>
+                          		</div>
+                    		</div>
+                    	</div>
+                  	</div>  
+                  	<div class="reveal" id="editUserProfileModal" data-reveal data-close-on-esc="false" data-close-on-click="false">
+ 						<h3 class="text-center">Edit Profile</h3>
+      					<div class="row">
+      						<div class="medium-6 columns">
+      							<label>First Name <small>required</small>
+      								<input name="userFirstName" type="text" value="" />
+      								<small class="form-error">First name is required.</small>
+      							</label>
+      						</div>
+      						<div class="medium-6 columns">
+      							<label>Last Name <small>required</small>
+      								<input name="userLastName" type="text" value="" />
+      								<small class="form-error">Last name is required.</small>
+      							</label>
+      						</div>
+      					</div>
+      					<div class="row">
+      						<div class="medium-8 columns">
+      							<label>Email <small>required</small>
+      								<input name="userEmail" type="text" value="" />
+      								<small class="form-error">Email is required.</small>
+      							</label>
+      						</div>
+      					</div>
+      					<div class="row">
+      						<div class="medium-8 columns">
+
+								<a id="changePasswordLink">Change Password</a>
+								<div class="row" id="changePassword" style="display:none;">
+									<div class="medium-6 columns" style="margin-top: .5rem;">
+										<label>Old Password
+											<input style="margin-bottom: .5rem;" type="password" id="oldPassword" name="oldPassword" />
+										</label>
+										<small style="margin-bottom: .5reml" class="form-error" id="oldPasswordError">The old password is incorrect.  Please try again.</small>
+
+									</div>
+									<div "medium-6 columns">&nbsp;</div>
+									<div class="medium-6 columns">
+										<label id="passwordLabel">
+												<span class="update">
+													New Password
+												</span>
+
+											<input id="password" type="password" name="userPassword" value="" /> 
+
+											<small class="error-match">
+												Passwords do not match.
+											</small>
+											<small id="emptyPassword" class="form-error">
+												One or more Password Fields is empty
+											</small>
+										</label>
+									</div>
+
+									<div class="medium-6 columns">
+										<label id="passwordCompareLabel">Re-Enter <span class="update">New </span>Password 
+											<input id="password2" class="passwordMatch" type="password" name="userPassword2" value="" />  
+											<small class="error-match">Passwords do not match.</small> 
+										</label>  
+									</div>
+									
+									<div id="passwordErrors" class="form-error" style="display:none; margin-left:1rem;"></div>
+								</div>
+										<span style="margin-top:-2rem; display:none;" class="hidden" id="passwordInfo">
+											<p>
+												<strong><small>Please note: </strong>
+												Password must contain:
+											<ul style="list-style:none; margin-top:-.8rem;"></small>
+												<li> <small>At least one UPPER CASE letter,</small></li>
+												<li> <small>At least one lower case letter,</small></li>
+												<li> <small>At least one number and </small> </li>
+												<li> <small>And be least 8 characters long.</small></li>
+											</ul>
+											</p>
+										</span>
+							</div>
+						</div>
+
+
+      					<div class="row" style="margin-top:.7rem;">
+                    		<div class="large-9 columns">
+	                        	<table id="phoneTable" class="phoneTable" cellpadding="0" cellspacing="0">
+	                            	<thead style="background:none;">
+	                                	<tr>
+	                                    	<th width="30%" style="text-align:left;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"><label>Phone</label></th>
+	                                    	<th width="40%" style="text-align:center;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"></th>
+	                                    	<th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">Primary</th>
+	                                    	<th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">
+	                                       	 <a class="addPhone"><img src="images/icons/phone_add.png" /></a>
+	                                    	</th>
+	                                	</tr>
+	                            	</thead>
+	                            	<tbody>
+	                                	<tr style="display:none;">
+	                                    	<td class="description" style="color:#36413e;text-align:center;">
+	                                        	<select class="Description no-margin" sort="" name="description[]">
+	                                            	<option></option>
+	                                            	<option value="Cell">Cell</option>
+	                                            	<option value="Home">Home</option>
+	                                            	<option value="Work">Work</option>
+	                                            	<option value="Other">Other</option>
+	                                        	</select>
+	                                    	</td>
+	                                    	<td class="number" style="color:#36413e;">
+	                                        	<input class="Phone no-margin" sort="" name="phone[]" type="text" value="">
+	                                    	</td>
+	                                    	<td class="primary" style="color:#36413e;text-align:center;">
+	                                        	<input class="isPrimary no-margin" sort="" name="isPrimary[]" type="checkbox" value="1">
+	                                    	</td>
+	                                    	<td class="delete" style="color:#36413e;text-align:center;">
+	                                        	<a class="deletePhone"><img src="images/icons/phone_delete.png" /></a>
+	                                    	</td>
+	                                	</tr>
+	                           	 	</tbody>
+	                        	</table>
+	                        	<small style="margin-left: .5rem;" class="error-match onePhone">At least one phone is required.</small> 
+	                        	<small style="margin-left: .5rem;" class="error-match fullPhone">Description and complete phone number are required.</small>
+	                        	<small style="margin-left: .5rem;" class="error-match primary">Please mark one phone number as primary.</small> 
+                    		</div>
+                		</div>
+                		<div class="row">
+			        		<div class="medium-12 columns">
+			        			<label><span class="update">Bio
+			            			<textarea rows="3" name="userBio"></textarea>
+                                </label>  
+			          		</div>
+			       		</div>
+                		<div class="row">
+			        		<div class="medium-12 columns">
+			        			<label><span class="update">New Photo
+			            			<input style="margin-bottom: 1rem;" type="file" name="userPhoto" value="" />  
+                                </label>  
+			          		</div>
+			       		</div>
+      					<div class="row">
+			        		<div class="medium-12 columns">
+			            		<p class="text-center no-margin">
+			             			<button class="button" id="saveEditUserProfile">Save</button> 
+			                  		<button class="button secondary" id="closeEditUserProfile">Cancel</button>
+			             		</p>
+			          		</div>
+			       		</div>
+			   		</div>
+			   		<div class="tiny reveal" id="errorModal" data-reveal>
+                      	<div class="row">
+                        	<div class="medium-12 columns">
+                        		<p class="text-center error-text" style="margin-top: 1rem;"></p>	
+                            	<p class="text-center no-margin">
+                            		<button data-open="editUserProfileModal" class="button">OK</button>
+                              	</p> 
+                            </div>
+                     	</div>
+                    </div>
+                    <div class="tiny reveal" id="successModal" data-reveal>
+                      	<div class="row">
+                        	<div class="medium-12 columns">
+                        		<p class="text-center no-margin">
+                                	Your profile has been udpated!
+                            		<br/><br/>
+                            		<button class="button" data-close>OK</button>
+                              	</p> 
+                            </div>
+                     	</div>
+                    </div>
+  				</div>
+              	<!-- <div class="tabs-panel" id="schedule">
+                	<div class="medium-6 columns" style="margin: 0 0 .5rem 0;"> 
+                    	<h4>Schedule Time Off</h4>
+                 	</div>
+                  <div id="cancelSchedule" class="medium-6 columns"></div>
+                	<div id="scheduleList" class="large-12 columns" style="padding-left:0;padding:right:0;"> 
+                    	 <div class="medium-12 columns"> 
+                  		<a id="addSchedule" class="button xtiny">Add Time Off</a>
+                  	</div>
+                  	<div class="medium-8 columns" style="margin:0;">  
+                        <table cellpadding="0" cellspacing="0" style="width:100%">
+                          	<thead>
+                               	<tr>
+                               		<th>Date Start</th>
+                                		<th>Time Start</th>
+                             		<th>Date End</th>
+                               		<th>Time End</th>
+                               		<th>Type</th>
+                               		<th>Scheduled By</th>
+                              		<th>Scheduled On</th>
+                                    <th>Action</th>
+                          		</tr>
+                            </thead>
+                           	<tbody>
+                                <tr>
+                               		<td>3/09/2016</td>
+                                    <td>All Day</td>
+                                    <td>3/09/2016</td>
+                                    <td>All Day</td>
+                                    <td>Time Off</td>
+                                    <td>Amanda Anderson</td>
+                                    <td>3/03/2016 8:00 AM</td>
+                                    <td><a class="editSchedule">Edit</a> | <a class="cancelSchedule">Cancel</a></td>
+                               	</tr>  
+                              	<tr>
+                                   	<td>3/17/2016</td>
+                                    <td>8:00 AM</td>
+                                    <td>3/17/2016</td>
+                                    <td>1:00 PM</td>
+                                    <td>Time Off</td>
+                                    <td>Amanda Anderson</td>
+                                    <td>3/10/2016 8:00 AM</td>
+                                    <td><a class="editSchedule">Edit</a> | <a class="cancelSchedule">Cancel</a></td>
+                               	</tr>             
+                         		</tbody>
+                   		</table>	
+                       </div>
+                  </div>
+                  <div id="scheduleCalendar" class="large-12 columns" style="display:none;"> 
+                    	<div class="large-12 columns">  
+           				<div id='calendar'></div>
+                    		<div id="addEvent" class="reveal-modal small" data-reveal aria-labelledby="modalTitle" aria-hidden="true" role="dialog">
+      							<h2 id="modalTitle"></h2>
+      							<p class="lead"></p>
+                         		<div class="row">
+                         			<div class="large-12 columns">
+                                		<label class="scheduledTitle"></label>
+                             	</div>
+                            		<div class="large-5 columns" id="scheduleModalDD">
+                                		<select class="evaluationData" name="salesperson">
+                                			<option value="">--</option>
+                                		</select>
+                            		</div>
+                             	<div class="large-7 columns"></div>
+                         		</div>	
+                         		<div class="row">
+                         			<div class="large-12 columns">
+                                		<label>Start Time</label>
+                             	</div>
+                            		<div class="large-3 columns">
+                                		<input class="evaluationData" class="date" type="text" name="scheduledStartDate" />
+                            		</div>
+                            		<div class="large-2 columns">
+                                		<input class="evaluationData" class="time" type="text" name="scheduledStartTime" />
+                            		</div>
+                             	<div class="large-7 columns"></div>
+                         		</div>	
+                         		<div class="row">
+                         			<div class="large-12 columns">
+                                		<label>End Time</label>
+                             	</div>
+                            		<div class="large-3 columns">
+                                		<input class="evaluationData" class="date" type="text" name="scheduledEndDate" />
+                            		</div>
+                            		<div class="large-2 columns">
+                                		<input class="evaluationData" class="time" type="text" name="scheduledEndTime" />
+                            		</div>
+                            		<div class="large-7 columns"></div>
+                         		</div> 
+                         		<div class="row">
+                         			<div class="large-12 columns">
+                                		<input type="hidden" name="tempID" value="" />
+                                		<input type="hidden" name="projectScheduleID" value="" />
+                         				<p><a id="confirmAppointmentYes" class="button tiny">Save</a><a id="confirmAppointmentNo" style="margin: 0 0 0 1rem;" class="button tiny success">Cancel</a></p>
+                           		</div> 
+                         		</div> 
+							</div>
+              				<div id="viewEvent" class="reveal-modal tiny" data-reveal aria-labelledby="modalTitle" aria-hidden="true" role="dialog">
+							</div>
+                         <div id="cancelEvent" class="reveal-modal tiny" data-reveal aria-labelledby="modalTitle" aria-hidden="true" role="dialog">
+                         		<h2 id="modalTitle">Cancel</h2>
+             					<p>Are you sure you want to cancel this event?</p>
+                             <input type="hidden" name="tempID" value="" />
+                         		<p><a id="cancelConfirmYes" class="button tiny">Yes</a><a id="cancelConfirmNo" style="margin: 0 0 0 1rem;" class="button tiny success">No</a></p>
+							</div>
+              				<div id="filterCalendar" class="reveal-modal tiny" data-reveal aria-labelledby="modalTitle" aria-hidden="true" role="dialog">
+      							<h2 id="modalTitle">Filter Calendar</h2>
+             					<p>Choose a filter to display the calendar by a specific role or individual.</p>
+      							<div class="large-8 columns">
+           						<select>
+                  					<option value="">--</option>
+        							</select>
+       							</div>
+								<div class="large-4 columns" style="margin:2rem 0 0 0"></div>
+          	 				</div>
+       					</div>
+                  </div>
+             	</div> -->
+        	</div>
+      	</div>
+   	</div>
+   	<?php  include_once 'setup-modal.html'  ?>
+    <?php  include_once 'footer.html'  ?> 
+
+<script src="js/foundation.min.js"></script>
+    <script>
+      $(document).foundation();
+    </script>
+    <script type="text/javascript" src="js/jquery.mask.min.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            $('.Phone').mask('(000) 000-0000');
+            $('.date').mask('11/11/1111');
+            $('.time').mask('Hh:Mm Pp',
+               {
+                   'translation': {
+                       H: { pattern: /[0-1]/ },
+                       h: { pattern: /[0-9]/ },
+                       M: { pattern: /[0-5]/ },
+                       m: { pattern: /[0-9]/ },
+                       P: { pattern: /[AaPp]/ },
+                       p: { pattern: /[Mm]/ }
+                   }
+               });
+        });
+    </script>
+  </body>
+</html>

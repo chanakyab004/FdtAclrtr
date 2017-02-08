@@ -1,0 +1,1272 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Foundation Accelerator</title>
+    <link rel="stylesheet" href="css/foundation.css" />
+    <link rel="stylesheet" href="css/custom.css" />
+    <link rel="stylesheet" href="css/index.css?v=20170111" />
+    <link rel="stylesheet" href="css/motion-ui.css" />
+    <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+    <link href='css/fullcalendar.css' rel='stylesheet' />
+    <link href='css/scheduler.css' rel='stylesheet' />
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
+    <script src="js/jquery.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+    <script src='js/moment.min.js'></script>
+    <script src='js/fullcalendar.js'></script>
+    <script src='js/scheduler.js'></script>
+    <script src='js/jquery.tablesorter.min.js'></script>
+    <script src='js/map.js?v=20170111'></script>
+    <script src='js/cookie.js'></script>
+    <script src='js/setup-progress.js'></script>
+    <script src='js/zen.js'></script>
+
+    <style>
+        div.loadingImage {
+            position: fixed;
+            z-index: 1500;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #eee;
+            opacity: 0.5;
+            text-align: center;
+        }
+        div.loadingImage {
+            display: none;
+        }
+        div.loadingImage > img {
+            position: absolute;
+            top: 40%;
+        }
+    </style>
+    <script>
+        var decodeEntities = function (encodedString) {
+            var textArea = document.createElement('textarea');
+            textArea.innerHTML = encodedString;
+            return textArea.value;
+        }
+
+        $(document).ready(function () {
+            var topbar = $('.top-bar').height();
+            var footer = $('.footer').height();
+            var pageHeight = $( window ).height() - footer - topbar + 1;
+            var containerHeight = $( window ).height() - footer - topbar - 9;
+            $('#projectStatus').css('height',pageHeight);  
+            $('.projectStatusContainer').css('max-height',containerHeight);  
+
+            //Create Project Status Cookie if it Doesn't Exist
+            if (document.getCookie('project_status')) {
+            } else {
+                var projectStatus = {"view": true};
+                projectStatus = JSON.stringify(projectStatus);
+                document.cookie = 'project_status='+projectStatus;
+            }
+
+            $('.refresh').click(getProjectStatus);
+            $('.sortBar .sort select').change(function(){
+                $('.sortBar .sort select').blur();
+                getProjectStatus();
+            });
+
+            //Read the Cookie Array
+            var projectStatusArray = JSON.parse(document.getCookie('project_status'));
+
+            //If Not True Hide the Project Status Section
+            if (projectStatusArray['view'] != true) {
+                $('#dashboard').switchClass( "shared", "full", 300, "easeInOutQuad" );
+                $('#projectStatus').animate({right: '-19%'}, { duration: 300, easing: "swing" });
+                $('#projectStatus .projectStatusTab').removeClass('show');  
+                //map.Resize();
+            } else {
+                getProjectStatus();    
+            }
+
+            //Read the Project Status Cookie for Project Status Sections
+            var count;
+            var step = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+            for (count = 1; count <= step.length; count++) { 
+                //text += cars[i] + "<br>";
+                countStep = count;
+
+                if (projectStatusArray['step'+countStep] == true) {
+                    //console.log('true');
+                    $('.projectStatusStep[statuslist="'+countStep+'"]').show();
+                    $('.projectStatusTitle[status="'+countStep+'"] span').eq('0').removeClass('closed');
+                    $('.projectStatusTitle[status="'+countStep+'"] span').eq('0').addClass('open');
+                }
+
+            }
+
+            companyAddress1 = "<?php echo $companyAddress1; ?>"; //FXLRATR-258
+            companyAddress2 = "<?php echo $companyAddress2; ?>"; //FXLRATR-258
+            companyCity = "<?php echo $companyCity; ?>"; //FXLRATR-258
+            companyZip = "<?php echo $companyZip; ?>"; //FXLRATR-258
+            companyState = "<?php echo $companyState; ?>"; //FXLRATR-258
+            companyFullAddress=""; //FXLRATR-258
+
+            if(companyAddress2.trim()!=''){
+                companyFullAddress = companyAddress1 + " " + companyAddress2;
+            }else
+            {
+                companyFullAddress = companyAddress1;
+            }
+
+            //needed for Zendesk Help Ticket
+             userInfo = {
+                    name: "<?php echo $userFirstName;  ?>" + " <?php echo $userLastName;  ?>",
+                    email: "<?php echo $userEmail;  ?>"
+                }
+            
+
+             
+           
+
+             //Show Project Status Box
+            $('#projectStatus .projectStatusTab').click(function(){
+                if ($('#projectStatus .projectStatusTab').hasClass('show')) {
+                    $('#dashboard').switchClass( "shared", "full", 300, "easeInOutQuad" );
+                    $('#projectStatus').animate({right: '-19%'}, { duration: 300, easing: "swing", complete: function() {
+                            console.log("Done Hiding");
+                            map.Resize();
+                        }  
+                    });
+                    $('#projectStatus .projectStatusTab').removeClass('show');
+
+                    var projectStatusArray = JSON.parse(document.getCookie('project_status'));
+                    projectStatusArray['view'] = false;
+                    projectStatusArray = JSON.stringify(projectStatusArray);
+                    document.cookie = 'project_status='+projectStatusArray;
+
+                } else {
+                    $('#dashboard').switchClass( "full", "shared", 300, "easeInOutQuad" );
+                    $('#projectStatus').animate({right: '0'}, { duration: 300, easing: "swing", complete: function() {
+                            console.log("Done Showing");
+                            map.Resize();
+                        }
+                    });
+                    $('#projectStatus .projectStatusTab').addClass('show');
+                   
+                    var projectStatusArray = JSON.parse(document.getCookie('project_status'));
+                    projectStatusArray['view'] = true;
+                    projectStatusArray = JSON.stringify(projectStatusArray);
+                    document.cookie = 'project_status='+projectStatusArray;
+
+                    getProjectStatus();   
+                }
+            });
+
+
+             //Show Project Status Subbox
+            $('.projectStatusTitle').click(function(){
+                var status = $(this).attr('status');
+
+                //console.log(status);
+
+                if ($('.projectStatusStep[statuslist="'+status+'"]').is(':visible')) {
+                    $('.projectStatusStep[statuslist="'+status+'"]').hide();
+                    $('.projectStatusTitle[status="'+status+'"] span').eq('0').removeClass('open');
+                    $('.projectStatusTitle[status="'+status+'"] span').eq('0').addClass('closed');
+
+                    var projectStatusArray = JSON.parse(document.getCookie('project_status'));
+                    projectStatusArray['step'+status+''] = false;
+                    projectStatusArray = JSON.stringify(projectStatusArray);
+                    document.cookie = 'project_status='+projectStatusArray;
+
+                } else {
+                    $('.projectStatusStep[statuslist="'+status+'"]').show();
+                    $('.projectStatusTitle[status="'+status+'"] span').eq('0').removeClass('closed');
+                    $('.projectStatusTitle[status="'+status+'"] span').eq('0').addClass('open');
+
+                    var projectStatusArray = JSON.parse(document.getCookie('project_status'));
+                    projectStatusArray['step'+status+''] = true;
+                    projectStatusArray = JSON.stringify(projectStatusArray);
+                    document.cookie = 'project_status='+projectStatusArray;
+                }
+            });
+
+
+            if (document.getCookie('ShowMap') != 'N') {
+                $('#mapSwitch').prop('checked', true);
+            }
+            else {
+                $('#mapSwitch').prop('checked', false);
+            }
+
+
+             $('#today').click(function () {
+                $('#calendar').fullCalendar('today')
+            });
+
+           
+
+            $("#dateFilter").datepicker({ dateFormat: 'DD, MM d, yy' });
+
+            $('#viewProjects').click(function () {
+                if (!$('#viewProjects').hasClass('active')) {
+                    $('#calendar').fullCalendar('refetchEvents');
+                    $('#calendarMap').css('display','none');
+                    $('#mapSwitchContainer').css('display','none');
+                    $('.dashboard-filter-bar div:first').css('display','');
+                    $('#filterSelect').parent().css('display','none');
+                    $('#calendar').parent().parent().css('margin-bottom','0rem');
+
+                    $('#calendar').empty();
+                    $('#viewProjects').addClass('active');
+                    $('#viewCalendar').removeClass('active');
+                    $('#projects').css('display', '');
+                    $('#dailyView, #weeklyView, #monthlyView').css('display', 'none');
+                }
+            });
+
+
+            $('#viewCalendar').click(function () {
+                if (!$('#viewCalendar').hasClass('active')) {
+                    $('#calendarMap').css('display','');
+                    $('#mapSwitchContainer').css('display','');
+                    $('.dashboard-filter-bar div:first').css('display','none');
+                    $('#filterSelect').parent().css('display','');
+                    $('#calendar').parent().parent().css('margin-bottom','4rem');
+
+                    if ($('.fc-toolbar').length == false) {
+                        $('#viewCalendar').addClass('active');
+                        $('#viewProjects').removeClass('active');
+                        $('#projects').css('display', 'none');
+                        $('#dailyView, #weeklyView, #monthlyView').css('display', '');
+
+                        if ($('#dailyView').hasClass('active')) {
+                            filterCalendar('timelineDay');
+                        } else if ($('#weeklyView').hasClass('active')) {
+                            filterCalendar('agendaWeek');
+                        } else if ($('#monthlyView').hasClass('active')) {
+                            filterCalendar('month');
+                        }
+                        
+                    }
+                }
+            });
+
+
+
+
+            $('#dailyView').click(function () {
+                document.setCookie('CalendarView', 'D');
+                $('#weeklyView, #monthlyView').removeClass('active');
+                $('#dailyView').addClass('active');
+                $('#calendar').fullCalendar('changeView', 'timelineDay')
+            });
+
+            $('#weeklyView').click(function () {
+                document.setCookie('CalendarView', 'W');
+                $('#dailyView, #monthlyView').removeClass('active');
+                $('#weeklyView').addClass('active');
+                $('#calendar').fullCalendar('changeView', 'agendaWeek')
+            });
+
+            $('#monthlyView').click(function () {
+                document.setCookie('CalendarView', 'M');
+                $('#dailyView, #weeklyView').removeClass('active');
+                $('#monthlyView').addClass('active');
+                $('#calendar').fullCalendar('changeView', 'month')
+            });
+
+            $('#previous').click(function () {
+                $('#calendar').fullCalendar('prev');
+            });
+
+            $('#next').click(function () {
+                $('#calendar').fullCalendar('next');
+            });
+
+            //Show Setup Modal if Clicked in Top Nav
+            $('#showSetup').click(showSetupModal);
+
+            //Show Setup Modal On Page Load if it Hasn't Been Viewed Since Yesterday
+            showSetupModal('true');
+
+            //Update Last Viewed When Modal Opens
+            $('#setupModal').on('open.zf.reveal', function() {
+                $.ajax({
+                    url: 'setupProgressUpdate.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        updateSetupNotice: 'true'
+                    },
+                    success: function (response) {
+                        //console.log(response);
+                        // if (response == 'true') {
+                        // }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                });
+
+            });
+
+            //Update Checkmarks When Clicked
+            $('img.setupProgressCheckmark').click(updateChecks);
+
+            //Stop Showing Setup Modal
+            $('#setupComplete').click(setupComplete);
+
+            $.ajax({
+                url: 'getResources.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "GET",
+                contentType: "application/x-www-form-urlencoded",
+                data: {
+                    filter: ''
+                },
+                success: function (response) {
+                    $('#loading-image').hide();
+                    if (response != null) {
+                       $('#filterSelect').append('<select id="filterResources"><option value="">View All</option><option value="sales">Sales</option><option value="installation">Installation</option></select>');
+                        $.each(response, function (i, item) {
+                            $('select#filterResources').append('<option value="' + item.id + '">' + item.title + '</option>');
+                        });
+
+                    $('select#filterResources').change(function () {
+
+                        var view = $('#calendar').fullCalendar('getView');
+
+                        var defaultView = view.name;
+                        filterCalendar(defaultView);
+
+                    });
+
+                            //filterCalendar('timelineDay');
+                         if (document.getCookie('CalendarView') == 'D') {
+                            $('#weeklyView, #monthlyView').removeClass('active');
+                            $('#dailyView').addClass('active');
+                            filterCalendar('timelineDay');
+                        }
+                        else if(document.getCookie('CalendarView') == 'M'){
+                            $('#dailyView, #weeklyView').removeClass('active');
+                            $('#monthlyView').addClass('active');
+                            filterCalendar('month');
+                        }
+                        else if(document.getCookie('CalendarView') == 'W'){
+                            $('#dailyView, #monthlyView').removeClass('active');
+                            $('#weeklyView').addClass('active');
+                            filterCalendar('agendaWeek');
+                        }else{
+                            filterCalendar('timelineDay');
+                        }
+
+                    }
+                    else{
+                        $('#calendar').empty();
+                        $('.dashboard-filter-bar').empty();
+                        $('#noResourcesModal').foundation('open');
+                    }
+
+                    
+
+
+                }, error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+
+            });
+
+            $('#mapSwitch').on('change', MapSwitchFlipped);
+            //showMap();
+        });
+
+
+        var getProjectStatus = function() {
+            $('#loading-image.projectStatus').show();
+
+            $('.projectStatusTitle').each(function(){
+                $(this).find('span').eq(2).text('(0)');
+            });
+
+            $('.projectStatusStep[statuslist="1"],.projectStatusStep[statuslist="2"],.projectStatusStep[statuslist="3"],.projectStatusStep[statuslist="4"],.projectStatusStep[statuslist="5"],.projectStatusStep[statuslist="6"],.projectStatusStep[statuslist="7"],.projectStatusStep[statuslist="8"],.projectStatusStep[statuslist="9"],.projectStatusStep[statuslist="10"],.projectStatusStep[statuslist="11"],.projectStatusStep[statuslist="12"]').empty();
+            
+
+            $.ajax({
+                url: 'getProjectStatus.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "GET",
+                contentType: "application/x-www-form-urlencoded",
+                data: {
+                    sort: $('.sortBar select').val()
+                },
+                success: function (response) {
+                   //console.log(response);
+
+                   $.each(response, function (i, item) {
+                         $('.projectStatusStep[statusList="'+item.statusType+'"]').append('<a href="'+item.link+'"><div class="projectStatusList"><strong>'+item.firstName+' '+item.lastName+'</strong><br/>'+item.addressDisplay+'<br/><span>'+item.time+'</span></div></a>');
+
+                   });
+
+                    if (response.ProjectCreatedCount || response.ProjectCreatedCount == 0) {
+                        $('.projectStatusTitle[status="1"]').show();
+                        if (response.ProjectCreatedCount > 0) {
+                        $('.projectStatusTitle[status="1"]').show();
+                            $('.projectStatusTitle[status="1"]').find('span').eq(2).text('('+response.ProjectCreatedCount+')');
+                        } else {
+                            $('.projectStatusTitle[status="1"]').find('span').eq(2).text('(0)');
+                        }
+                    } else {
+                        $('.projectStatusTitle[status="1"]').hide();
+                        $('.projectStatusStep[statuslist="1"]').hide(); 
+                    }
+
+
+                    if (response.AppointmentScheduledCount || response.AppointmentScheduledCount == 0) {
+                        $('.projectStatusTitle[status="2"]').show();
+                        if (response.AppointmentScheduledCount > 0) {
+                            $('.projectStatusTitle[status="2"]').find('span').eq(2).text('('+response.AppointmentScheduledCount+')');
+                        } else {
+                            $('.projectStatusTitle[status="2"]').find('span').eq(2).text('(0)');
+                        }
+                    } else {
+                        $('.projectStatusTitle[status="2"]').hide();
+                        $('.projectStatusStep[statuslist="2"]').hide(); 
+                    }
+
+
+                    if (response.AppointmentCompletedCount || response.AppointmentCompletedCount == 0) {
+                        $('.projectStatusTitle[status="3"]').show();
+                        if (response.AppointmentCompletedCount > 0) {
+                            $('.projectStatusTitle[status="3"]').show();
+                            $('.projectStatusTitle[status="3"]').find('span').eq(2).text('('+response.AppointmentCompletedCount+')');
+                        } else {
+                            $('.projectStatusTitle[status="3"]').find('span').eq(2).text('(0)');
+                        }
+                    } else {
+                        $('.projectStatusTitle[status="3"]').hide();
+                        $('.projectStatusStep[statuslist="3"]').hide(); 
+                    }
+
+
+                    if (response.RepairPlanCreatedCount || response.RepairPlanCreatedCount == 0) {
+                        $('.projectStatusTitle[status="4"]').show();
+                        if (response.RepairPlanCreatedCount > 0) {
+                            $('.projectStatusTitle[status="4"]').show();
+                            $('.projectStatusTitle[status="4"]').find('span').eq(2).text('('+response.RepairPlanCreatedCount+')');
+                        } else {
+                            $('.projectStatusTitle[status="4"]').find('span').eq(2).text('(0)');
+                        }
+                    } else {
+                        $('.projectStatusTitle[status="4"]').hide();
+                        $('.projectStatusStep[statuslist="4"]').hide(); 
+                    }
+
+
+                    if (response.BidCreatedCount || response.BidCreatedCount == 0) {
+                        $('.projectStatusTitle[status="5"]').show();
+                        if (response.BidCreatedCount > 0) {
+                            $('.projectStatusTitle[status="5"]').show();
+                            $('.projectStatusTitle[status="5"]').find('span').eq(2).text('('+response.BidCreatedCount+')');
+                        } else {
+                            $('.projectStatusTitle[status="5"]').find('span').eq(2).text('(0)');
+                        }
+                    } else {
+                        $('.projectStatusTitle[status="5"]').hide();
+                        $('.projectStatusStep[statuslist="5"]').hide(); 
+                    }
+
+
+                    if (response.BidSentCount || response.BidSentCount == 0) {
+                        $('.projectStatusTitle[status="6"]').show();
+                        if (response.BidSentCount > 0) {
+                            $('.projectStatusTitle[status="6"]').show();
+                            $('.projectStatusTitle[status="6"]').find('span').eq(2).text('('+response.BidSentCount+')');
+                        } else {
+                            $('.projectStatusTitle[status="6"]').find('span').eq(2).text('(0)');
+                        }
+                    } else {
+                        $('.projectStatusTitle[status="6"]').hide();
+                        $('.projectStatusStep[statuslist="6"]').hide(); 
+                    }
+
+
+                    if (response.BidAcceptedCount || response.BidAcceptedCount == 0) {
+                        $('.projectStatusTitle[status="7"]').show();
+                        if (response.BidAcceptedCount > 0) {
+                            $('.projectStatusTitle[status="7"]').show();
+                            $('.projectStatusTitle[status="7"]').find('span').eq(2).text('('+response.BidAcceptedCount+')');
+                        } else {
+                            $('.projectStatusTitle[status="7"]').find('span').eq(2).text('(0)');
+                        }
+                    } else {
+                        $('.projectStatusTitle[status="7"]').hide();
+                        $('.projectStatusStep[statuslist="7"]').hide(); 
+                    }
+
+
+                    if (response.BidRejectedCount || response.BidRejectedCount == 0) {
+                        $('.projectStatusTitle[status="8"]').show();
+                        if (response.BidRejectedCount > 0) {
+                            $('.projectStatusTitle[status="8"]').show();
+                            $('.projectStatusTitle[status="8"]').find('span').eq(2).text('('+response.BidRejectedCount+')');
+                        } else {
+                            $('.projectStatusTitle[status="8"]').find('span').eq(2).text('(0)');
+                        }
+                    } else {
+                        $('.projectStatusTitle[status="8"]').hide();
+                        $('.projectStatusStep[statuslist="8"]').hide(); 
+                    }
+
+
+                    if (response.InstallationScheduledCount || response.InstallationScheduledCount == 0) {
+                        $('.projectStatusTitle[status="9"]').show();
+                        if (response.InstallationScheduledCount > 0) {
+                            $('.projectStatusTitle[status="9"]').show();
+                            $('.projectStatusTitle[status="9"]').find('span').eq(2).text('('+response.InstallationScheduledCount+')');
+                        } else {
+                            $('.projectStatusTitle[status="9"]').find('span').eq(2).text('(0)');
+                        }
+                    } else {
+                        $('.projectStatusTitle[status="9"]').hide();
+                        $('.projectStatusStep[statuslist="9"]').hide(); 
+                    }
+
+
+                    if (response.InstallationCompleteCount || response.InstallationCompleteCount == 0) {
+                        $('.projectStatusTitle[status="10"]').show();
+                        if (response.InstallationCompleteCount > 0) {
+                            $('.projectStatusTitle[status="10"]').show();
+                            $('.projectStatusTitle[status="10"]').find('span').eq(2).text('('+response.InstallationCompleteCount+')');
+                        } else {
+                            $('.projectStatusTitle[status="10"]').find('span').eq(2).text('(0)');
+                        }
+                    } else {
+                        $('.projectStatusTitle[status="10"]').hide();
+                        $('.projectStatusStep[statuslist="10"]').hide(); 
+                    }
+
+
+                    if (response.FinalReportSentCount || response.FinalReportSentCount == 0) {
+                        $('.projectStatusTitle[status="11"]').show();
+                        if (response.FinalReportSentCount > 0) {
+                            $('.projectStatusTitle[status="11"]').show();
+                            $('.projectStatusTitle[status="11"]').find('span').eq(2).text('('+response.FinalReportSentCount+')');
+                        } else {
+                            $('.projectStatusTitle[status="11"]').find('span').eq(2).text('(0)');
+                        }
+                    } else {
+                        $('.projectStatusTitle[status="11"]').hide();
+                        $('.projectStatusStep[statuslist="11"]').hide(); 
+                    }
+
+
+                    if (response.CompletedProjectCount || response.CompletedProjectCount == 0) {
+                        $('.projectStatusTitle[status="12"]').show();
+                        if (response.CompletedProjectCount > 0) {
+                            $('.projectStatusTitle[status="12"]').show();
+                            $('.projectStatusTitle[status="12"]').find('span').eq(2).text('('+response.CompletedProjectCount+')');
+                        } else {
+                            $('.projectStatusTitle[status="12"]').find('span').eq(2).text('(0)');
+                        }
+                    } else {
+                        $('.projectStatusTitle[status="12"]').hide();
+                        $('.projectStatusStep[statuslist="12"]').hide(); 
+                    }
+                   
+                   $('#loading-image.projectStatus').hide();
+
+                }, error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+
+            });
+        };
+
+        var savedLocations = [], isMapInit = false;
+        //var bounds = null, markers = [], image, infowindow;
+        var map = null;
+
+
+        function initMap() {
+            isMapInit = true;
+            //map = new MapSet(document.getElementById('calendarMap'));
+            map = new MapSet(document.getElementById('calendarMap'), '<?php echo $companyLatitude; ?>', '<?php echo $companyLongitude; ?>'); //FXLRATR-25
+            if (savedLocations != null && savedLocations.length > 0) showMap(savedLocations);
+        }
+
+        function clearMap() {
+            if (map != null) map.RemoveMapLocations();
+        }
+
+        function showMap(locations) {
+            var sD = $('#currentDate').val().split('-');
+            var start = new Date(sD[0], sD[1] - 1, sD[2]);
+            //var end = new Date(sD[0], sD[1] - 1, sD[2], 23, 59, 59, 999);
+            var end = new Date(start.getTime() + 86400000);
+
+            if (locations == null) savedLocations = [];
+            else savedLocations = locations;
+            
+            if (!isMapInit) {
+                return;
+            }
+            if ($('#mapSwitch').prop('checked')) {
+                $('#calendarMap').show();
+                
+                if (map == null) {
+                    map = new MapSet(document.getElementById('calendarMap'), '<?php echo $companyLatitude; ?>', '<?php echo $companyLongitude; ?>'); //FXLRATR-258
+                    // map.MapAddress(companyFullAddress, companyCity, companyState, companyZip, "useAddress", null); //FXLRATR-258
+
+                }
+
+                    map.SetMapLocations(locations, start, end);
+
+                var projectStatusArray = JSON.parse(document.getCookie('project_status'));
+                if (projectStatusArray['view'] != true) {
+                    map.Resize();
+                }   
+
+            }
+            else {
+                $('#calendarMap').hide();
+            }
+        }
+
+        function MapSwitchFlipped() {
+            if ($('#mapSwitch').prop('checked'))
+            {
+                document.setCookie('ShowMap', 'Y');
+                showMap(savedLocations);
+            }
+            else {
+                document.setCookie('ShowMap', 'N');
+                $('#calendarMap').hide();
+            }
+        }
+        
+
+        var filterCalendar = function (defaultView) {
+
+            var date = $('input#currentDate').val();
+            //console.log(date);
+            //var newDateFormat = new Date(date);
+            //var newDate = $.datepicker.formatDate("yy-mm-dd", newDateFormat);
+            //console.log(newDate);
+
+            //var view = $('#calendar').fullCalendar('getView');
+            //
+            //  if (view == 'undefined') var defaultView = 'timelineDay';
+            //  else var defaultView = view.name;
+
+            //console.log(defaultView);
+
+            $('#calendar').fullCalendar('destroy');
+            $('#calendar').fullCalendar('render');
+
+
+
+            $('#calendar').fullCalendar({
+                header: {
+                    left: '',
+                    center: '',
+                    right: ''
+                },
+                slotDuration: '00:15:00',
+                slotLabelFormat: 'hA',
+                scrollTime: '08:00:00',
+                defaultView: defaultView,
+                aspectRatio: 1.8,
+                nowIndicator: true,
+                defaultDate: date,
+                fixedWeekCount: false,
+                selectable: false,
+                selectHelper: false,
+                unselectAuto: false,
+                editable: false,
+                eventLimit: true, // allow "more" link when too many events
+                overlap: false,
+                eventOverlap: false,
+                eventColor: '#f6f7fb',
+                businessHours: {
+                    start: '8:00',
+                    end: '17:00',
+                    dow: [0, 1, 2, 3, 4, 5, 6]
+                },
+                resourceLabelText: ' ',
+                resources: {
+                    url: 'getResources.php',
+                    data: {
+                        filter: $("select#filterResources option:selected").val()
+                    },
+                    success: function (response) {
+                        //$('#script-warning').show();
+                        //console.log(response);
+
+                    // if (!response){
+                    //     console.log("no sales or installers");
+                    //     $('#calendar').empty();
+                    //     //$('.dashboard-filter-bar').empty();
+                    // }
+
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                },
+                dayClick: function (date, jsEvent, view) {
+                    var date = date.format();
+                    var coordinates = jsEvent.pageX + ',' + jsEvent.pageY;
+                    var view = view.name;
+
+                    if (view != 'timelineDay') {
+                        $('#weeklyView, #monthlyView').removeClass('active');
+                        $('#dailyView').addClass('active');
+                        $('#calendar').fullCalendar('changeView', 'timelineDay');
+                        $('#calendar').fullCalendar('gotoDate', date);
+                    }
+                },
+                events: function (start, end, timezone, callback) {
+                    var start = start.local().format('YYYY/MM/DD');
+                    var end = end.local().format('YYYY/MM/DD');
+                    getEvents(start, end, timezone, callback);
+                },
+                eventAfterAllRender: function(view){
+                    if ($('.fc-toolbar').length > 0) {
+                       if (view.name === 'timelineDay'){
+                            var newEvents = [];
+                            $.each($('#calendar').fullCalendar('clientEvents'), function(i, item) {
+                                if (item.latitude != "0.00000000" && item.longitude != "0.00000000"){
+                                    newEvents.push(item);
+                                }
+                            });
+                            showMap(newEvents);
+                        }
+                       else $('#calendarMap').hide();
+                    }
+                },
+                eventClick: function (calEvent, jsEvent, view) {
+                    $('#loading-image').show();
+                    $.ajax({
+                        url: 'getEventDetail.php',
+                        dataType: "json",
+                        contentType: 'application/json',
+                        type: "GET",
+                        contentType: "application/x-www-form-urlencoded",
+                        data: {
+                            eventID: calEvent.id,
+                            eventType: calEvent.eventType
+                        },
+                        success: function (response) {
+
+                            $.each(response, function (i, item) {
+                                var addressDisplay2 = '';
+                                var onMapDetail = '';
+                                if (item.address2 != null){
+                                    addressDisplay2 = item.address2;
+                                }
+                                if (item.latitude == '0.00000000' && item.longitude == '0.00000000') {
+                                    onMapDetail = '(Location Not Mapped)<br/>';
+                                }
+
+                                if (calEvent.eventType == '1') {
+                                    
+                                    $('#viewEvent').append('<h2 id="modalTitle">' + item.firstName + ' ' + item.lastName + ' ' + item.scheduleType + '</h2><p>' + onMapDetail + '' + item.scheduled + '<br/>Start: ' + item.start + '<br/>End: ' + item.end + ' </p><p>' + item.address + ' ' + addressDisplay2 + '<br/>' + item.city + ', ' + item.state + ' ' + item.zip + '<br/>' + item.phoneNumber + '<br/>' + item.email + '<br/><a href="project-management.php?pid=' + item.projectID + '">View Project</a><br/><br/>Scheduled by: ' + item.scheduledByFirstName + ' ' + item.scheduledByLastName + ' on ' + item.scheduledOn + '</p><button class="close-button" data-close aria-label="Close reveal" type="button"><span aria-hidden="true">&times;</span></button>');
+                                } else {
+                                    $('#viewEvent').append('<h2 id="modalTitle">' + item.scheduledFirstName + ' ' + item.scheduledLastName + ' ' + item.scheduleType + '</h2><p>Start: ' + item.start + '<br/>End: ' + item.end + ' </p><p>Scheduled by: ' + item.scheduledByFirstName + ' ' + item.scheduledByLastName + ' on ' + item.scheduledOn + '</p><button class="close-button" data-close aria-label="Close reveal" type="button"><span aria-hidden="true">&times;</span></button>');
+
+
+                                }
+                            });
+                            $('#loading-image').hide();
+                        }, error: function (jqXHR, textStatus, errorThrown) {
+                            console.log(textStatus, errorThrown);
+                            console.log(jqXHR.responseText);
+                        }
+
+                    });
+
+                    $('#viewEvent').foundation('open');
+                    $('#viewEvent').on('closed.zf.reveal', function () {
+                        $('#viewEvent').empty();
+                    });
+
+                },
+                eventRender: function (event, element) {
+
+                    //Decode customer name on calendar
+                    var name = (element.find('.fc-title').text());
+                    element.find('.fc-title').text(decodeEntities(name));
+
+                    //$('#projects table tbody').empty();
+
+                    if (event.rendering == 'background') {
+                        element.append(event.title);
+                    }
+
+                    if (event.start == null || event.end == null) return;
+                    event.end.local();
+                    event.start.local();
+
+                    //var startDate = new Date(event.start._d)
+                    //var newStartDate = $.datepicker.formatDate("MM dd, yy", startDate);
+
+                    //var endDate = new Date(event.end._d)
+                    //var newEndDate = $.datepicker.formatDate("MM dd, yy", endDate);
+
+
+                    var view = $('#calendar').fullCalendar('getView');
+                    var eventAddressDisplay2 = '';
+                    if (event.address2 != null){
+                        eventAddressDisplay2 = event.address2;
+                    }
+
+
+                    if (view.name === 'timelineDay') {
+                        if (event.latitude == '0.00000000' && event.longitude == '0.00000000'){
+                            if (event.scheduleType == 'Installation') element.find('.fc-title').append('<br/><span class="fc-title-type">Installation (Location Not Mapped): ' + $.datepicker.formatDate("MM dd, yy", event.start._d) + ' - ' + (event.end.format('hh:mm:ss a') == '12:00:00 am' ? $.datepicker.formatDate("MM dd, yy", event.end.add(-1, 'second')._d) : $.datepicker.formatDate("MM dd, yy", event.end._d)) + '</span>');
+                            if (event.scheduleType == 'Installation') element.find('.fc-title').append('<br/><span class="fc-title-type">Installation :  ' + $.datepicker.formatDate("MM dd, yy", event.start._d) + ' - ' + (event.end.format('hh:mm:ss a') == '12:00:00 am' ? $.datepicker.formatDate("MM dd, yy", event.end.add(-1, 'second')._d) : $.datepicker.formatDate("MM dd, yy", event.end._d)) + '</span>');
+                            if (event.scheduleType == 'Evaluation') element.find('.fc-title').append('<br/><span class="fc-title-type">Evaluation (Location Not Mapped)</span>');
+
+                            element.find('.fc-title').append('<br/><span class="fc-title-address">' + event.address + ' ' + eventAddressDisplay2 + '</span><br/><span class="fc-title-city">' + event.city + ", " + event.state + ' ' + event.zip + '</span>');
+                            element.find('.fc-title').prepend('<div style="width: .3rem;background-color:' + event.calendarBgColor + ';height: 4.2rem;float: left;margin-left: 3px;"></div>');
+                            }
+                        else{
+                            if (event.scheduleType == 'Installation') element.find('.fc-title').append('<br/><span class="fc-title-type">Installation: ' + $.datepicker.formatDate("MM dd, yy", event.start._d) + ' - ' + (event.end.format('hh:mm:ss a') == '12:00:00 am' ? $.datepicker.formatDate("MM dd, yy", event.end.add(-1, 'second')._d) : $.datepicker.formatDate("MM dd, yy", event.end._d)) + '</span>');
+                            if (event.scheduleType == 'Evaluation') element.find('.fc-title').append('<br/><span class="fc-title-type">Evaluation</span>');
+
+                            element.find('.fc-title').append('<br/><span class="fc-title-address">' + event.address + ' ' + eventAddressDisplay2 + '</span><br/><span class="fc-title-city">' + event.city + ", " + event.state + ' ' + event.zip + '</span>');
+                            element.find('.fc-title').prepend('<div style="width: .3rem;background-color:' + event.calendarBgColor + ';height: 4.2rem;float: left;margin-left: 3px;"></div>');
+                        }
+
+
+                    }
+
+                    else if (view.name === 'agendaWeek') {
+                        if (event.allDay == '1') {
+                            element.find('.fc-title').append('<span class="fc-title-address"> ' + event.address + ' ' + eventAddressDisplay2 + ', ' + event.city + ", " + event.state + ' ' + event.zip + '</span>');
+                            element.find('.fc-title').prepend('<div style="width: .3rem;background-color:' + event.calendarBgColor + ';height: 2.3rem;float: left;margin-left: 3px;margin-right: 3px;"></div>');
+                            if (event.scheduleType == 'Installation') element.find('.fc-title').append('<br/><span class="fc-title-type">Installation: ' + $.datepicker.formatDate("MM dd, yy", event.start._d) + ' - ' + (event.end.format('hh:mm:ss a') == '12:00:00 am' ? $.datepicker.formatDate("MM dd, yy", event.end.add(-1, 'second')._d) : $.datepicker.formatDate("MM dd, yy", event.end._d)) + '</span>');
+                            if (event.scheduleType == 'Evaluation') element.find('.fc-title').append('<br/><span class="fc-title-type">Evaluation</span>');
+
+                        } else {
+                            if (event.scheduleType == 'Installation') element.find('.fc-title').append('<br/><span class="fc-title-type">Installation: ' + $.datepicker.formatDate("MM dd, yy", event.start._d) + ' - ' + (event.end.format('hh:mm:ss a') == '12:00:00 am' ? $.datepicker.formatDate("MM dd, yy", event.end.add(-1, 'second')._d) : $.datepicker.formatDate("MM dd, yy", event.end._d)) + '</span>');
+                            if (event.scheduleType == 'Evaluation') element.find('.fc-title').append('<br/><span class="fc-title-type">Evaluation</span>');
+                            element.find('.fc-title').append('<br/><span class="fc-title-address">' + event.address + ' ' + eventAddressDisplay2 + '</span><br/><span class="fc-title-city">' + event.city + ", " + event.state + ' ' + event.zip + '</span>');
+                            element.find('.fc-time').prepend('<div style="width: .3rem;background-color:' + event.calendarBgColor + ';height: 5.3rem;float: left;margin-right: 5px;"></div>');
+                        }
+
+                        //$('#projects table tbody').append('<tr class="eventItem"><td>'+event.firstName+' '+event.lastName+'</td><td>'+event.address+ ' ' +eventAddressDisplay2+'</td><td>'+event.city+'</td><td>'+event.state+'</td><td>'+event.zip+'</td><td>'+event.status+'</td><td><a class="button" href="project-management.php?pid='+event.projectID+'">View</a></td></tr>');
+
+                    }
+
+                    else if (view.name === 'month') {
+                        if (event.allDay == '1') {
+                            element.find('.fc-title').append('<span class="fc-title-address"> ' + event.address + ' ' + eventAddressDisplay2 + ', ' + event.city + ", " + event.state + ' ' + event.zip + '</span>');
+                        }
+                        element.find('.fc-title').prepend('<div style="width: .3rem;background-color:' + event.calendarBgColor + ';height: 2.3rem;float: left;margin-left: 3px;margin-right: 3px;"></div>');
+                        if (event.scheduleType == 'Installation') element.find('.fc-title').append('<br/><span class="fc-title-type">Installation: ' + $.datepicker.formatDate("MM dd, yy", event.start._d) + ' - ' + (event.end.format('hh:mm:ss a') == '12:00:00 am' ? $.datepicker.formatDate("MM dd, yy", event.end.add(-1, 'second')._d) : $.datepicker.formatDate("MM dd, yy", event.end._d)) + '</span>');
+                        if (event.scheduleType == 'Evaluation') element.find('.fc-title').append('<br/><span class="fc-title-type">Evaluation</span>');
+
+                        //$('#projects table tbody').append('<tr class="eventItem"><td>'+event.firstName+' '+event.lastName+'</td><td>'+event.address+ ' ' +eventAddressDisplay2+'</td><td>'+event.city+'</td><td>'+event.state+'</td><td>'+event.zip+'</td><td>'+event.status+'</td><td><a class="button" href="project-management.php?pid='+event.projectID+'">View</a></td></tr>');
+                    }
+
+                },
+                viewRender: function (view, element) {
+                    var m = $('#calendar').fullCalendar('getDate');
+                    $('#currentDate').val(m.format('YYYY-MM-DD'));
+
+                    if (view.name === 'timelineDay') {
+                        var momentFormat = m.format('dddd MMMM D, YYYY');
+                        $('#calendarTitle').text(momentFormat);
+
+                        $('.fc-expander-space').remove();
+
+                        //$(element).height(auto);
+                        $('#calendar').fullCalendar('option', 'contentHeight', 'auto');
+
+                        if ($('.fc-toolbar').length > 0) {
+                            var newEvents = [];
+                            $.each($('#calendar').fullCalendar('clientEvents'), function(i, item) {
+                                if (item.latitude != "0.00000000" && item.longitude != "0.00000000"){
+                                    newEvents.push(item);
+                                }
+                            });
+                            showMap(newEvents);
+                        }
+                    } else if (view.name === 'agendaWeek') {
+                        //var momentFormat = m.format('MMMM D');
+                        var viewStart = view.intervalStart.format('MMMM D');
+                        var viewEnd = view.intervalEnd.format('MMMM D YYYY');
+
+                        var newdate = new Date(viewEnd);
+                        newdate.setDate(newdate.getDate() - 1); // minus the date
+                        var viewEndNew = new Date(newdate);
+                        var viewEndNewFormat = $.datepicker.formatDate("MM d", viewEndNew);
+
+                        $('#calendarTitle').text(viewStart + ' - ' + viewEndNewFormat);
+
+                        $('#calendar').fullCalendar('option', 'contentHeight', '');
+                        $('#calendarMap').hide();
+                    } else if (view.name === 'month') {
+                        var momentFormat = m.format('MMMM YYYY');
+                        $('#calendarTitle').text(momentFormat);
+
+                        $('#calendar').fullCalendar('option', 'contentHeight', '');
+                        $('#calendarMap').hide();
+                    }
+                },
+                resourceRender: function (resourceObj, labelTds, bodyTds) {
+                    var role = resourceObj.installation == "1" ? "Installation" : "";
+                    if (resourceObj.sales == "1") {
+                        if (role.length > 0) role += ", ";
+                        role += "Sales";
+                    }
+
+                    labelTds.find('.fc-cell-content').append($('<span class="fc-cell-role"></span>').text(role));
+
+                    $('#calendar').find('tr[data-resource-id="' + resourceObj.id + '"] .fc-cell-content').before('<div style="width: .3rem;background-color:' + resourceObj.calendarBgColor + ';height: 90%;float: left;margin-left: 3px;margin-top: 0.4rem;"></div>');
+
+                    //Decode name on calendar
+                    var title = $('#calendar').find('tr[data-resource-id="' + resourceObj.id + '"] .fc-cell-content .fc-cell-text').text();
+                    $('#calendar').find('tr[data-resource-id="' + resourceObj.id + '"] .fc-cell-content .fc-cell-text').text(decodeEntities(title));
+                },
+                viewDestroy: function (view, element) {
+                    clearMap();
+                }
+            });
+
+        };
+
+       var getEvents = function (start, end, timezone, callback) {
+            $('#projects table tbody').empty();
+            $('#loading-image').show();
+            $.ajax({
+                url: 'getEvents.php',
+                dataType: 'json',
+                data: {
+                    filter: $('select#filterResources option:selected').val(),
+                    start: start, //moment(start).format('YYYY/MM/DD'),
+                    end: end //moment(end).format('YYYY/MM/DD')
+                },
+                success: function (response) {
+
+                    // console.log(response);
+                    $('#loading-image').hide();
+                   if (response != null) {
+
+                        if ($('.fc-toolbar').length > 0) {
+                            var events = eval(response);
+                            callback(events);
+                        }
+                        $(response).each(function (i, item) {
+                            var date = $('#calendar').fullCalendar('getDate');
+                            //currentDate = date._i
+                            var currentDate = $('input#currentDate').val();
+                            start = moment(item.start).format('YYYY-MM-DD');
+                            end = moment(item.end).format('YYYY-MM-DD');
+                            var addressDisplay2 = '';
+                            if (item.address2 != null){
+                                addressDisplay2 = item.address2;
+                            }
+
+                            //console.log('current date '+currentDate);
+                            //console.log('Events Fetched');
+                            
+                            //if (start <= currentDate && end >= currentDate) { 
+                                $('#projects table tbody').append('<tr><td>'+item.firstName+' '+item.lastName+'</td><td>'+item.address+ ' ' +addressDisplay2+'</td><td>'+item.city+'</td><td>'+item.state+'</td><td>'+item.zip+'</td><td>'+item.status+'</td><td><a class="button" href="project-management.php?pid='+item.projectID+'">View</a></td></tr>');
+                            //}
+                        });
+                    }
+                    //else {
+                    //    //console.log(response);
+                    //    showMap(response);
+                    //}
+                    $.ajax({
+                        url: 'getUnscheduled.php',
+                        dataType: 'json',
+                        success: function (response) {
+                            //console.log(response);
+                            if (response != null) {
+                                $.each(response, function (i, item) {
+                                    var addressDisplay2 = '';
+                                    if (item.address2 != null){
+                                        addressDisplay2 = item.address2;
+                                    }
+                                    $('#projects table tbody').append('<tr><td>'+item.firstName+' '+item.lastName+'</td><td>'+item.address + ' ' +addressDisplay2+'</td><td>'+item.city+'</td><td>'+item.state+'</td><td>'+item.zip+'</td><td>Pending Appointment</td><td><a class="button" href="project-management.php?pid='+item.projectID+'">View</a></td></tr>');
+                                });
+                            }
+                           
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            console.log(textStatus, errorThrown);
+                            console.log(jqXHR.responseText);
+                        }
+                    });
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            });
+        };
+
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDVYIV3RYj9RJGqLjZNgA7-Dhwt5pTJrT0&callback=initMap" async defer></script>
+</head>
+<body>
+    <?php  include_once 'header.html'  ?>
+    <div id="loading-image" class="loadingImage" style="display: block">
+        <img src="images/ajax-loader.gif" />
+    </div>
+     <div class="row expanded first-row">
+        <div id="dashboard" class="shared">
+            <div class="row expanded" style="background-color:#f6f7fb;">
+                <div class="medium-12 columns">
+                    <div class="medium-12 columns">
+                        <h1 class="dashboard-title"><?php echo $userFirstName;  ?>'s Dashboard</h1>
+                    </div>
+                </div>
+            </div>
+            <div class="row expanded" style="background-color:#f6f7fb;padding-left: 0.9375rem; padding-right: 0.9375rem">
+                <div class="medium-2 columns">
+                    <div id="mapSwitchContainer" class="row expanded">
+                        <div class="medium-2 columns">
+                            <label style="font-weight: bold;color: #58595b;font-size: 1rem;text-align:right;">Map</label>
+                        </div>
+                        <div class="medium-10 columns">
+                            <div class="switch small">
+                                <input checked class="switch-input" id="mapSwitch" type="checkbox" name="mapSwitch">
+                                <label class="switch-paddle" for="mapSwitch">
+                                    <span class="switch-active" aria-hidden="true">On</span>
+                                    <span class="switch-inactive" aria-hidden="true">Off</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="medium-8 columns">
+                    <div class="button-group text-center">
+                        <a id="viewCalendar" class="button bar left active">Schedule</a>
+                        <a id="viewProjects" class="button bar right">Projects</a>
+                    </div>
+                </div>
+                <div class="medium-2 columns">
+                    <?php echo $customerAddDisplay;  ?>
+                </div>
+            </div>
+            <div id="calendarMap"></div>
+            <div class="row expanded dashboard-filter-bar" style="height: 3.75rem;">
+                <div class="medium-3 columns" style="display:none;">
+                </div>
+                <div class="medium-3 columns" style="padding-right: 0;">
+                    <div id="filterSelect"></div>
+                </div>
+                <div class="medium-1 columns">
+                    <a id="today" class="button today" style="">Today</a>
+                </div>
+                <div class="medium-5 columns" style="margin-top: 1rem;">
+                    <div class="row expanded">
+                        <div class="medium-2 columns no-pad">
+                            <div id="previous" class="arrow-left"></div>
+                        </div>
+                        <div class="medium-8 columns no-pad text-center">
+                            <span id="calendarTitle"></span>
+                        </div>
+                        <div class="medium-2 columns no-pad">
+                            <div id="next" class="arrow-right"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="medium-3 columns">
+                    <div class="button-group text-right">
+                        <a id="dailyView" class="button view view-left active">Daily</a>
+                        <a id="weeklyView" class="button view view-center">Weekly</a>
+                        <a id="monthlyView" class="button view view-right">Monthly</a>
+                    </div>
+                </div>
+            </div>
+            <div class="row expanded" style="margin-bottom: 4rem;">
+                <div class="medium-12 columns">
+                    <div id="calendar"></div>
+                    <div id="viewEvent" class="reveal" data-reveal></div>
+                </div>
+            </div>
+            <div class="row expanded" style="margin-bottom: 4rem;">
+                <div class="medium-12 columns">
+                    <div id="projects" style="display:none;">
+                        <table>
+                            <thead>
+                                <tr> 
+                                    <th>Owner</th>
+                                    <th width="">Address</th>
+                                    <th width="">City</th>
+                                    <th width="">State</th>
+                                    <th width="">Zip</th>
+                                    <th width="">Status</th>
+                                    <th width="">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="projectStatus">
+            <div class="projectStatusTab show">
+                <span>Project Status</span>
+            </div>
+            <div id="loading-image" class="loadingImageSmall projectStatus">
+                <img src="images/ajax-loader.gif" />
+            </div>
+            <div class="projectStatusContainer">
+            <!-- 1. Project Created – Appointment needs scheduled
+            2. Sales Appointment Scheduled—no action necessary
+            3. Sales Appointment Completed—Repair plan needed
+            4. Repair Plan Created—Bid needed
+            5. Bid Created—Bid needs to be approved
+            6. Bid Sent—waiting for customer approval
+            7. Bid Accepted—Installation needs to be scheduled
+            8. Installation in Progress
+            9. Installation Complete—final report needed
+            10. Final report sent –Project needs to be marked Complete
+            11. Project Complete (show these for XX days, set in Company Profile)
+            Sales only see their assigned sales and installers only see their installations. Need to determine who sees which project status' -->
+                <div class="sortBar">
+                    <div class="sort">
+                        <select>
+                            <option value="asc">oldest</option>
+                            <option value="desc">newest</option>
+                        </select>
+                    </div>
+                    <div class="refresh"><span></span></div>
+                </div>
+                <div class="projectStatusTitle" status="1">
+                    <span class="closed"></span> 
+                    <span class="title">Project Created</span> <span class="titleCount"></span><br/>
+                    <span class="subTitle">Appointment needs scheduled</span>
+                </div>
+                <div class="projectStatusStep" statusList="1">
+                </div>
+
+                <div class="projectStatusTitle" status="2">
+                    <span class="closed"></span> 
+                    <span class="title">Sales Appointment Scheduled</span> <span class="titleCount"></span><br/>
+                    <span class="subTitle">no action necessary</span>
+                </div>
+                <div class="projectStatusStep" statusList="2">
+                </div>
+
+                <div class="projectStatusTitle" status="3">
+                <span class="closed"></span> 
+                    <span class="title">Sales Appointment Completed</span> <span class="titleCount"></span><br/>
+                    <span class="subTitle">Repair plan needed</span>
+                </div>
+                <div class="projectStatusStep" statusList="3">
+                </div>
+
+                <div class="projectStatusTitle" status="4">
+                <span class="closed"></span> 
+                    <span class="title">Repair Plan Created</span> <span class="titleCount"></span><br/>
+                    <span class="subTitle">Bid needed</span>
+                </div>
+                <div class="projectStatusStep" statusList="4">
+                </div>
+
+                <div class="projectStatusTitle" status="5">
+                <span class="closed"></span> 
+                    <span class="title">Bid Created</span> <span class="titleCount"></span><br/>
+                    <span class="subTitle">Bid needs to be sent</span>
+                </div>
+                <div class="projectStatusStep" statusList="5">
+                </div>
+
+                <div class="projectStatusTitle" status="6">
+                <span class="closed"></span> 
+                    <span class="title">Bid Sent</span> <span class="titleCount"></span><br/>
+                    <span class="subTitle">Waiting for customer approval</span>
+                </div>
+                <div class="projectStatusStep" statusList="6">
+                </div>
+
+                <div class="projectStatusTitle" status="7">
+                <span class="closed"></span> 
+                    <span class="title">Bid Accepted</span> <span class="titleCount"></span><br/>
+                    <span class="subTitle">Installation needs to be scheduled</span>
+                </div>
+                <div class="projectStatusStep" statusList="7">
+                </div>
+
+                <div class="projectStatusTitle" status="8">
+                <span class="closed"></span> 
+                    <span class="title">Bid Rejected</span> <span class="titleCount"></span><br/>
+                    <span class="subTitle">Project needs to be cancelled or rebid</span>
+                </div>
+                <div class="projectStatusStep" statusList="8">
+                </div>
+
+                <div class="projectStatusTitle" status="9">
+                <span class="closed"></span> 
+                    <span class="title">Installation Scheduled</span> <span class="titleCount"></span><br/>
+                    <span class="subTitle">Mark completed after install</span>
+                </div>
+                <div class="projectStatusStep" statusList="9">
+                </div>
+
+                <div class="projectStatusTitle" status="10">
+                <span class="closed"></span> 
+                    <span class="title">Installation Complete</span> <span class="titleCount"></span><br/>
+                    <span class="subTitle">Final report needed</span>
+                </div>
+                <div class="projectStatusStep" statusList="10">
+                </div>
+
+                <div class="projectStatusTitle" status="11">
+                <span class="closed"></span> 
+                    <span class="title">Final Report Sent</span> <span class="titleCount"></span><br/>
+                    <span class="subTitle">Project needs to be marked Complete</span>
+                </div>
+                <div class="projectStatusStep" statusList="11">
+                </div>
+
+                <div class="projectStatusTitle" status="12">
+                <span class="closed"></span> 
+                    <span class="title">Recently Completed Project</span> <span class="titleCount"></span><br/>
+                    <span class="subTitle">no action necessary</span>
+                </div>
+                <div class="projectStatusStep" statusList="12">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tiny reveal" id="noResourcesModal" data-reveal data-close-on-esc="true" data-close-on-click="true">
+        <div class="row">
+            <h3>No Salesmen or Installers</h3>
+        </div>
+        <p>Add salesmen or installers to see information on this page.</p>
+        <button class="button" data-close>OK</button>
+    </div>
+    <?php  include_once 'setup-modal.html'  ?>
+    <?php  include_once 'footer.html'  ?>
+
+
+    <input id="currentDate" type="hidden" name="currentDate" value="<?php echo $todaysDateDefault;  ?>" />
+
+    <script src="js/what-input.js"></script>
+    <script src="js/foundation.js"></script>
+    <script>
+        $(document).foundation();
+
+    </script>
+</body>
+</html>  

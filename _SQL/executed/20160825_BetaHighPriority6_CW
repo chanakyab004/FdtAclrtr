@@ -1,0 +1,5 @@
+ALTER TABLE  `evaluationBid` ADD UNIQUE (
+`bidNumber`
+)
+
+ALTER TABLE  `evaluationBid` CHANGE  `bidNumber`  `bidNumber` INT( 11 ) NULL DEFAULT NULL

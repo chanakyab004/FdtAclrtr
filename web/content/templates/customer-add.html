@@ -1,0 +1,2253 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Foundation Accelerator</title>
+    <link rel="stylesheet" href="css/foundation.css" />
+    <link rel="stylesheet" href="css/custom.css" />
+    <link rel="stylesheet" href="css/customer-add.css" />
+    <link rel="stylesheet" href="css/motion-ui.css" />
+    <link rel="stylesheet" href="css/wickedpicker.css" />
+    <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+    <link href='css/fullcalendar.css' rel='stylesheet' />
+    <link href='css/scheduler.css' rel='stylesheet' />
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
+    <script src="js/jquery.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src='js/moment.min.js'></script>
+    <script src='js/fullcalendar.min.js'></script>
+    <script src='js/scheduler.min.js'></script>
+    <script src='js/jquery.tablesorter.min.js'></script>
+    <script src='js/map.js'></script>
+    <script src='js/setup-progress.js'></script>
+    <script src='js/zen.js'></script>
+    <script src='js/wickedpicker.js'></script>
+  
+    <style>
+        div.loadingImage {
+            position: fixed;
+            z-index: 1500;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #eee;
+            opacity: 0.5;
+            text-align: center;
+        }
+        div.loadingImage {
+            display: none;
+        }
+        div.loadingImage > img {
+            position: absolute;
+            top: 40%;
+        }
+    </style>
+    <script>
+        companyLatitude = "<?php echo $companyLatitude; ?>";  //FXLRATR-258
+        companyLongitude = "<?php echo $companyLongitude; ?>"; //FXLRATR-258
+        companyAddress1 = "<?php echo $companyAddress1; ?>"; //FXLRATR-258
+        companyAddress2 = "<?php echo $companyAddress2; ?>"; //FXLRATR-258
+        companyCity = "<?php echo $companyCity; ?>"; //FXLRATR-258
+        companyZip = "<?php echo $companyZip; ?>"; //FXLRATR-258
+        companyState = "<?php echo $companyState; ?>"; //FXLRATR-258
+        companyFullAddress=""; //FXLRATR-258
+
+        var map = null, addressLast = null, cityLast = null, stateLast = null, zipLast = null, loc = null, s, e;
+        var hiddenMap = null, addressLast = null, cityLast = null, stateLast = null, zipLast = null, loc = null, s, e;
+
+        var useAddress = function (a, c, s, z, lat, lng) {
+            $('#address').val(a);
+            $('#city').val(c);
+            $('#state').val(s);
+            $('#zip').val(z);
+            $('#latitude').val(lat);
+            $('#longitude').val(lng);
+            mapAddress();
+        }
+
+        function clearLatLong() {
+            $('#latitude').val('');
+            $('#longitude').val('');
+            $('.locationData').hide();
+        }
+
+        var mapLatLong = function (){
+            hiddenMap = new MapSet($('#hiddenMap')[0], "<?php echo $companyLatitude; ?>", "<?php echo $companyLongitude; ?>");
+            addressLast = $('#address').val();
+            cityLast = $('#city').val();
+            stateLast = $('#state > option:selected').val()
+            zipLast = $('#zip').val();
+            hiddenMap.MapAddress(addressLast, cityLast, stateLast, zipLast, 'useAddress', setLatLng);
+        }
+
+        var mapAddress = function () {
+            if($('#calendarMap').length == 0) return;
+            else if (map == null) {
+                // map = new MapSet($('#calendarMap')[0]); //fxlratr-258 
+                map = new MapSet($('#calendarMap')[0], "<?php echo $companyLatitude; ?>", "<?php echo $companyLongitude; ?>");
+            }
+            if ($('#latitude').val().length > 0 && $('#longitude').val().length > 0) {
+                map.MapLocation($('#latitude').val(), $('#longitude').val());
+            }
+            else if ($('#address').val().length > 0 || $('#city').val().length > 0 || $('#state > option:selected').val().length > 0 || $('#zip').val().length > 0) {
+                if (addressLast != $('#address').val() || cityLast != $('#city').val() || stateLast != $('#state').val() || zipLast != $('#zip').val()) {
+                    addressLast = $('#address').val();
+                    cityLast = $('#city').val();
+                    stateLast = $('#state > option:selected').val()
+                    zipLast = $('#zip').val();
+                    map.MapAddress(addressLast, cityLast, stateLast, zipLast, 'useAddress', setLatLng);
+                }
+                else {
+                    map.ShowAddressMarkers();
+                }
+            }
+            else {
+                map.RemoveAddressMarkers();
+                $('#latitude').val('');
+                $('#longitude').val('');
+                $('.locationData').hide();
+            }
+        };
+
+
+
+        var setMapLocations = function (locations, start, end) {
+            if (map != null) {
+                map.SetMapLocations(locations, start, end);
+                mapAddress();
+            }
+            else if ($('#calendarMap').length > 0) {
+                // map = new MapSet($('#calendarMap')[0]); FXLRATR-258
+                map = new MapSet($('#calendarMap')[0], "<?php echo $companyLatitude; ?>", "<?php echo $companyLongitude; ?>");
+                map.SetMapLocations(locations, start, end);
+                mapAddress();
+            }
+            else {
+                s = start;
+                e = end;
+                loc = locations;
+            }
+        }
+
+        var setLatLng = function(mapset){
+            if(mapset.location.lat != null && mapset.location.lng != null){          
+                $('#latitude').val(mapset.location.lat);
+                $('#longitude').val(mapset.location.lng);
+                $('.locationData').show();
+            }
+            else{
+                $('#latitude').val('');
+                $('#longitude').val('');
+                $('.locationData').hide();
+            }
+        };
+
+        var initMap = function () {
+            if ($('#calendarMap').length > 0) {
+                // map = new MapSet($('#calendarMap')[0]); //fxlratr-258
+                map = new MapSet($('#calendarMap')[0], "<?php echo $companyLatitude; ?>", "<?php echo $companyLongitude; ?>");
+                if (loc != null) map.setMapLocations(loc, s, e);
+            }
+        };
+
+         function validateDates(){
+
+
+                if($('input[name="scheduledStartDate"]').val()==''){
+                    //add class required
+                    $('#startDateErr').show();
+                    $('input[name="scheduledStartDate"]').addClass("required");
+                    $('input[name="scheduledStartDate"]').addClass("is-invalid-input");
+                    return false;
+                }else{
+                    $('#startDateErr').hide();
+                    $('input[name="scheduledStartDate"]').removeClass("required");
+                    $('input[name="scheduledStartDate"]').removeClass("is-invalid-input");
+                }
+
+
+                if($('input[name="scheduledStartTime"]').val()==''){
+                    //add class required
+                    $('#startTimeErr').show();
+                    $('input[name="scheduledStartTime"]').addClass("required");
+                    $('input[name="scheduledStartTime"]').addClass("is-invalid-input");
+                    return false;
+                }else{
+                    $('#startTimeErr').hide();
+                    $('input[name="scheduledStartTime"]').removeClass("required");
+                    $('input[name="scheduledStartTime"]').removeClass("is-invalid-input");
+                }
+
+                if($('input[name="scheduledEndDate"]').val() ==''){
+                    $('#endDateErr').show();
+                    $('input[name="scheduledEndDate"]').addClass("required");
+                    $('input[name="scheduledEndDate"]').addClass("is-invalid-input");
+                    return false;
+                }else{
+                    $('#endDateErr').hide();
+                    $('input[name="scheduledEndDate"]').removeClass("required");
+                    $('input[name="scheduledEndDate"]').removeClass("is-invalid-input");
+
+                }
+
+                if($('input[name="scheduledEndTime"]').val()==''){
+                    $('#endTimeErr').show();
+                    $('input[name="scheduledEndTime"]').addClass("required");
+                    $('input[name="scheduledEndTime"]').addClass("is-invalid-input");
+                    return false;
+                }else{
+                    $('#endTimeErr').hide();
+                    $('input[name="scheduledEndTime"]').removeClass("required");
+                    $('input[name="scheduledEndTime"]').removeClass("is-invalid-input");
+                };
+
+
+                    return true;
+            };
+
+        var getMarketingTypes = function () {
+            var repeatBusinessMarketingTypeID = '<?php echo $repeatBusinessMarketingTypeID ?>';
+            $('#loading-image').show();
+            $.ajax({
+                url: 'getMarketingTypes.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "GET",
+                contentType: "application/x-www-form-urlencoded",
+                success: function (response) {
+                    var index = 0;
+                    $.each(response, function (i, item) {
+                        index = i +1;
+                        if (item.parentMarketingTypeID == null){ //source
+                            $('#referralDropdown').append('<option class="source" value="' + item.marketingTypeID + '">' + item.marketingTypeName + '</option>');
+                        }
+                        else{ //subsource
+                            $('.source[value="' + item.parentMarketingTypeID + '"]').after('<option class="subsource" value="' + item.marketingTypeID + '">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + item.marketingTypeName + '</option>');
+                        }
+                    });
+                    $('#loading-image').hide();
+                    if (repeatBusinessMarketingTypeID != null && ($('[type="submit"]').attr('name') != 'submitNewCustomer')){
+                        $('#referralDropdown').find('option[value="' + repeatBusinessMarketingTypeID + '"]').prop('selected', true);
+                    }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            });
+        };
+
+        var today = new Date("<?php echo $todaysDateMDY;  ?>");
+
+        $(document).ready(function () {
+
+            scheduleModalShown = false;  
+
+            addNewCustomer();
+
+            //Get all marketing types for the referral dropdown
+            getMarketingTypes();
+
+              //needed for Zendesk Help Ticket
+             userInfo = {
+                    name: "<?php echo $userFirstName;  ?>" + " <?php echo $userLastName;  ?>",
+                    email: "<?php echo $userEmail;  ?>"
+                }
+            
+            //Enable/Disable Email Field On Click
+            $('[name="noEmailRequired"]').change(function (){
+               if ($('input[name="noEmailRequired"]:checked').length > 0){
+                   $('[name="email"]').prop('disabled', true);
+                   $('[name="email"]').val('');
+                   $('[name="email"]').removeAttr('required');
+                   $('[name="email"]').parent().removeClass('is-invalid-label');
+                   $('[name="email"]').removeClass('is-invalid-input');
+                   $('[name="email"]').parent().find('.form-error').removeClass('is-visible');
+               } else {
+                   $('[name="email"]').prop('disabled', false);
+                   $('[name="email"]').attr('required');
+               }
+            }); 
+           
+
+            if( /iPhone|iPad|iPod/i.test(navigator.userAgent) ) {
+                 //change the input types for time to 
+                 //html 5 "time" so that we don't have
+                 //interface issues.
+                 $('#scheduledStartTime').removeClass('timepicker');
+                 $('#scheduledEndTime').removeClass('timepicker');
+
+                 $('#scheduledStartTime').prop('type','time');
+                 $('#scheduledEndTime').prop('type', 'time');
+            }
+
+            $('#cancelAddress').click(function(){
+
+                $('#submitNewCustomer').prop('disabled', false);
+            })
+
+
+            $('#scheduledStartTime').focus(function(event){
+                if( /iPhone|iPad|iPod/i.test(navigator.userAgent)){
+                    //without this, the time controls lost focus and made data entry impossible. 
+                    $(window).scrollTop(0);
+                }
+            });
+
+
+            $('#scheduledEndTime').focus(function(event){
+                if( /iPhone|iPad|iPod/i.test(navigator.userAgent) ){
+                //without this, the time controls lost focus and made data entry impossible.
+                     $(window).scrollTop(0);
+                }
+            });
+
+            $('#scheduledStartDate').focus(function(event){
+                if( /iPhone|iPad|iPod/i.test(navigator.userAgent) ){
+                    //without this, the time controls lost focus and made data entry impossible. 
+                    // $('#modalFocuser').focus();
+                    $(window).scrollTop(0);
+                }
+            });
+
+            $('#scheduledEndDate').focus(function(event){
+                if( /iPhone|iPad|iPod/i.test(navigator.userAgent) ){
+                    //without this, the time controls lost focus and made data entry impossible. 
+                    // $('#modalFocuser').focus();
+
+                    $(window).scrollTop(0);
+                }
+            });
+
+            $('#scheduleSalesperson').focus(function(event){
+                if( /iPhone|iPad|iPod/i.test(navigator.userAgent) ){
+                //without this, the time controls lost focus and made data entry impossible. 
+                // $('#modalFocuser').focus();
+                    $(window).scrollTop(0);
+                }
+            });
+
+            //show warning if scheduling date in past
+            $('#scheduledStartDate').on('change', function(){
+                $('.callout.small.alert').remove();
+                if (new Date($('#scheduledStartDate').val()) < today || new Date($('#scheduledEndDate').val()) < today) {
+                    if ($('.callout.small.alert').length < 1){
+                        $('#addEvent').append('<div class="callout small alert"><p>Please note that one of the selected dates is in the past.</p></div>');
+                        $('#scheduledEndDate').trigger("change");
+                    }
+                }
+            });
+
+            $('#scheduledEndDate').on('change', function(){
+                $('.callout.small.alert').remove();
+                if (new Date($('#scheduledStartDate').val()) < today|| new Date($('#scheduledEndDate').val()) < today) {
+                    if ($('.callout.small.alert').length < 1){
+                        $('#addEvent').append('<div class="callout small alert"><p>Please note that one of the selected dates is in the past.</p></div>');
+                    }
+                }
+            });
+
+            //prevent keyboard from popping up on mobile devices.  Prevent keypress event on other devices.
+            $('input[name="scheduledEndTime"]').prop('readonly', 'readonly');
+            $('input[name="scheduledStartTime"]').prop('readonly', 'readonly');
+            $('input[name="scheduledEndDate"]').prop('readonly', 'readonly');
+            $('input[name="scheduledStartDate"]').prop('readonly', 'readonly');
+
+            function validateProjectContacts() {
+                if ($('#emailTable tbody').children().filter(":visible").length > 1){
+                    $('#emailTable tbody tr:visible [name="contactEmail"]').each(function () {
+                        var email = $(this).val()
+                        if (email == '' || !isEmail(email)) {
+                            $(this).parent().addClass('is-invalid-label');
+                            $(this).addClass('is-invalid-input');
+                            $(this).parent().find('.form-error').addClass('is-visible');
+                            $('small.contactEmail').addClass('is-visible');
+                        } else {
+                            $(this).parent().removeClass('is-invalid-label');
+                            $(this).removeClass('is-invalid-input');
+                            $(this).parent().find('.form-error').removeClass('is-visible');
+                            $('small.contactEmail').removeClass('is-visible');
+                        }
+                    });
+
+                    $('#emailTable tbody tr:visible [name="name"]').each(function () {
+                        var name = $(this).val().trim()
+                        if (name == '') {
+                            $(this).parent().addClass('is-invalid-label');
+                            $(this).addClass('is-invalid-input');
+                            $(this).parent().find('.form-error').addClass('is-visible');
+                            $('small.contactName').addClass('is-visible');
+                        } else {
+                            $(this).parent().removeClass('is-invalid-label');
+                            $(this).removeClass('is-invalid-input');
+                            $(this).parent().find('.form-error').removeClass('is-visible');
+                            $('small.contactName').removeClass('is-visible');
+                        }
+                    });
+                }
+                else if ($('#emailTable tbody').children().filter(":visible").length == 1){
+                    var email = $('#emailTable tbody tr:visible [name="contactEmail"]').val();
+                    var name = $('#emailTable tbody tr:visible [name="name"]').val().trim();
+                    if (email == '' && name == ''){
+                        $('small.contactEmail').removeClass('is-visible');
+                        $('small.contactName').removeClass('is-visible');
+                        $('#emailTable tbody tr:visible [name="contactEmail"]').parent().removeClass('is-invalid-label');
+                        $('#emailTable tbody tr:visible [name="contactEmail"]').removeClass('is-invalid-input');
+                        $('#emailTable tbody tr:visible [name="contactEmail"]').parent().find('.form-error').removeClass('is-visible');
+                        $('#emailTable tbody tr:visible [name="name"]').parent().removeClass('is-invalid-label');
+                        $('#emailTable tbody tr:visible [name="name"]').removeClass('is-invalid-input');
+                        $('#emailTable tbody tr:visible [name="name"]').parent().find('.form-error').removeClass('is-visible');
+                    }
+                    else{
+                        if (name == '') {
+                            $('#emailTable tbody tr:visible [name="name"]').parent().addClass('is-invalid-label');
+                            $('#emailTable tbody tr:visible [name="name"]').addClass('is-invalid-input');
+                            $('#emailTable tbody tr:visible [name="name"]').parent().find('.form-error').addClass('is-visible');
+                            $('small.contactName').addClass('is-visible');
+                        } else {
+                            $('#emailTable tbody tr:visible [name="name"]').parent().removeClass('is-invalid-label');
+                            $('#emailTable tbody tr:visible [name="name"]').removeClass('is-invalid-input');
+                            $('#emailTable tbody tr:visible [name="name"]').parent().find('.form-error').removeClass('is-visible');
+                            $('small.contactName').removeClass('is-visible');
+                        }
+                        if (email == '' || !isEmail(email)) {
+                            $('#emailTable tbody tr:visible [name="contactEmail"]').parent().addClass('is-invalid-label');
+                            $('#emailTable tbody tr:visible [name="contactEmail"]').addClass('is-invalid-input');
+                            $('#emailTable tbody tr:visible [name="contactEmail"]').parent().find('.form-error').addClass('is-visible');
+                            $('small.contactEmail').addClass('is-visible');
+                        } else {
+                            $('#emailTable tbody tr:visible [name="contactEmail"]').parent().removeClass('is-invalid-label');
+                            $('#emailTable tbody tr:visible [name="contactEmail"]').removeClass('is-invalid-input');
+                            $('#emailTable tbody tr:visible [name="contactEmail"]').parent().find('.form-error').removeClass('is-visible');
+                            $('small.contactEmail').removeClass('is-visible');
+                        }
+                    }
+                }
+            };
+
+            function validate(){
+                var addCustomer;
+                addCustomer = 1;
+
+                $('input[required], select[required]').each(function(){
+                    if ($.trim( $(this).val() ) == '') {
+                    //if ($(this).val() == '') {
+                        $(this).parent().addClass('is-invalid-label');
+                        $(this).addClass('is-invalid-input');
+                        $(this).parent().find('.form-error').addClass('is-visible');
+                    } else {
+                        $(this).parent().removeClass('is-invalid-label');
+                        $(this).removeClass('is-invalid-input');
+                        $(this).parent().find('.form-error').removeClass('is-visible');
+                        addCustomer = 1;
+                    }
+                });
+
+                validateProjectContacts();
+
+                if ($('#phoneTable tbody tr:visible').length > 0) {
+                    $('small.onePhone').removeClass('is-visible');
+
+                    $('#phoneTable tbody tr:visible').each(function(){
+                        if ($(this).find('td input.phone').val() == '' || $(this).find('td select').val() == '') {
+                            $('small.fullPhone').addClass('is-visible');
+                            addCustomer = 0;
+                        } else {
+                            if ($(this).find('td input.phone').val().length < 14) {
+                                 $('small.fullPhone').addClass('is-visible');
+                                 addCustomer = 0;
+                            } else {
+                                $('small.fullPhone').removeClass('is-visible');
+                                addCustomer = 1;
+                            }
+                        }
+                    }); 
+
+                    if (addCustomer == 1) {
+                        if ($('#phoneTable .isPrimary:checked').length < 1) {
+                            $('small.primary').addClass('is-visible');
+                            addCustomer = 0;
+                        } else {
+                            if ($('#phoneTable .isPrimary:checked').is(':visible')) {
+                                $('small.primary').removeClass('is-visible');
+                                addCustomer = 1;
+                            } else {
+                                $('small.primary').addClass('is-visible');
+                                addCustomer = 0;
+                            }
+                        }
+                    }
+
+                } else {
+                    $('small.onePhone').addClass('is-visible');
+                    addCustomer = 0;
+                }
+
+                if ($(".is-visible")[0]){
+                    addCustomer = 0;
+                }
+                if (addCustomer == 1) {
+                    if ($('#scheduledStartDate').val() == '' || $('#scheduledEndDate').val() == ''){
+                        //we want to ensure that you want to add a customer without
+                        //scheduling an appointment for evaluation
+                        if (!scheduleModalShown){
+                            $('#confirmSaveUnscheduled').foundation('open');
+                            // return false;
+                            addCustomer = 0;
+                        }
+                    } else{
+                        $('#submitNewCustomer').prop('disabled', true);
+                    }
+                }
+
+                if (addCustomer == 1) {
+                    checkAddress(); 
+                }
+            };
+
+            function checkAddress(){
+                var undefinedAddress = false;
+                if ($('#latitude').val() == '' || $('#longitude').val() == ''){
+                    address = $('input[name="address"]').val();
+                    city = $('input[name="city"]').val();
+                    state = $('select[name="state"]').val();
+                    zip = $('input[name="zip"]').val();
+
+                    $('#addressPartialText').text(address + ', ' + city + ', ' + state + ' ' + zip);
+                    if (hiddenMap != null){
+                        if (hiddenMap.address.length > 0){
+                            $('#addressFullText').text(hiddenMap.address[0].title);
+                        }
+                        else{
+                            undefinedAddress = true;
+                        }
+                    }
+                    if (!undefinedAddress){
+                        $('#latLongModal').foundation('open');
+                    }
+                    else{
+                        submitData();
+                    }
+                }
+                else{
+                    submitData();            
+                }
+            };
+
+           function submitData(){
+                var form = $('form');
+                var formdata = new FormData(form[0]);
+                var customerPhoneArray = storeCustomerPhoneTableData();
+                var emailArray = storeEmailTableData();
+                var referralMarketingTypeID = $('#referralDropdown option:selected').val();
+
+                if(referralMarketingTypeID == 0){
+                    referralMarketingTypeID = null;
+                }
+
+                function storeEmailTableData() {
+                    var emailTableData = new Array();
+                    $('#emailTable tbody tr').each(function(row,tr){
+                        var name = $(tr).find('td:eq(0)').find('[name="name"]').val().trim();
+                        var email = $(tr).find('td:eq(1)').find('[name="contactEmail"]').val();
+                        if (name != '' && email != ''){
+                            if (name == ''){
+                                name = null;
+                            }
+                            emailTableData[row]={
+                                "email": email,
+                                "name": name
+                            };
+                        }
+                    });
+                    emailTableData.shift();
+                    var emailTableArray = emailTableData;
+                    return emailTableArray = JSON.stringify(emailTableArray);
+                }
+            
+                function storeCustomerPhoneTableData() {
+                    var phoneTableData = new Array();
+                    $('#phoneTable tbody tr').each(function(row,tr){
+                        phoneTableData[row]={
+                            "phoneDescription":$(tr).find('td:eq(0)').find('select').val(),
+                            "phoneNumber":$(tr).find('td:eq(1)').find('input').val(),
+                            "isPrimary":$(tr).find('td:eq(2)').find('input:checked').val()
+                        };
+                    });
+                    phoneTableData.shift();
+                    var customerPhoneTableArray = phoneTableData;
+                    return customerPhoneTableArray = JSON.stringify(customerPhoneTableArray);
+                }
+
+                formdata.append('emailArray', emailArray);
+
+                formdata.append('customerPhoneArray', customerPhoneArray);
+
+                formdata.append('referralMarketingTypeID', referralMarketingTypeID);
+
+                $('#loading-image').show();
+
+                if ($('input[name="scheduledStartTime"]').val() !='' && $('input[name="scheduledEndTime"]').val() !='' ){
+                        if(/iPhone|iPad|iPod/i.test(navigator.userAgent)){
+
+                                    var userStartTime = $('input[name="scheduledStartTime"]').val().toString();
+                                    var userEndTime = $('input[name="scheduledEndTime"]').val().toString();
+
+                                    var startHours = userStartTime.split(':')[0];
+                                    var startMinutes = userStartTime.split(':')[1];
+
+                                    var endHours = userEndTime.split(':')[0];
+                                    var endMinutes = userEndTime.split(':')[1];
+                                
+                            }else{
+
+                                    var userStartTime = $('input[name="scheduledStartTime"]').wickedpicker('time').toString();
+                                    var userEndTime = $('input[name="scheduledEndTime"]').wickedpicker('time').toString();
+
+                                    var startHours = userStartTime.split(':')[0];
+                                    var startMinutes = userStartTime.split(':')[1];
+                                    startMinutes = startMinutes.slice(0, -2)
+                                    var startSuffix = userStartTime.split(' ')[3];
+
+                                    startHours = startHours.trim();
+                                    startMinutes = startMinutes.trim();
+                                    startSuffix = startSuffix.trim();
+
+                                    if (startSuffix == 'pm' || startSuffix == 'PM') {
+                                        startHours = startHours != '12' ? parseInt(startHours) + parseInt(12) : startHours;
+                                    }
+
+                                    var endHours = userEndTime.split(':')[0];
+                                    var endMinutes = userEndTime.split(':')[1];
+                                    endMinutes = endMinutes.slice(0, -2)
+                                    var endSuffix = userEndTime.split(' ')[3];
+
+                                    endHours = endHours.trim();
+                                    endMinutes = endMinutes.trim();
+                                    endSuffix = endSuffix.trim();
+
+                                    if (endSuffix == 'pm' || endSuffix == 'PM') {
+                                        endHours = endHours != '12' ? parseInt(endHours) + parseInt(12) : endHours;
+                                    }
+
+
+                            }
+
+                                userStartTime = startHours + ":" + startMinutes + ":" + "00";
+                                userEndTime = endHours + ":" + endMinutes + ":" +"00";
+                                $('input[name="scheduledStartTime"]').val(userStartTime);
+
+                                $('input[name="scheduledEndTime"]').val(userEndTime);
+
+                                formdata.append('scheduledStartTimeFormatted', userStartTime);
+                                formdata.append('scheduledEndTimeFormatted', userEndTime);
+                        }
+
+
+                if($('[type="submit"]').attr('name') == 'submitNewCustomer'){
+                    $.ajax({
+                        url         : 'submitNewCustomer.php',
+                        data        : formdata ? formdata : form.serialize(),
+                        cache       : false,
+                        contentType : false,
+                        processData : false,
+                        type        : 'POST',
+
+                        success: function (response) {
+                            $('#loading-image').hide();
+                            //console.log(response);
+                            var response = jQuery.parseJSON(response);
+                            //console.log(response.result);
+                            if (response.result == "true"){
+
+                               window.location.href = "project-management.php?pid="+response.projectID;
+                            }
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            console.log(textStatus, errorThrown);
+                            console.log(jqXHR.responseText);
+                        }
+                    });
+                }
+                else if ($('[type="submit"]').attr('name') == 'submitNewProperty'){
+                    $.ajax({
+                        url         : 'submitNewProperty.php',
+                        data        : formdata ? formdata : form.serialize(),
+                        cache       : false,
+                        contentType : false,
+                        processData : false,
+                        type        : 'POST',
+
+                        success: function (response) {
+                            $('#loading-image').hide();
+                             var response = jQuery.parseJSON(response);
+                             //console.log(response);
+                             window.location.href = "project-management.php?pid="+response.projectID;
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            console.log(textStatus, errorThrown);
+                            console.log(jqXHR.responseText);
+                        }
+                    });
+                }
+                else if ($('[type="submit"]').attr('name') == 'submitNewProject'){
+                    $.ajax({
+                        url         : 'submitNewProject.php',
+                        data        : formdata ? formdata : form.serialize(),
+                        cache       : false,
+                        contentType : false,
+                        processData : false,
+                        type        : 'POST',
+
+                        success: function (response) {
+                            $('#loading-image').hide();
+                             var response = jQuery.parseJSON(response);
+                             window.location.href = "project-management.php?pid="+response.projectID;
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            console.log(textStatus, errorThrown);
+                            console.log(jqXHR.responseText);
+                        }
+                    });
+                }
+                else{
+                    // console.log('none selected');
+                }
+           }
+
+           var showMap = function (){
+                    $('#dailyView')[0].click();
+                    $('#loading-image').show();
+                    mapAddress();
+                    $('#loading-image').hide();
+           };
+
+            $('form').on('submit', function () {
+                if($('[type="submit"]').attr('name') == 'submitNewCustomer'){
+                    validate();
+                }
+                else if ($('[type="submit"]').attr('name') == 'submitNewProperty'){
+                    $('input[required], select[required]').each(function(){
+                        if (!$(this).is(':disabled')){
+                            if ($.trim( $(this).val() ) == '') {
+                                $(this).parent().addClass('is-invalid-label');
+                                $(this).addClass('is-invalid-input');
+                                $(this).parent().find('.form-error').addClass('is-visible');
+                            } else {
+                                $(this).parent().removeClass('is-invalid-label');
+                                $(this).removeClass('is-invalid-input');
+                                $(this).parent().find('.form-error').removeClass('is-visible');
+                            }
+                        }
+                    });
+                    if (!$(".is-visible")[0]){
+                        submitData();
+                    }
+                }
+                else if ($('[type="submit"]').attr('name') == 'submitNewProject'){
+                    if ($.trim( $('[name="projectDescription"]').val() ) == '') {
+                        $('[name="projectDescription"]').parent().addClass('is-invalid-label');
+                        $('[name="projectDescription"]').addClass('is-invalid-input');
+                        $('[name="projectDescription"]').parent().find('.form-error').addClass('is-visible');
+                    } else {
+                        $('[name="projectDescription"]').parent().removeClass('is-invalid-label');
+                        $('[name="projectDescription"]').removeClass('is-invalid-input');
+                        $('[name="projectDescription"]').parent().find('.form-error').removeClass('is-visible');
+                    }
+                    if (!$(".is-visible")[0]){
+                        submitData();
+                    }
+                }
+                else{
+                    console.log('none selected');
+                }
+            });
+
+            $('#useComplete').click(function (){
+                $('#mapsAddress').html(hiddenMap.address[0].iwc);
+                $('#mapsAddress a')[0].click();
+                $('#latLongModal').foundation('close');
+                submitData();
+            });
+
+            $('#usePartial').click(function (){
+                $('#latLongModal').foundation('close');
+                submitData();
+            });
+
+
+            //handlers for the buttons on the modal #saveDontSchedule
+            var saveDontSchedule = function (){
+                //For Save without Schedule Modal  FXLRATR-254
+                //if the user doesn't want to schedule anything immediately
+                //this is the option (s)he will choose
+                $('#confirmSaveUnscheduled').foundation('close');
+                scheduleModalShown = true;  
+                checkAddress();
+            }
+
+
+            var dontSaveWithoutSchedule = function (){
+                //For Save without Schedule Modal  FXLRATR-254
+                //this option is selected when the user wishes to 
+                //schedule an appointment
+                $('#confirmSaveUnscheduled').foundation('close');
+                $("input:text:visible:first").focus();
+                scheduleModalShown = true;    
+            }
+
+            // end handlers for buttons on the modal #saveDontSchedule
+
+
+            $('#addNew').click(addNewCustomer);
+            $('#existing').click(existingCustomer);
+            $('.addPhone').click(addPhoneRow);
+            $('#emailTable .addEmail').click(addEmailRow);
+            $('.deletePhone').click(deletePhoneRow);
+            $('#cancelAddCustomer').click(cancelCustomer);
+            $('input.isPrimary').change(isPrimaryCheck);
+            $('input.isInHouseSales').change(showCalendar);
+            $('#address, #city, #state, #zip').change(function () { $('#latitude, #longitude').val('');  mapAddress(); mapLatLong(); });
+
+            //For Save without Schedule Modal  FXLRATR-254
+            $('#saveDontSchedule').click(saveDontSchedule); //handles 'yes' button on the confirm modal
+            $('#dontSaveWithoutSchedule').click(dontSaveWithoutSchedule); //handles 'no' button on the confirm modal
+
+
+
+            $('input.evaluationData, select.evaluationData').change(function () {
+                $(this).addClass('changed');
+            });
+
+            $('#today').click(function () {
+                $('#calendar').fullCalendar('today')
+            });
+
+            $('#closeNoResourcesModal').click(function () {
+                $('#noResourcesModal').foundation('close');
+                window.location.replace("customer.php");
+            });
+            
+            $('#dailyView').click(function () {
+                $('#weeklyView, #monthlyView').removeClass('active');
+                $('#dailyView').addClass('active');
+                $('#calendar').fullCalendar('changeView', 'timelineDay')
+            });
+
+            $('#weeklyView').click(function () {
+                $('#dailyView, #monthlyView').removeClass('active');
+                $('#weeklyView').addClass('active');
+                $('#calendar').fullCalendar('changeView', 'agendaWeek')
+            });
+
+            $('#monthlyView').click(function () {
+                $('#dailyView, #weeklyView').removeClass('active');
+                $('#monthlyView').addClass('active');
+                $('#calendar').fullCalendar('changeView', 'month')
+            });
+
+            $('#previous').click(function () {
+                $('#calendar').fullCalendar('prev')
+            });
+
+            $('#next').click(function () {
+                $('#calendar').fullCalendar('next')
+            });
+
+
+            $('#addEvent').on('closed.zf.reveal', function () {
+                $('#addEvent').parent().appendTo("#calendarShow");
+            });
+
+             if ($('#customerID').val() != '' || $('#propertyID').val() != '') {
+                $('#customerButtons').css('display','none');
+            }
+
+
+            $(function () {
+                $(".datepickerFrom").datepicker({
+                    defaultDate: "+1w",
+                    changeMonth: true,
+                    numberOfMonths: 1,
+                    onClose: function (selectedDate) {
+                        $(".datepickerTo").datepicker("option", "minDate", selectedDate);
+                        $('#scheduledEndDate').trigger('change');
+                    }
+                });
+                $(".datepickerTo").datepicker({
+                    defaultDate: "+1w",
+                    changeMonth: true,
+                    numberOfMonths: 1,
+                    onClose: function (selectedDate) {
+                        $(".datepickerFrom").datepicker("option", "maxDate", selectedDate);
+                    }
+                });
+            });
+									
+            //Show Setup Modal if Clicked in Top Nav
+            $('#showSetup').click(showSetupModal);
+
+            //Show Setup Modal On Page Load if it Hasn't Been Viewed Since Yesterday
+            showSetupModal('true');
+
+            //Update Last Viewed When Modal Opens
+            $('#setupModal').on('open.zf.reveal', function() {
+                $.ajax({
+                    url: 'setupProgressUpdate.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        updateSetupNotice: 'true'
+                    },
+                    success: function (response) {
+                        //console.log(response);
+                        // if (response == 'true') {
+                        // }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                });
+
+            });
+
+            //Update Checkmarks When Clicked
+            $('img.setupProgressCheckmark').click(updateChecks);
+
+            //Stop Showing Setup Modal
+            $('#setupComplete').click(setupComplete);
+										
+
+            $.ajax({
+                url: 'getResources.php',
+                dataType: 'json',
+                contentType: 'application/json',
+                type: 'GET',
+                contentType: 'application/x-www-form-urlencoded',
+                data: {
+                    filter: 'sales'
+                },
+                success: function (response) {
+                    $('#filterSelect').append('<select disabled id="filterResources"><option value="">View All</option><option selected value="sales">Sales</option><option value="installation">Installation</option></select>');
+                    if (response != null) {
+                        $.each(response, function (i, item) {
+                            $('select#filterResources').append('<option value="' + item.id + '">' + item.title + '</option>');
+                            $('#scheduleModalDD select').append('<option value="' + item.id + '">' + item.title + '</option>');
+                            $('select[name="projectSalesperson"]').append('<option value="' + item.id + '">' + item.title + '</option>');
+                        });
+                        $('select#filterResources').change(function () {
+
+                            var view = $('#calendar').fullCalendar('getView');
+
+                            var defaultView = view.name;
+                            filterCalendar(defaultView);
+
+                        });
+                    }
+                    else{
+                        $('#calendar').empty();
+                        $('.dashboard-filter-bar').empty();
+                        $('#noResourcesModal').foundation('open');
+                    }
+
+
+
+                }, error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+
+            });
+           
+        });
+
+        var addNewCustomer = function () {
+              
+            if ($('#propertyID').val() != '') {
+                var propertyID = $('#propertyID').val();
+                window.history.replaceState(null, '', 'customer-add.php?pid='+propertyID)
+            } else if ($('#customerID').val() != '') {
+                var customerID = $('#customerID').val();
+                window.history.replaceState(null, '', 'customer-add.php?cid='+customerID)
+            } else {
+                window.history.replaceState(null, '', 'customer-add.php')
+            }
+              
+            $('input.isInHouseSales[value="1"]').prop('checked', true);
+
+            $('#newCustomerDisplay').css('display', '');
+            $('#calendarShow').css('display', '');
+
+            renderCalendar('month');
+
+            $('#existing').removeClass('active');
+            $('#addNew').addClass('active');
+
+            if ('<?php echo $addPhoneRow; ?>' == '1') {
+
+                oldRow = $('#phoneTable').find('tbody > tr:last-child input.isPrimary').attr('value');
+                var newRow = parseFloat(oldRow) + 1;
+
+                $cloneBlankRow = $('#phoneTable').find('tbody tr:first').clone().css('display', '');
+                $('#phoneTable').find('tbody').append($cloneBlankRow);
+                $('#phoneTable').find('tbody > tr:last-child input.isPrimary').prop('checked', 'true');
+                $('#phoneTable').find('tbody > tr:last-child input.isPrimary').attr('value', '' + (newRow) + '');
+                $('#phoneTable').find('tbody > tr:last-child input.isPrimary').change(isPrimaryCheck);
+                $('#phoneTable').find('tbody > tr:last-child .delete > a').click(deletePhoneRow);
+            }
+
+            addEmailRow();
+        };
+
+        var addPhoneRow = function () {
+
+            oldRow = $('#phoneTable').find('tbody > tr:last-child input.isPrimary').attr('value');
+            var newRow = parseFloat(oldRow) + 1;
+
+            $cloneBlankRow = $('#phoneTable').find('tbody tr:first').clone().css('display', '');
+            $('#phoneTable').find('tbody').append($cloneBlankRow);
+            $('#phoneTable').find('tbody > tr:last-child input.isPrimary').attr('value', '' + (newRow) + '');
+            $('#phoneTable').find('tbody > tr:last-child input.isPrimary').change(isPrimaryCheck);
+            $('#phoneTable').find('tbody > tr:last-child .delete > a').click(deletePhoneRow);
+
+            //if ($('input.isPrimary').is(':not(:checked)'))
+            if (!$('input.isPrimary:checked'))
+                $('#phoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+        };
+
+
+        var deletePhoneRow = function () {
+
+            $(this).parent().parent().remove();
+
+            if ($(this).parent().parent().find('input.isPrimary').is(':checked'))
+                $('#phoneTable tbody tr:nth-child(2) td.primary input.isPrimary').prop('checked', true);
+
+            if ($('#phoneTable tbody').children().length == 1)
+                $('.addPhone').trigger('click');
+
+        };
+
+
+        var isPrimaryCheck = function () {
+
+            $('#phoneTable').find('input.isPrimary').prop('checked', false);
+            $(this).prop('checked', true);
+
+        };
+
+        var addEmailRow = function () {
+            $cloneBlankRow = $('#emailTable').find('tbody tr:first').clone().css('display', '');
+            $('#emailTable').find('tbody').append($cloneBlankRow);
+            $('#emailTable').find('tbody > tr:last-child a').click(deleteEmailRow);
+        };
+
+        var deleteEmailRow = function () {
+            $(this).parent().parent().remove();
+
+            if ($('#emailTable tbody').children().length == 1){
+                $('small.contactEmail').removeClass('is-visible');
+                $('small.contactName').removeClass('is-visible');
+            }
+        };
+
+        var isEmail = function(email) {
+            return email.indexOf('@') > 0 && email.indexOf('.') > 0;
+        };
+
+        var existingCustomer = function () {
+            if ($('#addNew').hasClass('active')) cancelCustomer();
+            else {
+                $('#newCustomerDisplay, #calendarShow').css('display', 'none');
+               
+                $('#addNew').removeClass('active');
+                $('#existing').addClass('active');
+                window.history.replaceState(null, '', 'customer.php')
+            }
+        };
+
+        var cancelCustomer = function () {
+
+            $('#cancelCustomerModal').foundation('open');
+
+            $('#cancelCustomerNo').click(function () {
+                $('#cancelCustomerModal').foundation('close');
+            });
+
+            $('#cancelCustomerYes').click(function () {
+                if ($('#propertyID').val() != '' ||  $('#customerID').val() != '' ) {
+                    var customerID = $('#customerID').val();
+                    window.location.href = "customer-management.php?cid="+customerID+"";
+                }else {
+                    window.location.href = "customer.php";
+
+                }
+            });
+
+        };
+
+        var showCalendar = function () {
+
+            if ($('input.isInHouseSales').is(':checked')) {
+                var value = $(this).val();
+
+                if (value == 1) {
+
+                    $('#calendarShow').css('display', 'block');
+
+                    renderCalendar('month');
+
+
+                } else {
+                    $('#calendarShow').css('display', 'none');
+                }
+            }
+
+        };
+
+        function renderCalendar(defaultView) {
+            $('#calendar').fullCalendar({
+                header: {
+                    left: '',
+                    center: '',
+                    right: ''
+                },
+                views: {
+                    timelineDay: {
+                        buttonText: 'Daily',
+                        titleFormat: 'dddd MMMM D, YYYY'
+                    },
+                    agendaWeek: {
+                        buttonText: 'Weekly',
+                        titleFormat: 'MMMM D' //[ YYYY]{ '&#8212;' MMMM D YYYY}"
+                    },
+                    month: {
+                        buttonText: 'Monthly',
+                        titleFormat: 'MMMM YYYY',
+                        eventLimit: 3 
+                    }
+                },
+                slotDuration: '00:15:00',
+                slotLabelFormat: 'hA',
+                scrollTime: '08:00:00',
+                defaultView: defaultView,
+                aspectRatio: 1.8,
+                defaultDate: '<?php echo $todaysDateDefault;  ?>',
+                fixedWeekCount: false,
+                selectable: true,
+                selectHelper: false,
+                unselectAuto: false,
+                editable: false,
+                eventLimit: true, // allow "more" link when too many events
+                overlap: false,
+                eventOverlap: false,
+                eventColor: '#f6f7fb',
+                businessHours: {
+                    start: '8:00',
+                    end: '17:00',
+                    dow: [0, 1, 2, 3, 4, 5, 6]
+                },
+                resourceLabelText: ' ',
+                resources: {
+                    url: 'getResources.php',
+                    data: {
+                        filter: 'sales' //$('select#filterResources option:selected').val()
+                    },
+                    success: function (response) {
+                        //$('#script-warning').show();
+                        //console.log(response);
+                        $('#loading-image').hide(); 
+
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                },
+                dayClick: function (date, jsEvent, view) {
+                    var date = date.format();
+                    var coordinates = jsEvent.pageX + ',' + jsEvent.pageY;
+                    var view = view.name;
+
+                    if (view != 'timelineDay') {
+                        $('#weeklyView, #monthlyView').removeClass('active');
+                        $('#dailyView').addClass('active');
+                        $('#calendar').fullCalendar('changeView', 'timelineDay');
+                        $('#calendar').fullCalendar('gotoDate', date);
+                    }
+                },
+                select: function (start, end, jsEvent, view, resource) {
+                    var view = view.name;
+
+                    if (view == 'timelineDay') {
+
+
+                        if ($('input[name="tempID"]').val() != '') {
+                           
+                           //Get Temporary ID
+                           var tempID = $('input[name="tempID"]').val();
+
+                           //Remove Last Rendered Event
+                           $('#calendar').fullCalendar('removeEvents', tempID);
+
+                           $('input[name="tempID"]').val('');
+                       }
+
+                       //Check if event exists already
+                       if ($('input[name="tempID"]').val() == '') {
+                            var address, city, state, zip;
+
+                            address = $('input[name="address"]').val();
+                            city = $('input[name="city"]').val();
+                            state = $('select[name="state"]').val();
+                            zip = $('input[name="zip"]').val();
+
+
+                            //Render Event
+                            var eventData;
+                            var firstName = $('input[name="firstName"]').val();
+                            var lastName = $('input[name="lastName"]').val();
+
+                            eventData = {
+                                title: firstName + ' ' + lastName + ' Appointment',
+                                start: start,
+                                end: end,
+                                resourceId: resource.id,
+                                address: address,
+                                city: city,
+                                state: state,
+                                zip: zip
+                            };
+
+                            $('#calendar').fullCalendar('renderEvent', eventData, true); // stick? = true
+
+
+                            //Get Temporary Event ID
+                            var clientEvents = $('#calendar').fullCalendar('clientEvents');
+                            var lastEvent = clientEvents[clientEvents.length - 1];
+                            var lastId = lastEvent._id;
+
+                            //console.log(clientEvents);
+                            //console.log(lastId);
+
+                            $('#addEvent #modalTitle').text('Schedule Evaluation');
+                             if($('input[name="firstName"]').val() !=''){
+                            $('#addEvent p.lead').text('Add Appointment For ' + $('input[name="firstName"]').val()+' '+$('input[name="lastName"]').val());
+                              }else{
+                                        $('#addEvent p.lead').text('Add Appointment');
+                                    }
+                            $('#addEvent .scheduledTitle').text('Salesperson');
+
+
+                            //Populate Modal with Data from Select Event
+                            var startDate = moment(eventData.start).format('MM/DD/YYYY');
+                            var startTime = moment(eventData.start).format('HH:mm');
+                            var startTimeAMPM = moment(eventData.start).format('h : mm A');
+                            $('input[name="scheduledStartDate"]').val(startDate);
+
+
+                            var endDate = moment(eventData.end).format('MM/DD/YYYY');
+                            var endTime = moment(eventData.end).format('HH:mm');
+                            var endTimeAMPM = moment(eventData.end).format('h : mm A');
+                            $('input[name="scheduledEndDate"]').val(endDate);
+
+
+                            
+
+                            // console.log("st: " + startTime);
+                            // console.log("end: " + endTime);
+
+
+                            $('select[name="salesperson"]').find('option[value="' + resource.id + '"]').prop('selected', true);
+
+                            $('input[name="tempID"]').val(lastId);
+
+                            //get wickedpickers setup 
+                                  var StartTimeOptions ={
+                                        now: startTime,
+                                        twentyFour: false,  //Display 24 hour format, defaults to false
+                                        upArrow: 'wickedpicker__controls__control-up',  //The up arrow class selector to use, for custom CSS
+                                        downArrow: 'wickedpicker__controls__control-down', //The down arrow class selector to use, for custom CSS
+                                        close: 'wickedpicker__close', //The close class selector to use, for custom CSS
+                                        hoverState: 'hover-state', //The hover state class to use, for custom CSS
+                                        title: "Select a time", //The Wickedpicker's title,
+                                        showSeconds: false, //Whether or not to show seconds,
+                                        secondsInterval: 1, //Change interval for seconds, defaults to 1,
+                                        minutesInterval: 5, //Change interval for minutes, defaults to 1
+                                        beforeShow: null, //A function to be called before the Wickedpicker is shown
+                                        show: function(){
+                                                var modal = $('input[name="scheduledStartTime"]').closest('#addEvent');
+                                                var datePicker = $('body').find('.wickedpicker');
+                                                    if(!modal.length) {
+                                                        $(datePicker).css('z-index', 'auto');
+                                                        return;
+                                                    }
+                                                var zIndexModal = $(modal).css('z-index');
+                                                    $(datePicker).css('z-index', zIndexModal + 1);
+                                                }, //A function to be called when the Wickedpicker is shown
+                                        clearable: false, //Make the picker's input clearable (has clickable "x")
+                                        };
+                                
+                                     var EndTimeOptions ={
+                                        now: endTime,
+                                        twentyFour: false,  //Display 24 hour format, defaults to false
+                                        upArrow: 'wickedpicker__controls__control-up',  //The up arrow class selector to use, for custom CSS
+                                        downArrow: 'wickedpicker__controls__control-down', //The down arrow class selector to use, for custom CSS
+                                        close: 'wickedpicker__close', //The close class selector to use, for custom CSS
+                                        hoverState: 'hover-state', //The hover state class to use, for custom CSS
+                                        showSeconds: false, //Whether or not to show seconds,
+                                        secondsInterval: 1, //Change interval for seconds, defaults to 1,
+                                        minutesInterval: 5, //Change interval for minutes, defaults to 1
+                                        beforeShow: null, //A function to be called before the Wickedpicker is shown
+                                        show: function(){
+                                                var modal = $('input[name="scheduledEndTime"]').closest('#addEvent');
+                                                var datePicker = $('body').find('.wickedpicker');
+                                                    if(!modal.length) {
+                                                        $(datePicker).css('z-index', 'auto');
+                                                        return;
+                                                    }
+                                                var zIndexModal = $(modal).css('z-index');
+                                                    $(datePicker).css('z-index', zIndexModal + 1);
+                                                }, //A function to be called when the Wickedpicker is shown
+                                        clearable: false, //Make the picker's input clearable (has clickable "x")
+                                        };
+
+
+
+                                if(/iPhone|iPad|iPod/i.test(navigator.userAgent)){
+                                    $('input[name="scheduledStartTime"]').val(startTime);
+                                    $('input[name="scheduledEndTime"]').val(endTime);
+                                }else{
+                                   $('#scheduledStartTime').wickedpicker(StartTimeOptions);
+                                   $('#scheduledStartTime').val(startTimeAMPM);
+                                   $('#scheduledEndTime').wickedpicker(EndTimeOptions);
+                                   $('#scheduledEndTime').val(endTimeAMPM);
+                                }   
+
+                                if (new Date($('input[name="scheduledStartDate"]').val()) < today) {
+                                    if ($('.callout.small.alert').length < 1){
+                                        $('#addEvent').append('<div class="callout small alert"><p>Please note that one of the selected dates is in the past.</p></div>');
+                                    }
+                                }    
+                            //Open Add Event Modal
+                            $('#addEvent').foundation('open');
+
+
+                 
+                            // Click Cancel on Modal
+                            $('#confirmAppointmentNo').click(function () {
+
+                                //Get Temporary ID
+                                var tempID = $('input[name="tempID"]').val();
+
+                                //Remove Last Rendered Event
+                                $('#calendar').fullCalendar('removeEvents', tempID);
+
+                                //Unselect Event on Calendar
+                                $('#calendar').fullCalendar('unselect');
+
+                                //Remove Temp ID from form
+                                $('input[name="tempID"]').val('');
+
+                                //Close Modal
+                                $('#addEvent').foundation('close');
+                            });
+
+
+                            // Click Save on Modal
+                            $('#confirmAppointmentYes').click(function () {
+
+                                if (validateDates() == true){
+                                // Check if Input Fields on Modal Were Changed
+                                
+                                if ($('input.evaluationData, select.evaluationData').hasClass('changed')) {
+
+                                    $('#addEvent #modalTitle').text('Schedule Evaluation');
+                                     if($('input[name="firstName"]').val() !=''){
+                                      $('#addEvent p.lead').text('Add Appointment For '+ $('input[name="firstName"]').val()+' '+$('input[name="lastName"]').val());
+                                    }else{
+                                        $('#addEvent p.lead').text('Add Appointment');
+                                    }
+                                    
+                                    $('#addEvent .scheduledTitle').text('Salesperson');
+
+                                    //Get Temporary ID
+                                    var tempID = $('input[name="tempID"]').val();
+
+                                    //Remove Last Rendered Event
+                                    $('#calendar').fullCalendar('removeEvents', tempID);
+
+
+                                    //Get Input Start Day and Time
+
+                                    var newStartDay = $('input[name="scheduledStartDate"]').val();
+                                    
+
+                                    if(/iPhone|iPad|iPod/i.test(navigator.userAgent)){
+                                        var newStartTime = $('input[name="scheduledStartTime"]').val();
+                                        var startHours = newStartTime.split(':')[0];
+                                        var startMinutes = newStartTime.split(':')[1];
+                                        var newStartDayFormat = new Date(newStartDay);
+
+                                    }else{
+                                        // var newStartTime = $('input[name="scheduledStartTime"]').wickedpicker('time');
+                                        var newStartTime = $('#scheduledStartTime').wickedpicker('time');
+
+                                        var startHours = newStartTime.split(':')[0];
+                                        var startMinutes = newStartTime.split(':')[1];
+                                        startMinutes = startMinutes.slice(0, -2)
+                                        var startSuffix = newStartTime.split(' ')[3];
+
+                                        startHours = startHours.trim();
+                                        startMinutes = startMinutes.trim();
+                                        startSuffix = startSuffix.trim();
+
+
+                                        if (startSuffix == 'pm' || startSuffix == 'PM') {
+                                            startHours = startHours != '12' ? parseInt(startHours) + parseInt(12) : startHours;
+                                        }
+
+                                        var newStartDayFormat = new Date(newStartDay);
+                                    }
+
+
+
+                                    newStartDayFormat.setHours(startHours, startMinutes);
+
+
+                                    //Get Input End Day and Time
+                                    var newEndDay = $('input[name="scheduledEndDate"]').val();
+
+                                    if(/iPhone|iPad|iPod/i.test(navigator.userAgent)){
+                                        var newEndTime = $('input[name="scheduledEndTime"]').val();
+
+                                        var endHours = newEndTime.split(':')[0];
+                                        endHours = endHours.trim();
+
+                                        var endMinutes = newEndTime.split(':')[1];
+                                        endMinutes = endMinutes.trim();
+
+                                    }else{
+                                        var newEndTime = $('input[name="scheduledEndTime"]').wickedpicker('time');
+                                        var endHours = newEndTime.split(':')[0];
+                                        endHours = endHours.trim();
+
+                                        var endMinutes = newEndTime.split(':')[1];
+                                        endMinutes = endMinutes.trim();
+
+                                        endMinutes = endMinutes.slice(0, -2)
+                                        var endSuffix = newEndTime.split(' ')[3];
+
+                                        endSuffix = endSuffix.trim();
+
+                                        if (endSuffix == 'pm' || endSuffix == 'PM') {
+                                            endHours = endHours != '12' ? parseInt(endHours) + parseInt(12) : endHours;
+                                        }
+
+                                    }
+                                    
+                                    var endMonth = new Date($('input[name="scheduledEndDate"]').val());
+                                    endMonth = endMonth.getMonth();
+
+                                
+
+
+                                    var newEndDayFormat = new Date(newEndDay);
+                                    //newEndDayFormat.setUTCHours(endHours, endMinutes);
+                                    newEndDayFormat.setHours(endHours, endMinutes);
+
+                                    // alert("ok startTime: " + newStartDayFormat + " endtime " + newEndDayFormat);
+
+                                    //Get Salesperson (Resource) ID
+                                    var salesId = $('select[name="salesperson"]').val();
+
+
+
+                                    //Set New Event Data
+                                    eventData = {
+                                        title: firstName + ' ' + lastName + ' Appointment',
+                                        start: newStartDayFormat,
+                                        end: newEndDayFormat,
+                                        resourceId: salesId,
+                                        address: address,
+                                        city: city,
+                                        state: state,
+                                        zip: zip
+                                    };
+
+                                    
+                
+                                    $('#calendar').fullCalendar( 'rerenderEvents' )
+
+                                    $('#calendar').fullCalendar('renderEvent', eventData, true); // stick? = true
+
+                                    //Get Temporary Event ID
+                                       var clientEvents = $('#calendar').fullCalendar('clientEvents');
+                                       var lastEvent = clientEvents[clientEvents.length - 1];
+                                       var lastId = lastEvent._id;
+
+                                        $('input[name="tempID"]').val(lastId);
+                                        $('#calendar').fullCalendar('unselect');
+
+                                        // //reset time pickers
+                                        //  $('input[name="scheduledStartTime"]').wickedpicker({now:'00:00:00'});
+                                        //  $('input[name="scheduledEndTime"]').wickedpicker({now:'00:00:00'});
+
+                                        $('#addEvent').foundation('close');
+
+                                } else {
+                                    $('#calendar').fullCalendar('unselect');
+                                    $('#addEvent').foundation('close');
+                                }
+                            }else{
+                                //there are errors;
+                            } //closed
+                        });
+
+                            //If Event exists then open existing event
+                        } 
+
+                        // else {
+
+                        //     $('input.evaluationData, select.evaluationData').removeClass('changed')
+
+                        //     $('#addEvent').foundation('open');
+                        // }
+
+                    }
+                },
+                events: function (start, end, timezone, callback) {
+                    var start = moment(start).format('YYYY/MM/DD');
+                    var end = moment(end).format('YYYY/MM/DD');
+
+                    getEvents(start, end, timezone, callback);
+                },
+                eventAfterAllRender: function (view) {
+                    if ($('.fc-toolbar').length > 0 && view.name === 'timelineDay'){
+                        var sD = $('#currentDate').val().split('-');
+                        var start = new Date(sD[0], sD[1] - 1, sD[2]);
+                        //var end = new Date(sD[0], sD[1] - 1, sD[2], 23, 59, 59, 999);
+                        var end = new Date(start.getTime() + 86400000);
+
+                        var newEvents = [];
+                        $.each($('#calendar').fullCalendar('clientEvents'), function(i, item) {
+                            if (item.latitude != "0.00000000" && item.longitude != "0.00000000"){
+                                newEvents.push(item);
+                            }
+                        });
+                        setMapLocations(newEvents, start, end);
+                    }
+                },
+                //eventClick: function (calEvent, jsEvent, view) {
+                //     if (calEvent.length) {
+                //         $.ajax({
+                //             url: 'getEventDetail.php',
+                //             dataType: 'json',
+                //             contentType: 'application/json',
+                //             type: 'GET',
+                //             contentType: 'application/x-www-form-urlencoded',
+                //             data: {
+                //                 eventID: calEvent.id,
+                //                 eventType: calEvent.eventType
+                //             },
+                //             success: function (response) {
+                //                 //console.log(response);
+                //                 $.each(response, function (i, item) {
+
+                //                     if (calEvent.eventType == '1') {
+                //                         $('#viewEvent').append('<h2 id="modalTitle">' + item.firstName + ' ' + item.lastName + ' ' + item.scheduleType + '</h2><p>' + item.scheduled + '<br/>Start: ' + item.start + '<br/>End: ' + item.end + ' </p><p>' + item.address + '<br/>' + item.city + ', ' + item.state + ' ' + item.zip + '<br/>' + item.phoneNumber + '<br/>' + item.email + '<br/><a href="project-details.php?pid=' + item.projectID + '">View Project</a><br/><br/>Scheduled by: ' + item.scheduledByFirstName + ' ' + item.scheduledByLastName + ' on ' + item.scheduledOn + '</p><a class="close-reveal-modal" aria-label="Close">&#215;</a>');
+                //                     } else {
+                //                         $('#viewEvent').append('<h2 id="modalTitle">' + item.scheduledFirstName + ' ' + item.scheduledLastName + ' ' + item.scheduleType + '</h2><p>Start: ' + item.start + '<br/>End: ' + item.end + ' </p><p>Scheduled by: ' + item.scheduledByFirstName + ' ' + item.scheduledByLastName + ' on ' + item.scheduledOn + '</p><a class="close-reveal-modal" aria-label="Close">&#215;</a>');
+                //                     }
+                //                 });
+                //             }, error: function (jqXHR, textStatus, errorThrown) {
+                //                 console.log(textStatus, errorThrown);
+                //                 console.log(jqXHR.responseText);
+                //             }
+
+                //         });
+
+                //         $('#viewEvent').foundation('open');
+                //         $('#viewEvent').on('closed', function () {
+                //             $('#viewEvent').empty();
+                //         });
+                //     } else {
+                //         $('input.evaluationData, select.evaluationData').removeClass('changed')
+
+                //         $('#addEvent').foundation('open');
+                //     }
+
+                // },
+                eventRender: function (event, element) {
+                    if (event.rendering == 'background') {
+                        element.append(event.title);
+                    }
+
+                    var startDate = new Date(event.start._i)
+                    var newStartDate = $.datepicker.formatDate('MM dd, yy', startDate);
+
+                    var endDate = new Date(event.end._i)
+                    var newEndDate = $.datepicker.formatDate('MM dd, yy', endDate);
+
+
+                    var view = $('#calendar').fullCalendar('getView');
+
+                    if (view.name === 'timelineDay') {
+                        if (event.latitude == '0.00000000' && event.longitude == '0.00000000'){
+                            if (event.scheduleType == 'Installation') element.find('.fc-title').append('<br/><span class="fc-title-type">' + event.scheduleType + ': (Location not Mapped)' + newStartDate + ' - ' + newEndDate + '</span>');
+                            if (event.scheduleType == 'Evaluation') element.find('.fc-title').append('<br/><span class="fc-title-type">' + event.scheduleType + ' (Location not Mapped)</span>');
+
+                            element.find('.fc-title').append('<br/><span class="fc-title-address">' + event.address + '</span><br/><span class="fc-title-city">' + event.city + ", " + event.state + ' ' + event.zip + '</span>');
+                            element.find('.fc-title').prepend('<div style="width: .3rem;background-color:' + event.calendarBgColor + ';height: 4.2rem;float: left;margin-left: 3px;"></div>');
+                        }
+                        else{
+                            if (event.scheduleType == 'Installation') element.find('.fc-title').append('<br/><span class="fc-title-type">' + event.scheduleType + ': ' + newStartDate + ' - ' + newEndDate + '</span>');
+                            if (event.scheduleType == 'Evaluation') element.find('.fc-title').append('<br/><span class="fc-title-type">' + event.scheduleType + '</span>');
+
+                            element.find('.fc-title').append('<br/><span class="fc-title-address">' + event.address + '</span><br/><span class="fc-title-city">' + event.city + ", " + event.state + ' ' + event.zip + '</span>');
+                            element.find('.fc-title').prepend('<div style="width: .3rem;background-color:' + event.calendarBgColor + ';height: 4.2rem;float: left;margin-left: 3px;"></div>');
+                        }
+
+                    }
+                    else if (view.name === 'agendaWeek') {
+                        if (event.allDay == '1') {
+                            element.find('.fc-title').append('<span class="fc-title-address"> ' + event.address + ', ' + event.city + ", " + event.state + ' ' + event.zip + '</span>');
+                            element.find('.fc-title').prepend('<div style="width: .3rem;background-color:' + event.calendarBgColor + ';height: 2.3rem;float: left;margin-left: 3px;margin-right: 3px;"></div>');
+                            if (event.scheduleType == 'Installation') element.find('.fc-title').append('<br/><span class="fc-title-type">' + event.scheduleType + ': ' + newStartDate + ' - ' + newEndDate + '</span>');
+                            if (event.scheduleType == 'Evaluation') element.find('.fc-title').append('<br/><span class="fc-title-type">' + event.scheduleType + '</span>');
+
+                        } else {
+                            if (event.scheduleType == 'Installation') element.find('.fc-title').append('<br/><span class="fc-title-type">' + event.scheduleType + ': ' + newStartDate + ' - ' + newEndDate + '</span>');
+                            if (event.scheduleType == 'Evaluation') element.find('.fc-title').append('<br/><span class="fc-title-type">' + event.scheduleType + '</span>');
+                            element.find('.fc-title').append('<br/><span class="fc-title-address">' + event.address + '</span><br/><span class="fc-title-city">' + event.city + ", " + event.state + ' ' + event.zip + '</span>');
+                            element.find('.fc-time').prepend('<div style="width: .3rem;background-color:' + event.calendarBgColor + ';height: 5.3rem;float: left;margin-right: 5px;"></div>');
+                        }
+
+                    }
+
+                    else if (view.name === 'month') {
+                        if (event.allDay == '1') {
+                            element.find('.fc-title').append('<span class="fc-title-address"> ' + event.address + ', ' + event.city + ", " + event.state + ' ' + event.zip + '</span>');
+                        }
+                        element.find('.fc-title').prepend('<div style="width: .3rem;background-color:' + event.calendarBgColor + ';height: 2.3rem;float: left;margin-left: 3px;margin-right: 3px;"></div>');
+                        if (event.scheduleType == 'Installation') element.find('.fc-title').append('<br/><span class="fc-title-type">' + event.scheduleType + ': ' + newStartDate + ' - ' + newEndDate + '</span>');
+                        if (event.scheduleType == 'Evaluation') element.find('.fc-title').append('<br/><span class="fc-title-type">' + event.scheduleType + '</span>');
+                    }
+
+                },
+                viewRender: function (view, element) {
+                    var moment = $('#calendar').fullCalendar('getDate');
+                    var momentFormat = moment.format();
+
+                    $('#currentDate').val(momentFormat);
+
+
+                    if (view.name === 'timelineDay') {
+                        var momentFormat = moment.format('dddd MMMM D, YYYY');
+                        $('#calendarTitle').text(momentFormat);
+
+                        $('.fc-expander-space').remove();
+
+                        //$(element).height(auto);
+                        $('#calendar').fullCalendar('option', 'contentHeight', 'auto');
+
+                        //if ($('#calendarMap').length > 0) $('#calendarMap').empty();
+                        //else $('.fc-view-container').before('<div id="calendarMap"></div>');
+                        if ($('#calendarMap').length == 0) $('.fc-view-container').before('<div id="calendarMap"></div>');
+                        else $('#calendarMap').show();
+
+                        //if ($('.fc-toolbar').length > 0) {
+                        //    var locations = $('#calendar').fullCalendar('clientEvents');
+                        //    setMapLocations(locations);
+                        //}
+                    } else if (view.name === 'agendaWeek') {
+                        //var momentFormat = moment.format('MMMM D');
+                        var viewStart = view.intervalStart.format('MMMM D');
+                        var viewEnd = view.intervalEnd.format('MMMM D YYYY');
+
+                        var newdate = new Date(viewEnd);
+                        newdate.setDate(newdate.getDate() - 1); // minus the datez
+                        var viewEndNew = new Date(newdate);
+                        var viewEndNewFormat = $.datepicker.formatDate('MM d', viewEndNew);
+
+                        $('#calendarTitle').text(viewStart + ' - ' + viewEndNewFormat);
+
+                        $('#calendar').fullCalendar('option', 'contentHeight', '');
+                        //$('#calendarMap').remove();
+                        $('#calendarMap').hide();
+                    } else if (view.name === 'month') {
+                        var momentFormat = moment.format('MMMM YYYY');
+                        $('#calendarTitle').text(momentFormat);
+
+                        $('#calendar').fullCalendar('option', 'contentHeight', '');
+                        //$('#calendarMap').remove();
+                        $('#calendarMap').hide();
+                    }
+                },
+                resourceRender: function (resourceObj, labelTds, bodyTds) {
+                    var role = resourceObj.installation == '1' ? 'Installation' : '';
+                    if (resourceObj.sales == '1') {
+                        if (role.length > 0) role += ', ';
+                        role += 'Sales';
+                    }
+                    labelTds.find('.fc-cell-content').append($('<span class="fc-cell-role"></span>').text(role));
+
+                    $('#calendar').find('tr[data-resource-id="' + resourceObj.id + '"] .fc-cell-content').before('<div style="width: .3rem;background-color:' + resourceObj.calendarBgColor + ';height: 4.2rem;float: left;margin-left: 3px;margin-top: 0.4rem;"></div>');
+                }
+            });
+
+        };
+
+
+        var getEvents = function (start, end, timezone, callback) {
+            $('#loading-image').show();
+            $.ajax({
+                url: 'getEvents.php',
+                dataType: 'json',
+                data: {
+                    filter: 'sales', //$('select#filterResources option:selected').val(),
+                    start: start, //moment(start).format('YYYY/MM/DD'),
+                    end: end//moment(end).format('YYYY/MM/DD')
+                },
+                success: function (doc) {
+                    $('#loading-image').hide();
+                    if ($('.fc-toolbar').length > 0) {
+                        var events = eval(doc);
+                        callback(events);
+                    }
+                    //else {
+                    //    //console.log(doc);
+                    //    setMapLocations(doc);
+                    //}
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            });
+        };
+
+
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDVYIV3RYj9RJGqLjZNgA7-Dhwt5pTJrT0&callback=initMap" async defer></script>
+    <style>
+        #calendarMap {
+            height: 320px;
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <?php  include_once 'header.html'  ?>
+    <div id="loading-image" class="loadingImage" style="display: block">
+        <img src="images/ajax-loader.gif" />
+    </div>
+    <div class="row expanded first-row">
+        <div class="medium-12 columns">
+            <div class="medium-12 columns">
+                <h1 class="project-title" style="margin-bottom:1rem;"><?php echo $pageTitle; ?></h1>
+            </div>
+        </div>
+    </div>
+    <div class="tiny reveal" id="noResourcesModal" data-reveal data-close-on-esc="false" data-close-on-click="false">
+        <div class="row">
+            <h3>No Salesmen or Installers</h3>
+        </div>
+        <p>Add salesmen or installers to schedule an appointment.</p>
+        <button class="button" id="closeNoResourcesModal">Ok</button>
+    </div>
+    <?php echo $buttonDisplay; ?>
+    
+    <form class="reportForm" target="hidden-iframe" method="post" novalidate>
+        <input type="hidden" id="latitude" name="latitude" value="<?php echo $latitude;  ?>" />
+        <input type="hidden" id="longitude" name="longitude" value="<?php echo $longitude;  ?>" />
+        <input type="hidden" id="customerID" name="customerID" value="<?php echo $customerID;  ?>" />
+        <input type="hidden" id="propertyID" name="propertyID" value="<?php echo $propertyID;  ?>" />
+
+        <input type="hidden" name="existingFirstName" value="<?php echo $firstName;  ?>" />
+        <input type="hidden" name="existingLastName" value="<?php echo $lastName;  ?>" />
+        <input type="hidden" name="existingEmail" value="<?php echo $email;  ?>" />
+
+        <input type="hidden" name="existingAddress" value="<?php echo $address;  ?>" />
+        <input type="hidden" name="existingAddress2" value="<?php echo $address2;  ?>" />
+        <input type="hidden" name="existingCity" value="<?php echo $city;  ?>" />
+        <input type="hidden" name="existingState" value="<?php echo $state;  ?>" />
+        <input type="hidden" name="existingZip" value="<?php echo $zip;  ?>" />
+
+        <div class="row expanded" id="newCustomerDisplay" style="margin-bottom:4rem; margin-top: 1rem; display:none;">
+            <!--<div class="medium-12 columns no-pad">
+                <h4>New Customer</h4>
+            </div>-->
+            <div class="medium-5 columns">
+                <div class="row">
+                    <div class="large-5 columns">
+                        <label>
+                            Customer First Name <small>required</small>
+                            <input <?php echo $disabledProperty;  ?><?php echo $disabledProject;  ?> name="firstName" type="text" value="<?php echo $firstName;  ?>" required  />
+                            <small class="form-error">First name is required.</small>
+                        </label>
+                    </div>
+                    <div class="large-5 columns">
+                        <label>
+                            Customer Last Name <small>required</small>
+                            <input <?php echo $disabledProperty;  ?><?php echo $disabledProject;  ?> name="lastName" type="text" value="<?php echo $lastName;  ?>" required  />
+                            <small class="form-error">Last Name is required.</small>
+                        </label>
+                    </div>
+                    <div class="large-2 columns"></div>
+                </div>
+                <div class="row">
+                    <div class="large-7 columns">
+                        <label>
+                            Project Address <small>required</small>
+                            <input <?php echo $disabledProject;  ?> name="address" id="address" type="text" value="<?php echo $address;  ?>" required  />
+                            <small class="form-error">Address is required.</small>
+                        </label>
+                    </div>
+                    <div class="large-3 columns">
+                        <label>
+                            Address 2 <small>(Apt, Suite, Unit)</small>
+                            <input <?php echo $disabledProject;  ?> name="address2" id="address2" type="text" value="<?php echo $address2;  ?>" />
+                        </label>
+                    </div>
+                    <div class="large-4 columns"></div>
+                </div>
+                <div class="row">
+                    <div class="large-4 columns">
+                        <label>
+                            Project City <small>required</small>
+                            <input <?php echo $disabledProject;  ?> name="city" id="city" type="text" value="<?php echo $city;  ?>" required  />
+                            <small class="form-error">City is required.</small>
+                        </label>
+                    </div>
+                    <div class="large-4 columns">
+                        <label>
+                            <span class="page-content-text">Project State <small>required</small></span>
+                            <select <?php echo $disabledProject;  ?> required name="state" id="state">
+                                <?php echo $stateOptions;  ?>
+                            </select>
+                            <small class="form-error">State is required.</small>
+                        </label>
+                    </div>
+                    <div class="large-3 columns">
+                        <label>
+                            Project Zip <small>required</small>
+                            <input <?php echo $disabledProject;  ?> name="zip" id="zip" type="text" value="<?php echo $zip;  ?>" required />
+                            <small class="form-error">Zip is required.</small>
+                        </label>
+                    </div>
+                    <div class="large-1 columns"></div>
+                </div>
+                <div class="row">
+                    <div class="large-11 columns"><span id="locationSet" class="locationData">Location Set</span> <a href="javascript:clearLatLong()" class="locationData">Clear</a></div>
+                </div>
+                <div class="row">
+                    <div class="large-11 columns">
+                        <ul class="accordion" data-accordion data-allow-all-closed="true" style="margin-left: 0; margin-bottom: 1rem;">
+                            <li class="accordion-item" data-accordion-item>
+                                <a class="accordion-title">Is the billing address different? <small>Click to Add</small></a>
+                                <div class="accordion-content" data-tab-content style="background:none;">
+                                    <div class="row">
+                                        <div class="large-7 columns">
+                                            <label>
+                                                Billing Address
+                                                <input <?php echo $disabledProperty;  ?><?php echo $disabledProject;  ?> name="ownerAddress" id="ownerAddress" type="text" value="<?php echo $ownerAddress;  ?>" />
+                                            </label>
+                                        </div>
+                                        <div class="large-4 columns">
+                                            <label>
+                                                Billing Address 2 <small>(Apt, Suite, Unit)</small>
+                                                <input <?php echo $disabledProperty;  ?><?php echo $disabledProject;  ?> name="ownerAddress2" id="ownerAddress2" type="text" value="<?php echo $ownerAddress2;  ?>" />
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="large-4 columns">
+                                            <label>
+                                                Billing City
+                                                <input <?php echo $disabledProperty;  ?><?php echo $disabledProject;  ?> name="ownerCity" id="ownerCity" type="text" value="<?php echo $ownerCity;  ?>" />
+                                            </label>
+                                        </div>
+                                        <div class="large-4 columns">
+                                            <label>
+                                                Billing State
+                                                <select <?php echo $disabledProperty;  ?><?php echo $disabledProject;  ?> name="ownerState" id="ownerState" style="margin:0 0 0 0 !important;">
+                                                    <?php echo $ownerStateOptions;  ?>
+                                                </select>
+                                            </label>
+                                        </div>
+                                        <div class="large-3 columns">
+                                            <label>
+                                                Billing Zip
+                                                <input <?php echo $disabledProperty;  ?><?php echo $disabledProject;  ?> name="ownerZip" id="ownerZip" type="text" value="<?php echo $ownerZip;  ?>" />
+                                            </label>
+                                        </div>
+                                        <div class="large-1 columns"></div>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="large-8 columns">
+                        <label>
+                            Customer Email <small>required</small>
+                            <input <?php echo $disabledProperty;  ?><?php echo $disabledProject;  ?> name="email" type="text" value="<?php echo $email;  ?>" required  />
+                            <small class="form-error">Email is required.</small>
+                        </label>
+                    </div>
+                    <div class="medium-2 columns">
+                        <label>No Email</label>
+                        <input <?php echo $disabledProperty;  ?><?php echo $disabledProject;  ?> name="noEmailRequired" type="checkbox" value="1" style="margin-left: 1.1rem; margin-top: 0.7rem">
+                    </div>
+                    <div class="large-5 columns"></div>
+                </div>
+                <div class="row">
+                    <div class="large-8 columns">
+                        <label style="margin-bottom: 0.2rem;">Project Contacts <span data-tooltip aria-haspopup="true" class="has-tip top" data-disable-hover="false" tabindex="6" title="Project contacts will be CC'ed on all emails that are sent for this project."><img src="images/icons/info.png" /></span> </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="large-12 columns text-center">
+                        <table id="emailTable" class="emailTable" cellpadding="0" cellspacing="0">
+                            <thead style="background:none;">
+                                <tr>
+                                    <th width="45%" style="text-align:left;color:#000000;line-height: .5rem;border-bottom:0;padding:0.4rem 0rem 0.4rem 0.7rem;font-weight: normal;font-size: 0.875rem;">Name <span data-tooltip aria-haspopup="true" class="has-tip top" data-disable-hover="false" tabindex="6" title="This is the name that the email will be addressed to."><img src="images/icons/info.png" /></span></th>
+                                    <th width="45%" style="text-align:left;color:#000000;line-height: .5rem;border-bottom:0;padding:0.4rem 0rem 0.4rem 0.7rem;font-weight: normal;font-size: 0.875rem;">Email</th>
+                                     <th width="10%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">
+                                     <a class="addEmail"><img src="images/icons/phone_add.png" /></a>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="display:none;">
+                                    <td style="color:#36413e;border-bottom:0;">
+                                        <input name="name" class="no-margin" type="text" value="" maxlength ="70"/>
+                                    </td>
+                                    <td style="color:#36413e;text-align:center;border-bottom:0;">
+                                        <input name="contactEmail" class="no-margin" type="text" value="" sort="" maxlength ="100"/>
+                                    </td>
+                                    <td class="delete" style="color:#36413e;text-align:center;border-bottom:0;">
+                                        <a class="deleteEmail"><img src="images/icons/phone_delete.png" /></a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="row">
+                            <div class="medium-5 columns text-center">
+                                <small style="text-align: left;padding-left: 0.7rem;" class="error-match contactName">A name is required.</small>
+                            </div>
+                            <div class="medium-5 columns text-center">
+                                <small style="text-align: left;padding-left: 1.4rem;" class="error-match contactEmail">A valid email is required.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="large-9 columns" id="phoneSection">
+                        <table id="phoneTable" class="phoneTable" cellpadding="0" cellspacing="0" style="margin: 1rem 0;">
+                            <thead style="background:none;">
+                                <tr>
+                                    <th width="30%" style="text-align:left;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"><label>Customer Phone</label></th>
+                                    <th width="40%" style="text-align:center;color:#ffffff;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;"></th>
+                                    <th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">Primary</th>
+                                    <th width="15%" style="text-align:center;color:#000000;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;">
+                                        <a class="addPhone"><img src="images/icons/phone_add.png" /></a>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="display:none;">
+                                    <td class="description" style="color:#36413e;text-align:center;">
+                                        <select class="no-margin" name="description[]" >
+                                            <option></option>
+                                            <option value="Cell">Cell</option>
+                                            <option value="Home">Home</option>
+                                            <option value="Work">Work</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </td>
+                                    <td class="number" style="color:#36413e;">
+                                        <input class="no-margin phone" name="phone[]" type="text" value="" >
+                                    </td>
+                                    <td class="primary" style="color:#36413e;text-align:center;">
+                                        <input class="isPrimary no-margin" name="isPrimary[]" type="checkbox" value="0">
+                                    </td>
+                                    <td class="delete" style="color:#36413e;text-align:center;">
+                                        <a class="deletePhone"><img src="images/icons/phone_delete.png" /></a>
+                                    </td>
+                                </tr>
+                                <?php echo $phoneDisplay;  ?>
+                            </tbody>
+                        </table>
+                        <small style="margin-left: .5rem;" class="form-error onePhone">At least one phone is required.</small> 
+                        <small style="margin-left: .5rem;" class="error-match fullPhone">Description and complete phone number are required.</small>
+                        <small style="margin-left: .5rem;" class="form-error primary">Please mark one phone number as primary.</small> 
+                    </div>
+                    <div class="large-3 columns"></div>
+                </div>
+                <div class="row">
+                    <div class="large-7 columns">
+                        <label>
+                            Project Name (House, Garage, etc.) <small>required</small>
+                            <input name="projectDescription" type="text" value="" required  />
+                            <small class="form-error">Description is required.</small>
+                        </label>
+                    </div>
+                    <div class="large-5 columns"></div>
+                </div>
+                <div class="row">
+                    <div class="large-7 columns">
+                        <label>
+                            Project Salesperson
+                            <select name="projectSalesperson">
+                                <option value=""></option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="large-5 columns"></div>
+                </div>
+                <div class="row">
+                    <div class="large-9 columns">
+                        <label>
+                            Project Note
+                            <textarea style="background-color: #dff1fc" rows="3" name="projectNote"></textarea>
+                        </label>
+                    </div>
+                    <div class="large-3 columns"></div>
+                </div>
+                <div class="row">
+                    <div class="large-7 columns">
+                        <label for="referralDropdown">How did you hear about us?</label>
+                            <select id="referralDropdown" name="referralDropdown" type="text" value="">
+                                <option value="0">Select one</option>
+                            </select>
+                    </div>
+                    <br>
+                    <div class="large-5 columns"></div>
+                </div>
+                <div class="row">
+                    <div class="large-4 columns">
+                        <label>Salesperson <small>required</small></label>
+                        <label>
+                            <input class="isInHouseSales" name="isInHouseSales" type="radio" value="1" required />
+                            In House
+                        </label>
+                        <label>
+                            <input class="isInHouseSales" name="isInHouseSales" type="radio" value="0" required />
+                            Other
+                        </label>
+                    </div>
+                    <div class="large-8 columns"></div>
+                </div>
+                <div class="row">
+                    <div class="large-12 columns">
+                        <br />
+                        <input id="currentDate" type="hidden" name="currentDate" value="" />
+                        <?php echo $submitButton; ?>
+                        <a id="cancelAddCustomer" class="button secondary">Cancel</a>
+                    </div>
+                </div>
+            </div>
+            <div class="medium-7 columns" id="calendarShow" style="display:none;">
+                <!--<div class="large-12 columns">
+                    <h4>Schedule</h4>
+                </div>-->
+                <div id="scheduleCalendar" class="medium-12 columns no-pad">
+                    <div class="row expanded dashboard-filter-bar" style="border-left:2px solid #b1b4bf; border-right:2px solid #b1b4bf;">
+                        <div class="medium-3 columns no-pad">
+                            <div id="filterSelect"></div>
+                        </div>
+                        <div class="medium-1 columns no-pad">
+                            <a id="today" class="button today" style="">Today</a>
+                        </div>
+                        <div class="medium-5 columns no-pad" style="margin-top: 1rem;">
+                            <div class="row expanded">
+                                <div class="medium-2 columns no-pad">
+                                    <div id="previous" class="arrow-left"></div>
+                                </div>
+                                <div class="medium-8 columns no-pad text-center">
+                                    <span id="calendarTitle"></span>
+                                </div>
+                                <div class="medium-2 columns no-pad">
+                                    <div id="next" class="arrow-right"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="medium-3 columns no-pad">
+                            <div class="button-group text-right">
+                                <a id="monthlyView" class="button view view-left active">Monthly</a>
+                                <a id="weeklyView" class="button view view-center">Weekly</a>
+                                <a id="dailyView" class="button view view-right">Daily</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row expanded">
+                        <div class="medium-12 columns no-pad">
+                            <div id='calendar'></div>
+                            <div id="addEvent" class="reveal small" data-reveal data-close-on-esc="false" data-close-on-click="false">
+                                <h2 id="modalTitle"></h2>
+                                <p class="lead"></p>
+                                <div class="row">
+                                    <div class="medium-12 columns">
+                                        <label class="scheduledTitle"></label>
+                                        <!-- <input name="foriPad" style="width:0px; height:0px; border:none;" id="modalFocuser" readonly/> -->
+                                    </div>
+                                    <div class="medium-5 columns" id="scheduleModalDD">
+                                        <select class="evaluationData" name="salesperson" id="scheduleSalesperson">
+                                            <option value="">--</option>
+                                        </select>
+                                    </div>
+                                    <div class="medium-7 columns"></div>
+                                </div>
+                                <div class="row">
+                                    <div class="medium-12 columns">
+                                        <label>Start Time</label>
+                                    </div>
+                                    <div class="medium-4 columns">
+                                        <input id="scheduledStartDate" class="evaluationData datepickerFrom date" type="text" name="scheduledStartDate" />
+                                        <small class="form-error" id="startDateErr">Please select a scheduled start date</small>
+                                    </div>
+                                    <div class="medium-4 columns">
+                                        <!-- <div id="iPadStartTime" style="display:none"></div> -->
+
+                                        <input id="scheduledStartTime" class="evaluationData timepicker" type="text" name="scheduledStartTime" readonly="readonly" />
+                                        <small class="form-error" id="startTimeErr">Please enter a scheduled start time</small>
+                                    </div>
+                                    <div class="medium-2 columns">&nbsp;</div>
+                                </div>
+                                <div class="row">
+                                    <div class="medium-12 columns">
+                                        <label>End Time</label>
+                                    </div>
+                                    <div class="medium-4 columns">
+                                        <input id="scheduledEndDate" class="evaluationData datepickerTo date" type="text" name="scheduledEndDate" />
+                                        <small style="margin-bottom: .3rem;"class="form-error" id="endDateErr">Please select an end date</small>
+                                    </div>
+                                    <div class="medium-4 columns">
+                                        <input readonly="readonly" id="scheduledEndTime" class="evaluationData timepicker" type="text" name="scheduledEndTime" />
+                                        <small style="margin-bottom: .3rem;" id="endTimeErr" class="form-error">Please enter an end time</small>
+                                    </div>
+                                    <div class="medium-2 columns">&nbsp;</div>
+                                </div>
+                                <div class="row">
+                                    <div class="medium-12 columns">
+                                        <input type="hidden" name="tempID" value=""/>
+                                        <input type="hidden" name="projectScheduleID" value=""/>
+                                        <!-- <p><a id="confirmAppointmentYes" class="button">Ok</a> <a id="confirmAppointmentNo" class="button secondary">Cancel</a></p> -->
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="medium-12 columns" id="okButtonDiv">
+                                        <!-- <input name="foriPad" style="width:0px; height:0px; border:none;" id="modalFocuser" /> -->
+                                        <p><a id="confirmAppointmentYes" class="button">Ok</a> <a id="confirmAppointmentNo" class="button secondary">Cancel</a></p>
+                                    </div>
+                                </div>
+
+                            <!-- </div> -->
+                            <div id="viewEvent" class="reveal small" data-reveal></div>
+                            <div id="cancelEvent" class="reveal tiny" data-reveal data-close-on-esc="false" data-close-on-click="false">
+                                <h2 id="modalTitle">Cancel</h2>
+                                <p>Are you sure you want to cancel this event?</p>
+                                <input type="hidden" name="tempID" value="" />
+                                <p><a id="cancelConfirmYes" class="button tiny">Yes</a><a id="cancelConfirmNo" style="margin: 0 0 0 1rem;" class="button tiny success">No</a></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    <div id="cancelCustomerModal" class="reveal tiny" data-reveal data-close-on-click="false" data-close-on-esc="false">
+        <h2 class="text-center" id="modalTitle">Cancel</h2>
+        <p class="lead text-center">Are you sure you want to cancel?  Your information will not be saved.</p>
+        <p class="text-center"><a id="cancelCustomerYes" class="button">Yes</a> <a id="cancelCustomerNo" class="button secondary">No</a></p>
+    </div>
+<!--     <div id="latLongModal" class="reveal tiny" data-reveal data-close-on-click="false" data-close-on-esc="false">
+        <p class="lead text-center">Your address cannot be verified.</p>
+        <p id="addressPartial" class="is-invalid-input" data-invalid="">
+            <br>You entered </br>
+            <a id="usePartial" class="button right" style="margin-top: -1rem">Use</a>
+        </p>
+        <p id="addressFull">
+            <br>We suggest </br>
+            <a id="useComplete" class="button right" style="margin-top: -1rem">Use</a>
+        </p>
+    </div> -->
+    <div id="latLongModal" class="reveal small" data-reveal data-close-on-click="false" data-close-on-esc="false">
+       <p class="lead text-center">Your address cannot be verified.</p>
+       <p id="addressPartial" class="is-invalid-input" data-invalid="" style="padding: 0 .5rem .5rem .5rem;">
+           <br>You entered </br>
+           <span id="addressPartialText"></span>
+           <button id="usePartial" class="button right" style="margin-top: -1rem">Use</button>
+       </p>
+       <p id="addressFull" style="padding: 0 .5rem .5rem .5rem;">
+           <br>We suggest </br>
+           <span id="addressFullText"></span>
+           <button id="useComplete" class="button right" style="margin-top: -1rem">Use</button>
+       </p>
+       <input type="hidden" id="partialMatchLatitude" name="partialMatchLatitude" value="" />
+       <input type="hidden" id="partialMatchLongitude" name="partialMatchLongitude" value="" />
+       <p class="text-center">
+           <button id="cancelAddress" class="button secondary" style="margin-top: 1rem;margin-bottom: .5rem;" data-close>Cancel</button>
+       </p>
+    </div>
+    <iframe name="hidden-iframe" style="display: none;"></iframe>
+     <div type="hidden" id="mapsAddress" style="display: none;"/>
+     <div type="hidden" id="hiddenMap" style="display: none;"></div>
+
+    <div id="confirmSaveUnscheduled" class="reveal tiny" data-reveal data-close-on-esc="false" data-close-on-click="false">
+            <h2 id="modalTitle">Save without Scheduling?</h2>
+            <p>Are you sure you want to save this customer without scheduling an evaluation?</p>
+<!--             <input type="hidden" name="tempID" value="" />
+ -->            <p class="text-center"><button id="saveDontSchedule" class="button">Yes</button>
+                   <button id="dontSaveWithoutSchedule" class="button secondary" >No</button>
+                </p>
+        </div>
+    </div>
+
+
+    <?php  include_once 'setup-modal.html'  ?>
+    <?php  include_once 'footer.html'  ?>
+
+
+
+    <script src="js/foundation.min.js"></script>
+    <script>
+
+        $(document).foundation();
+         // $(document).foundation('reveal', 'reflow');
+    </script>
+    <script type="text/javascript" src="js/jquery.mask.min.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            $('.phone').mask('(000) 000-0000');
+            // $('.date').mask('11/11/1111');
+            // $('.time').mask('Hh:Mm Pp',
+            //    {
+            //        'translation': {
+            //            H: { pattern: /[0-1]/ },
+            //            h: { pattern: /[0-9]/ },
+            //            M: { pattern: /[0-5]/ },
+            //            m: { pattern: /[0-9]/ },
+            //            P: { pattern: /[AaPp]/ },
+            //            p: { pattern: /[Mm]/ }
+            //        }
+            //    });
+        });
+    </script>
+    <script src='js/autosize.min.js'></script>
+    <script>
+        autosize(document.querySelectorAll('textarea'));
+    </script>
+</body>
+</html>

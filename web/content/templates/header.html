@@ -1,0 +1,45 @@
+<div class="top-bar" style="width:100%" style="background: #2089ca;">
+	<div class="top-bar-title">
+		<!--<span data-responsive-toggle="responsive-menu" data-hide-for="small">
+      		<button class="menu-icon dark" type="button" data-toggle></button>
+    	</span>-->
+    	<div style="padding: .2rem;"><a class="no-padding" href="/"><img style="width:10rem;" src="images/FAlogo_horizontal_white.png" /></a></div>
+  	</div>
+ 	<div id="responsive-menu">
+    	<div class="top-bar-left">
+      		<ul class="dropdown menu" data-dropdown-menu>
+            <?php echo $metricsNavDisplay; ?>
+            <?php echo $crewManagementNavDisplay; ?>
+            <?php echo $setupDisplay; ?>
+            <?php echo $marketingNavDisplay; ?>
+        		<!--<li>
+          			<a href="#">News</a>
+          			<ul class="menu vertical">
+            			<li><a href="#">One</a></li>
+            			<li><a href="#">Two</a></li>
+           			<li><a href="#">Three</a></li>
+          			</ul>
+        		</li>
+        		
+        		<li><a href="#">Invoices</a></li>-->
+      		</ul>
+    	</div>
+    	<div class="top-bar-right">
+      		<ul class="dropdown menu" data-dropdown-menu>
+           	<!--<li><input style="display:none;" type="search" placeholder="Search"></li>
+              	<li><button type="button" class="button tiny"><img src="images/icons/search.png"></button></li>-->
+              	<li>
+            		<a class="no-padding" href="#"><img src="images/icons/profile.png"></a>
+                  <ul class="menu vertical">
+                    <?php echo $accountDisplay;  ?>
+                  	<?php echo $companyProfileDisplay;  ?>
+                   	<li><a href="user-profile.php">User Profile</a></li>
+                    <li><a id="dropDownHelp">Feedback &amp; Support</a></li>
+                   	<li><a href="logout.php">Logout</a></li>
+
+              		</ul>
+              </li>
+          	</ul>
+   		</div>
+  	</div>
+</div>

@@ -1,0 +1,225 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Foundation Accelerator</title>
+    <link rel="stylesheet" href="css/foundation.css" />
+	<link rel="stylesheet" href="css/custom.css" />
+   <link rel="stylesheet" href="css/motion-ui.css" />
+   <link rel="stylesheet" href="css/view-bid.css" />
+	<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+	<link href='css/fullcalendar.css' rel='stylesheet' />
+	<link href='css/scheduler.css' rel='stylesheet' />
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
+	<script src="js/jquery.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+	<script src='js/moment.min.js'></script>
+	<script src='js/fullcalendar.min.js'></script>
+	<script src='js/scheduler.min.js'></script>
+	<script src='js/jquery.tablesorter.min.js'></script>
+   	<script>
+    	$(document).ready(function() {
+
+    		var pageHeight = $( window ).height() * .85;
+			
+			$('#accept').click(function(){
+				$('#contractModal').css('height',pageHeight);		
+				$('#contractModal').foundation('open');	
+				
+			});
+			
+			$('#reject').click(function(){
+				$('#rejectBidModal').foundation('open');		
+				
+			});
+		
+			
+			$('#signContract').click(function() {
+				$('#contractModalAccept').foundation('open');		
+				
+
+
+// 				var evaluationID = $('#evaluationID').text();
+// 				var customEvaluation = $('#customEvaluation').text();
+		
+// 				$.ajax({
+// 					url: 'bid-accept.php',
+// 					dataType: "json",
+// 					contentType: 'application/json',
+// 					type: "POST",
+// 					contentType: "application/x-www-form-urlencoded",
+// 					data: {
+// 						evaluationID: evaluationID,
+// 						customEvaluation: customEvaluation,
+// 						bidID: '<?php echo $bidID;  ?>',
+// 						timezone: '<?php echo $timezone;  ?>',
+// 						daylightSavings: '<?php echo $daylightSavings;  ?>',
+// 						bidAcceptedName: '<?php echo $firstName;  ?> <?php echo $lastName;  ?>'
+// 					},
+// 					success: function(response) {
+// 						window.location.href = "bid-accept-email.php?id=<?php echo $bidID;?>&email=send";
+						
+// 						//$('#viewBidButtons').empty();
+// //						
+// //						$('#viewBidButtons').html('<span>Bid Accepted '+response+'</span>');
+// //						
+// //						$('#contractModal').foundation('close');		
+							
+// 					}, error: function(jqXHR, textStatus, errorThrown) {
+// 						console.log(textStatus, errorThrown);
+// 						console.log(jqXHR.responseText);
+// 					}
+							
+// 				});	
+			});
+
+
+
+			$('#signContractAccept').click(function() {
+				$('#loading-image').show();
+				console.log("showing image");
+				
+				var evaluationID = $('#evaluationID').text();
+				var customEvaluation = $('#customEvaluation').text();
+				
+
+				$.ajax({
+					url: 'bid-accept.php',
+					dataType: "json",
+					contentType: 'application/json',
+					type: "POST",
+					contentType: "application/x-www-form-urlencoded",
+					data: {
+						evaluationID: evaluationID,
+						customEvaluation: customEvaluation,
+						bidID: '<?php echo $bidID;  ?>',
+						timezone: '<?php echo $timezone;  ?>',
+						daylightSavings: '<?php echo $daylightSavings;  ?>',
+						bidAcceptedName: '<?php echo $firstName;  ?> <?php echo $lastName;  ?>'
+					},
+					success: function(response) {
+						window.location.href = "bid-accept-email.php?id=<?php echo $bidID;?>&email=send";
+						
+						//$('#viewBidButtons').empty();
+//						
+//						$('#viewBidButtons').html('<span>Bid Accepted '+response+'</span>');
+//						
+//						$('#contractModal').foundation('close');		
+						$('loading-image').hide();
+
+							
+					}, error: function(jqXHR, textStatus, errorThrown) {
+						console.log(textStatus, errorThrown);
+						console.log(jqXHR.responseText);
+						$('loading-image').hide();
+				
+					}
+							
+				});	
+			});
+			
+			
+			$('#rejectBid').click(function() {
+				var evaluationID = $('#evaluationID').text();
+				var customEvaluation = $('#customEvaluation').text();
+		
+				$.ajax({
+					url: 'bid-reject.php',
+					dataType: "json",
+					contentType: 'application/json',
+					type: "POST",
+					contentType: "application/x-www-form-urlencoded",
+					data: {
+						evaluationID: evaluationID,
+						customEvaluation: customEvaluation,
+						bidID: '<?php echo $bidID;?>',
+						timezone: '<?php echo $timezone;  ?>',
+						daylightSavings: '<?php echo $daylightSavings;  ?>'
+					},
+					success: function(response) {
+						if (response == null) { 
+							location.reload();
+						} else {
+							
+							window.location.href = "bid-reject-email.php?id=<?php echo $bidID;?>";
+							
+							//$('#viewBidButtons').empty();
+//							
+//							$('#viewBidButtons').html('<button class="button" id="accept">Accept Bid</button><br/><span>Bid Rejected '+response+'</span>');
+//							
+//							$('#rejectBidModal').foundation('close');	
+//							
+//							$('#accept').click(function(){
+//								$('#contractModal').foundation('open');		
+//							});
+						}
+				
+							
+					}, error: function(jqXHR, textStatus, errorThrown) {
+						console.log(textStatus, errorThrown);
+						console.log(jqXHR.responseText);
+					}
+							
+				});	
+			});
+
+			
+
+
+			
+		
+					
+		});
+    </script>
+<style>
+.button {
+	background-color: <?php echo $companyColor; ?>;
+}
+
+.button:hover, .button:focus {
+    background-color: <?php echo $companyColorHover; ?>;
+}
+
+.button.secondary {
+    color: <?php echo $companyColor; ?>;
+    border: 1px solid <?php echo $companyColor; ?>;
+	background-color: #ffffff;
+ }
+
+.button.secondary:hover, .button.secondary:focus {
+    color: <?php echo $companyColorHover; ?>;
+}
+
+a {
+    color: <?php echo $companyColor; ?>;
+}
+
+a:hover, a:focus {
+    color: <?php echo $companyColorHover; ?>;
+}
+
+p {width:100%;}
+</style>
+</head>
+  <body>
+    <?php echo $viewBidContentDisplay; ?>
+
+	<div id="loading-image" class="loadingImage">
+		<img src="images/ajax-loader.gif" />
+	</div>
+
+<script src="js/foundation.min.js"></script>
+    <script>
+      $(document).foundation();
+    </script>
+    <script type="text/javascript" src="js/jquery.mask.min.js"></script>
+    <script type="text/javascript">
+  		$(function() {
+   		 $('.phone').mask('(000) 000-0000');
+  		});
+</script>
+  </body>
+</html>

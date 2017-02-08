@@ -1,0 +1,922 @@
+#calendar {
+	visibility: hidden;
+}
+
+.dottedLine
+{
+    border-left: 1px dotted black;
+    height: 25px;
+    margin-top: 15px;
+} 
+
+div.loadingImage {
+
+    position: fixed;
+    z-index: 1500;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #eee;
+    opacity: 0.5;
+    text-align: center;
+}
+div.loadingImage {
+    display: none;
+}
+div.loadingImage > img {
+    position: absolute;
+    top: 40%;
+}
+
+.calendarHeader, .calendarHeaderDetail, .calendarTableDetail, .calendarTableBottom {
+    margin-bottom: 0;
+}
+
+.calendarTableDetail {
+    border-collapse: separate;
+}
+
+.calendarFilter {
+    margin: 0;
+    height: 3.25rem;
+    width: 15%;
+    background-color: #f6f7fb;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: Bold;
+    color: #58595b;
+    font-size: 1.1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 2px solid #b1b4bf;
+    border-left: 0;
+    border-top: 2px solid #b1b4bf;
+    border-bottom: 2px solid #b1b4bf;
+    text-align: center;
+}
+
+.calendarActive {
+    margin: 0;
+    height: 3.25rem;
+    width: 15%;
+    background-color: #f6f7fb;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: Bold;
+    color: #58595b;
+    font-size: 1.1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 2px solid #b1b4bf;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 2px solid #b1b4bf;
+    text-align: center;
+}
+
+#filterSelect select {
+	margin: 0;
+    height: 3.25rem;
+    background-color: #f6f7fb;
+    border-radius: 0;
+    border-right: 0;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: bold;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 0;
+    padding: 0;
+}
+
+#filterSelectDetail select {
+	margin: 0;
+    height: 3.25rem;
+    background-color: #f6f7fb;
+    border-radius: 0;
+    border-right: 0;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: bold;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 0;
+    padding: 0;
+}
+
+.calendarWeek {
+    margin: 0;
+    height: 3.25rem;
+    width: 72%;
+    background-color: #f6f7fb;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: Bold;
+    color: #58595b;
+    font-size: 1.1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 2px solid #b1b4bf;
+    border-left: 0;
+    border-top: 2px solid #b1b4bf;
+    border-bottom: 2px solid #b1b4bf;
+    text-align: center;
+}
+
+.calendarName {
+    margin: 0;
+    height: 3.25rem;
+    width: 15%;
+    background-color: #f6f7fb;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 2px solid #b1b4bf;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 1px solid #b1b4bf;
+    text-align: left;
+    /*vertical-align: top;*/
+}
+
+.calendarName:hover {
+    cursor: pointer;
+}
+
+.calendarCheckbox {
+    margin: 0;
+    height: 3.25rem;
+    width: 8%;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 2px solid #b1b4bf;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 1px solid #b1b4bf;
+    text-align: center;
+}
+
+.calendarName span {
+	/*vertical-align: top;*/
+}
+
+.calendarDay {
+    margin: 0;
+    height: 3.25rem;
+    width: 8%;
+    background-color: #ffffff;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: bold;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 1px dotted #b1b4bf;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 2px solid #b1b4bf;
+    text-align: center;
+}
+
+.calendarApproveAll {
+    margin: 0;
+    height: 3.25rem;
+    width: 8%;
+    background-color: #ffffff;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: bold;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 2px solid #b1b4bf;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 2px solid #b1b4bf;
+    text-align: center;
+}
+
+.calendarTime {
+    margin: 0;
+    height: 3.25rem;
+    width: 8%;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 1px dotted #b1b4bf;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 1px solid #b1b4bf;
+    text-align: center;
+}
+
+.calendarTime:hover {
+    cursor: pointer;
+}
+
+.approved {
+	color: #358BC6;
+}
+
+.today {
+	background-color: #F1F9FE;
+}
+
+.calendarTime:hover {
+	background-color: #E4F3FD;
+}
+
+.addIcon {
+    background: url(../images/icons/cm-add-sprite.png) no-repeat;
+    background-position: 0 0px;
+    margin: 15px 4px;
+    width: 21px;
+    height: 21px;
+    max-width: 21px;
+}
+
+.addIcon:hover {
+    background: url(../images/icons/cm-add-sprite.png) no-repeat;
+    background-position: 0 -21px;
+    margin: 15px 4px;
+    width: 21px;
+    height: 21px;
+    max-width: 21px;
+    cursor: pointer;
+}
+
+.personIcon {
+    float: right;
+    /*margin-top: 4px;*/
+    height: 21px;
+    width: 21px;
+    background: url(../images/icons/cm-profile-sprite.png) no-repeat;
+    background-position: 0 0px;
+    margin: 0 auto;
+}
+
+.personIcon:hover {
+    float: right;
+    /*margin-top: 4px;*/
+    height: 21px;
+    width: 21px;
+    background: url(../images/icons/cm-profile-sprite.png) no-repeat;
+    background-position: 0 -21px;
+    margin: 0 auto;
+    cursor: pointer;
+}
+
+.clockIcon {
+    height: 28px;
+    width: 28px;
+    background: url(../images/icons/cm-approve-clock-sprite.png) no-repeat;
+    background-position: 0 -28px;
+    margin: 0 auto;
+}
+
+.clockIcon:hover {
+    height: 28px;
+    width: 28px;
+    background: url(../images/icons/cm-approve-clock-sprite.png) no-repeat;
+    background-position: 0 -56px;
+    margin: 0 auto;
+    cursor: pointer;
+}
+
+.clockIcon.clicked {
+    height: 28px;
+    width: 28px;
+    background: url(../images/icons/cm-approve-clock-sprite.png) no-repeat;
+    background-position: 0 -56px;
+    margin: 0 auto;
+}
+
+.clockIcon.clicked:hover {
+    height: 28px;
+    width: 28px;
+    background: url(../images/icons/cm-approve-clock-sprite.png) no-repeat;
+    background-position: 0 -28px;
+    margin: 0 auto;
+    cursor: pointer;
+}
+
+.clockIcon.invalid {
+    height: 28px;
+    width: 28px;
+    background: url(../images/icons/cm-approve-clock-sprite.png) no-repeat;
+    background-position: 0 0px;
+    margin: 0 auto;
+    cursor: auto;
+}
+
+.clockIconWeek {
+    height: 28px;
+    width: 28px;
+    background: url(../images/icons/cm-approve-clock-sprite.png) no-repeat;
+    background-position: 0 -28px;
+    margin: 0 auto;
+}
+
+.clockIconWeek:hover {
+    height: 28px;
+    width: 28px;
+    background: url(../images/icons/cm-approve-clock-sprite.png) no-repeat;
+    background-position: 0 -56px;
+    margin: 0 auto;
+    cursor: pointer;
+}
+
+.clockIconWeek.clicked {
+    height: 28px;
+    width: 28px;
+    background: url(../images/icons/cm-approve-clock-sprite.png) no-repeat;
+    background-position: 0 -56px;
+    margin: 0 auto;
+}
+
+.clockIconWeek.clicked:hover {
+    height: 28px;
+    width: 28px;
+    background: url(../images/icons/cm-approve-clock-sprite.png) no-repeat;
+    background-position: 0 -28px;
+    margin: 0 auto;
+    cursor: pointer;
+}
+
+.clockIconWeek.invalid {
+    height: 28px;
+    width: 28px;
+    background: url(../images/icons/cm-approve-clock-sprite.png) no-repeat;
+    background-position: 0 0px;
+    margin: 0 auto;
+    cursor: auto;
+}
+
+.clockApproveAll {
+
+}
+
+.clockIconDetail {
+    height: 28px;
+    width: 28px;
+    background: url(../images/icons/cm-approve-clock-sprite.png) no-repeat;
+    background-position: 0 -28px;
+    margin: 0 auto;
+}
+
+.clockIconDetail:hover {
+    height: 28px;
+    width: 28px;
+    background: url(../images/icons/cm-approve-clock-sprite.png) no-repeat;
+    background-position: 0 -56px;
+    margin: 0 auto;
+    cursor: pointer;
+}
+
+.clockIconDetail.clicked {
+    height: 28px;
+    width: 28px;
+    background: url(../images/icons/cm-approve-clock-sprite.png) no-repeat;
+    background-position: 0 -56px;
+    margin: 0 auto;
+}
+
+.clockIconDetail.clicked:hover {
+    height: 28px;
+    width: 28px;
+    background: url(../images/icons/cm-approve-clock-sprite.png) no-repeat;
+    background-position: 0 -28px;
+    margin: 0 auto;
+    cursor: pointer;
+}
+
+.clockIconDetail.invalid {
+    height: 28px;
+    width: 28px;
+    background: url(../images/icons/cm-approve-clock-sprite.png) no-repeat;
+    background-position: 0 0px;
+    margin: 0 auto;
+    cursor: auto;
+}
+
+.pencilIcon {
+    height: 21px;
+    width: 21px;
+    background: url(../images/icons/cm-edit-sprite.png) no-repeat;
+    background-position: 0 0px;
+    margin: 0 auto;
+}
+
+.pencilIcon:hover {
+    height: 21px;
+    width: 21px;
+    background: url(../images/icons/cm-edit-sprite.png) no-repeat;
+    background-position: 0 -21px;
+    margin: 0 auto;
+    cursor: pointer;
+}
+
+.crew-options {
+	margin-bottom: 2px;
+}
+
+.crew-options .view {
+	color: #58595b;
+	font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: bold;
+	font-size:.7rem;
+	background-color:#ffffff;
+	border-top: 1px solid #d1d3d4;
+	border-bottom: 1px solid #d1d3d4;
+	border-radius:2px 2px 2px 2px;
+	padding: 0.6em 1em;
+}
+	
+.crew-options .view:hover {
+	color:#000000; }	
+	
+.crew-options .view.active {
+	color: #ffffff;
+	background-color:#d1d3d4; }	
+	
+.crew-options .view.active:hover {
+	color: #58595b; }	
+
+.crew-options .button-group	{
+	margin-right: 1rem;
+}
+
+.crew-options .view.view-left {
+	border-radius:5px 0px 0px 5px; 
+	border-right: .5px solid #d1d3d4;
+	border-left: 1px solid #d1d3d4;
+}
+	
+.crew-options .view.view-center {
+	border-radius:0px; }
+	
+.crew-options .view.view-right {
+	border-radius:0px 5px 5px 0px; 
+	border-left: .5px solid #d1d3d4;
+	border-right: 1px solid #d1d3d4;
+}
+
+.crew-options {
+	margin-bottom: 2px;
+}
+
+.crew-detail {
+    margin-bottom: 0;
+    margin-left: 1rem;
+}
+
+.crew-detail .view {
+	color: #58595b;
+	font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: bold;
+	font-size:.7rem;
+	background-color:#ffffff;
+	border:1px solid #d1d3d4;
+	border-radius:2px 2px 2px 2px;
+}
+	
+.crew-detail .view:hover {
+	color:#000000; }	
+	
+.crew-detail .view.active {
+	color: #ffffff;
+	background-color:#d1d3d4; }	
+	
+.crew-detail .view.active:hover {
+	color: #58595b; }	
+
+.crew-detail .button-group	{
+	margin-right: 1rem;
+}
+
+.crew-detail .view.view-left {
+	border-radius:5px 0px 0px 5px; }
+	
+.crew-detail .view.view-center {
+	border-radius:0px; }
+	
+.crew-detail .view.view-right {
+	border-radius:0px 5px 5px 0px; }
+
+/*detail view*/
+
+.calendarDetailHeader {
+    margin: 0;
+    height: 3.25rem;
+    width: 60%;
+    background-color: #f6f7fb;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: Bold;
+    color: #58595b;
+    font-size: 1.1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 0;
+    border-left: 0;
+    border-top: 2px solid #b1b4bf;
+    border-bottom: 2px solid #b1b4bf;
+    
+}
+
+.calendarNameBlank {
+    margin: 0;
+    height: 3.25rem;
+    width: 15%;
+    background-color: #f6f7fb;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 2px solid #b1b4bf;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 0;
+    text-align: left;
+}
+
+.calendarNameBlankBottom {
+    margin: 0;
+    height: 3.25rem;
+    width: 15%;
+    background-color: #f6f7fb;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 2px solid #b1b4bf;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 1px solid #b1b4bf;
+    text-align: left;
+}
+
+.calendarDetailBlankBottom {
+    margin: 0;
+    height: 3.25rem;
+    width: 15%;
+    background-color: #f6f7fb;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 2px solid #b1b4bf;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 2px solid #b1b4bf;
+    text-align: left;
+}
+
+.headerName {
+	float: left;
+}
+
+.headerStatus {
+    margin: 0;
+    height: 3.25rem;
+    width: 8%;
+    background-color: #f6f7fb;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: Bold;
+    color: #58595b;
+    font-size: 1.1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 0;
+    border-left: 0;
+    border-top: 2px solid #b1b4bf;
+    border-bottom: 2px solid #b1b4bf;
+}
+
+.headerEdit {
+    margin: 0;
+    height: 3.25rem;
+    width: 4%;
+    background-color: #f6f7fb;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: Bold;
+    color: #58595b;
+    font-size: 1.1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 2px solid #b1b4bf;
+    border-left: 0;
+    border-top: 2px solid #b1b4bf;
+    border-bottom: 2px solid #b1b4bf;
+}
+
+.calendarDetailDay {
+    margin: 0;
+    height: 3.25rem;
+    width: 8%;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: bold;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 1px dotted #b1b4bf;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 1px solid #b1b4bf;
+    text-align: center;
+    vertical-align: top;
+}
+
+.calendarDetailHours {
+    margin: 0;
+    height: 3.25rem;
+    width: 8%;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 1px dotted #b1b4bf;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 1px solid #b1b4bf;
+    text-align: center;
+    vertical-align: top;
+}
+
+.calendarDetailTime {
+    margin: 0;
+    height: 3.25rem;
+    width: 16%;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 1px dotted #b1b4bf;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 1px solid #b1b4bf;
+    text-align: center;
+    vertical-align: top;
+}
+
+.calendarDetailNotes {
+    margin: 0;
+    height: 3.25rem;
+    width: 28%;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 1px dotted #b1b4bf;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 1px solid #b1b4bf;
+    text-align: left;
+    vertical-align: top;
+}
+
+.calendarApproveTime {
+    margin: 0;
+    height: 3.25rem;
+    width: 8%;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 1px dotted #b1b4bf;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 1px solid #b1b4bf;
+    text-align: center;
+}
+
+.calendarEditTime {
+    margin: 0;
+    height: 3.25rem;
+    width: 4%;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    border-right: 2px solid #b1b4bf;
+    border-left: 0;
+    border-top: 0;
+    border-bottom: 1px solid #b1b4bf;
+    text-align: center;
+}
+
+.calendarDetailTotal {
+    margin: 0;
+    height: 3.25rem;
+    width: 11%;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: bold;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 0;
+    text-align: center;
+    vertical-align: top;
+}
+
+.calendarDetailTotalHours {
+    margin: 0;
+    height: 3.25rem;
+    width: 11%;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 0;
+    text-align: center;
+    vertical-align: top;
+}
+
+.calendarDetailApproveAll {
+    margin: 0;
+    height: 3.25rem;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: bold;
+    color: #58595b;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 0;
+    text-align: center;
+}
+
+.calendarDetailApproveAll a {
+    padding: 0.5em 3em 0.4em 3em;
+    margin: 10px 0 0 880px;
+    float: right;
+}
+
+/*timecard*/
+
+.timecardNote {
+    margin-top: 0px;
+}
+
+#editTimecardModal hr {
+	border-style: dotted;
+	margin: 0.5rem auto;
+}
+
+.deleteTimeEntry {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    vertical-align: middle;
+    margin-top: 50%;
+}
+
+.addTimeEntry {
+    margin-right: .5rem;
+}
+
+.timeLabelIn {
+    padding: 0;
+    text-align: right;
+    margin-top: .5rem;
+}
+
+.timeLabelOut {
+    padding: 0;
+    text-align: right;
+    margin-top: 1rem;
+}
+
+
+.labelWrapper {
+    padding: 0;
+}
+
+#timecardDateTitle {
+	margin-bottom: auto;
+    margin-top: 3%;
+    margin-left: auto;
+    margin-right: 0;
+    float: right;
+}
+
+#timecardTitle {
+	font-size: 1.9375rem;
+}
+
+.invalid-time {
+    color: #ff0000;
+}
+
+.alignedTable table {
+    float: left;
+}
+
+.custom-combobox {
+    position: relative;
+    display: inline-block;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: bold;
+    color: #58595b;
+    font-size: 1rem;
+    background: white;
+}
+
+.custom-combobox a {
+    border: 0;
+    background: white;
+}
+
+.custom-combobox {
+    width: 100%;
+}
+.custom-combobox-toggle {
+/*    position: absolute;
+    top: 0;
+    bottom: 0;
+    margin-left: -1px;
+    padding: 0;*/
+}
+.custom-combobox-input {
+    margin: 0;
+    padding: 5px 10px;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: bold;
+    color: #58595b;
+    font-size: 1rem;
+    background: white !important;
+    width: 87%;
+}
+
+.ui-autocomplete.ui-front.ui-menu.ui-widget.ui-widget-content.ui-corner-all {
+    z-index:1050;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: bold;
+    color: #58595b;
+    font-size: 1rem;
+}
+
+.ui-autocomplete {
+    max-height: 100px;
+        overflow-y: auto;
+        /* prevent horizontal scrollbar */
+        overflow-x: hidden;
+    }
+    /* IE 6 doesn't support max-height
+    * we use height instead, but this forces the menu to always be this tall
+    */
+    * html .ui-autocomplete {
+        height: 100px;
+}
+
+.notesLabel {
+    margin-left: 46%;
+}
+
+.comboboxWrapper {
+    padding-right: 0;
+}
+
+.custom-combobox-input.ui-widget.ui-widget-content.ui-state-default.ui-corner-left.ui-autocomplete-input {
+    border-radius: 5px;
+    height: 2.4375rem;
+    padding: 0.5rem;
+    border: 1px solid #cacaca;
+    box-shadow: inset 0 1px 2px rgba(10, 10, 10, 0.1);
+    color: #0a0a0a;
+    background-color: #fefefe;
+    font-size: 1rem;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+}
+
+.custom-combobox .ui-button-icon-only .ui-button-text {
+    padding:0;
+}

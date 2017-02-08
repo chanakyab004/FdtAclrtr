@@ -1,0 +1,1372 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Foundation Accelerator</title>
+    <link rel="stylesheet" href="css/foundation.css" />
+	<link rel="stylesheet" href="css/custom.css" />
+	<link rel="stylesheet" href="css/bid-summary.css" />
+    <link rel="stylesheet" href="css/motion-ui.css" />
+	<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+	<link href='css/fullcalendar.css' rel='stylesheet' />
+	<link href='css/scheduler.css' rel='stylesheet' />
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
+	<script src="js/jquery.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+	<script src='js/moment.min.js'></script>
+	<script src='js/fullcalendar.min.js'></script>
+	<script src='js/scheduler.min.js'></script>
+	<script src='js/jquery.tablesorter.min.js'></script>
+    <script src='js/setup-progress.js'></script>
+    <script src='js/zen.js'></script>
+<script>
+$(document).ready(function() {
+
+	//needed for Zendesk Help Ticket
+     userInfo = {
+            name: "<?php echo $userFirstName;  ?>" + " <?php echo $userLastName;  ?>",
+            email: "<?php echo $userEmail;  ?>"
+        }
+	
+	$("input.Answer, input.Discount, select.Discount").change(ajaxSave);
+	
+	$("#closeBid").click(function(){
+		window.location.replace("project-management.php?pid=<?php echo $projectID;  ?>#evaluation");
+	});
+	
+	$("#cancelInvoice").click(function(){
+
+		$('#invoiceModal .invoiceTable tbody tr').not(':first').remove();
+
+		//Close Invoice Modal
+		$('#invoiceModal').foundation('close');
+	});	
+	
+	 //  	$('#bidAcceptanceName').change(function(){
+  // 		if ($(this).val().trim()!= ''){
+  // 			$(this).parent().removeClass('is-invalid-label');
+		// 	$(this).removeClass('is-invalid-input');
+		// 	$(this).parent().find('.form-error').removeClass('is-visible');
+		// }
+  // 	});
+	 //  	  	$('#projectCompleteName').change(function(){
+		//   		if ($(this).val().trim()!= ''){
+		//   			$(this).parent().removeClass('is-invalid-label');
+		// 			$(this).removeClass('is-invalid-input');
+		// 			$(this).parent().find('.form-error').removeClass('is-visible');
+		// 		}
+  // 	});
+
+		$('input[name="projectCompleteName"], input[name="bidAcceptanceName"], input[name="bidNumber"]').change(function(){
+        if ($(this).val().trim() == ''){
+            $(this).parent().addClass('is-invalid-label');
+            $(this).addClass('is-invalid-input');
+            $(this).parent().find('.form-error').addClass('is-visible');
+        } else {
+            $(this).parent().removeClass('is-invalid-label');
+            $(this).removeClass('is-invalid-input');
+            $(this).parent().find('.form-error').removeClass('is-visible');
+        }
+    });
+
+	$("#bidSentOk").click(function(){
+		window.location.replace("project-management.php?pid=<?php echo $projectID;  ?>#evaluation");
+	});	
+	
+	$(".changeInvoiceAmount").change(addInvoiceTotalAmount);
+	$(".changeInvoicePercent").change(addInvoiceTotalPercent);
+	
+
+
+ 	//Add Row for Invoice on Click +/-
+    $(".button.numberInvoices").on("click", function () {
+
+        var $button = $(this);
+        var oldValue = $('.invoiceTable tbody > tr:last-child td input').attr("sort");
+
+        var oldInputCount = $('.invoiceTable tbody tr:not(:first-child)').length;
+
+        if ($button.text() == "+") {
+        	$('.invoiceTable input').removeClass('is-invalid-input');
+    		$('.invoiceTable input').parent().find('.form-error').removeClass('is-visible');
+
+            var newVal = parseFloat(oldValue) + 1;
+            $('.invoiceTable tbody').append($('.invoiceTable tbody tr:first').clone().css('display', ''));
+            $('.invoiceTable tbody > tr:last-child td input').attr("sort", "" + (newVal) + "");
+		    $('.invoiceTable tbody > tr:last-child td input.changeInvoiceAmount').change(addInvoiceTotalAmount);
+		    $('.invoiceTable tbody > tr:last-child td input.changeInvoicePercent').change(addInvoiceTotalPercent);
+
+        }
+        else if ($button.text() == "-") {
+        	$('.invoiceTable input').removeClass('is-invalid-input');
+    		$('.invoiceTable input').parent().find('.form-error').removeClass('is-visible');
+
+            // Don't allow decrementing below default
+            if (oldInputCount > 0) {
+                var newVal = parseFloat(oldValue) - 1;
+                if ($('.invoiceTable tbody tr:last-child td input.changeInvoicePercent').val() == '' && $('.invoiceTable tbody tr:last-child td input.changeInvoiceAmount').val() == '') {
+                	$('.invoiceTable tbody tr:last-child').remove();
+                } else {
+                	$('.invoiceTable tbody tr:last-child').remove();
+                	addInvoiceTotalAmount();
+                }
+
+            } else {
+                newVal = 2;
+            }
+        }
+
+        var newInputCount = $('.invoiceTable tbody tr:not(:first-child)').length; 
+        newInputCount = newInputCount + 2;
+
+        $button.parent().siblings(".invoiceCountInput").children(".invoiceCount").val(newInputCount);
+    });
+    //End Add Row for Invoice on Click
+
+    $("#previewBid").click(function(){
+        var previewID = '<?php echo $previewID; ?>';
+        var link = '';
+		var baseURL = 'bid-preview.php?id=' + previewID;
+
+		link += baseURL;
+
+		var bidNumber = $('[name="bidNumber"]').val();
+		var bidAcceptanceSort = 0;
+		var bidAcceptanceName = $('[name="bidAcceptanceName"]').val();
+		var bidAcceptanceSplit = $('[name="invoiceSplitBidAcceptance"]').val();
+   		var bidAcceptanceAmount =  $('[name="bidAcceptanceTotal"]').val();
+   		var projectCompleteSort = 9999;
+		var projectCompleteName = $('[name="projectCompleteName"]').val();
+		var projectCompleteSplit = $('#invoiceSplitProjectComplete').text();
+		var projectCompleteAmount = $('#projectCompleteTotal').text().replace(',', '');
+		var bidSubTotal = $('#bid-sub-total').text();
+		var bidTotal = $('#bidTotal').text().replace(",", "");
+
+        var bidAcceptanceData = '&bidAcceptance[bidAcceptanceName]='+ encodeURI(bidAcceptanceName) + 
+        						'&bidAcceptance[bidAcceptanceSplit]=' + bidAcceptanceSplit + 
+        						'&bidAcceptance[bidAcceptanceAmount]=' + bidAcceptanceAmount;
+        link += bidAcceptanceData;
+
+        $('.invoiceTable tbody tr').each(function(row,tr){
+        	if ($(tr).find('td:eq(0)').find('input').attr('sort') != 0){
+                var invoiceName = $(tr).find('td:eq(0)').find('input').val();
+                var invoiceSort = $(tr).find('td:eq(0)').find('input').attr('sort');
+                var invoiceSplit = $(tr).find('td:eq(1)').find('input').val();
+                var invoiceAmount = $(tr).find('td:eq(2)').find('input').val();
+
+		        var invoiceData = '&invoice['+ invoiceSort +'][invoiceName]='+ encodeURI(invoiceName) + 
+		        						'&invoice['+ invoiceSort +'][invoiceSort]=' + invoiceSort + 
+		        						'&invoice['+ invoiceSort +'][invoiceSplit]=' + invoiceSplit + 
+		        						'&invoice['+ invoiceSort +'][invoiceAmount]=' + invoiceAmount;
+		        link += invoiceData;
+        	}
+        });
+
+        var projectCompleteData = '&projectComplete[projectCompleteName]='+ encodeURI(projectCompleteName) + 
+        						'&projectComplete[projectCompleteSplit]=' + projectCompleteSplit + 
+        						'&projectComplete[projectCompleteAmount]=' + projectCompleteAmount;
+        link += projectCompleteData;
+
+       	link += '&bidSubTotal=' + bidSubTotal;
+       	link += '&bidTotal=' + bidTotal;
+       	link += '&bidNumber=' + bidNumber;
+
+        window.open(link, '_blank');
+    });
+	
+	$("#finalizeBid").click(function(){
+        if ($('#noEmailRequiredStatus').text() == "0" && $('#unsubscribedStatus').text() == "0"){
+            finalizeBid();
+        }
+        else{
+            if ($('#noEmailRequiredStatus').text() == "1"){
+                var text = 'no email.';
+            }
+            if ($('#unsubscribedStatus').text() == "1"){
+                var text = 'unsubscribed from emails.';
+            }
+
+            $('#emailWontSendModal').foundation('open');
+            $('#emailWontSendModal p').text('Bid will not be sent because the customer has ' + text + ' Continue?');
+        }
+	});
+
+
+	$('#continueWithoutEmail').click(finalizeBid);
+	
+	
+	$("#invoiceApprove").click(function(){
+		var bidNumberValidate;
+		var percentageValidate = 1;
+		var projectCompletePercentInteger = Number($('#invoiceSplitProjectComplete').text());
+		var percentageTotal = 0;
+
+		$('.changeInvoicePercent').not('[sort="0"]').each(function () {
+			if ($(this).val() != ''){
+				percentageTotal += Number($(this).val());
+			}
+		});
+		percentageTotal += projectCompletePercentInteger;
+		if (percentageTotal < 100 || percentageTotal > 100){
+			percentageValidate = 0;
+			$('.changeInvoicePercent').addClass('is-invalid-input');
+		}
+		else{
+			$('.changeInvoicePercent').removeClass('is-invalid-input');
+		}
+
+        if (parseInt($('#invoiceSplitProjectComplete').text()) < 1){
+            $('#invoiceSplitProjectComplete').addClass('is-invalid-label');
+            percentageValidate = 0;
+        }
+        else{
+            $('#invoiceSplitProjectComplete').removeClass('is-invalid-label');
+        }
+
+		var bidNumberInput = $('[name="bidNumber"]').val();
+
+		// // FXLRATR-177
+		//these cannot be empty.
+		var bidAcceptanceName = $('[name="bidAcceptanceName"]').val().trim();
+		var projectCompleteName = $('[name="projectCompleteName"]').val().trim();
+
+			if(bidAcceptanceName !='' && projectCompleteName !=''){	
+
+				if (bidNumberInput != ''){
+					$.ajax({
+			       	 	url: 'checkBidNumber.php',
+			        	dataType: "json",
+			        	contentType: 'application/json',
+			        	type: "GET",
+			        	contentType: "application/x-www-form-urlencoded",
+			        	data: {
+							bidNumber: bidNumberInput
+			        	},
+						success: function (response) {
+							if (!response){
+								$('.changeBidNumber').removeClass('is-invalid-input');
+								// $('.form-error').removeClass('is-visible');
+								$('#bidUsed').removeClass('is-visible');
+								//storeInvoiceData();
+								bidNumberValidate = 1;
+								validateSendBid();
+							}
+							else{		
+								$('.changeBidNumber').addClass('is-invalid-input');
+								// $('.form-error').addClass('is-visible');
+								$('#bidUsed').addClass('is-visible');
+								bidNumberValidate = 0;
+								validateSendBid();
+							}
+						},
+					 	error: function(jqXHR, textStatus, errorThrown) {
+			  				console.log(textStatus, errorThrown);
+							console.log(jqXHR.responseText);
+					 	}
+			    	});			
+				} 
+				
+			}
+
+			
+
+		 	function validateSendBid() {
+				if (bidNumberValidate == 1 && percentageValidate == 1) {
+					if (bidNumberInput != ''){ 
+						// console.log('Store Invoice Data');
+						storeInvoiceData();
+					} 
+				}
+			}
+			
+
+			function storeInvoiceData() {
+		        var invoiceTableData = new Array();
+		        $('.invoiceTable tbody tr').each(function(row,tr){
+		            invoiceTableData[row]={
+		                "invoiceName":$(tr).find('td:eq(0)').find('input').val(),
+		                "invoiceSort":$(tr).find('td:eq(0)').find('input').attr('sort'),
+		                "invoiceSplit":$(tr).find('td:eq(1)').find('input').val(),
+		                "invoiceAmount":$(tr).find('td:eq(2)').find('input').val()
+		            };
+		        });
+		        invoiceTableData.shift();
+		        var invoiceTableArray = invoiceTableData
+
+		        //console.log(invoiceTableArray);
+				$('#loading-image').show();
+				$.ajax({
+		       	 	url: 'send-bid.php',
+		        	dataType: "json",
+		        	contentType: 'application/json',
+		        	type: "POST",
+		        	contentType: "application/x-www-form-urlencoded",
+		        	data: {
+						evaluationID: $('#evaluationID').attr('value'),
+						quickbooksID: '<?php echo $quickbooksID;  ?>',
+						bidNumber: bidNumberInput,
+						bidAcceptanceName: $('[name="bidAcceptanceName"]').val(), //FLXRATR-177
+						bidAcceptanceSplit: $('[name="invoiceSplitBidAcceptance"]').val(),
+		           		bidAcceptanceAmount: $('[name="bidAcceptanceTotal"]').val(),
+						//projectStartAmount: $('[name="projectStartTotal"]').val(),
+						projectCompleteName: $('[name="projectCompleteName"]').val(), //FLXRATR-177
+						projectCompleteSplit: $('#invoiceSplitProjectComplete').text(),
+						projectCompleteAmount: $('#projectCompleteTotal').text().replace(',', ''),
+						//projectStartSplit: $('[name="invoiceSplitProjectStart"]').val(),
+						bidSubTotal: $('#bid-sub-total').text(),
+						bidTotal: $('#bidTotal').text(),
+						invoiceArray: invoiceTableArray,
+						customEvaluation: ''
+
+		        	},
+					success: function (response) {
+						$('#loading-image').hide();
+						//console.log(response);
+						if (response == 'true') {
+							//Open Bend Sent Modal
+	                        if ($('#noEmailRequiredStatus').text() == "0" && $('#unsubscribedStatus').text() == "0"){
+	                            $('#bidSentModal').foundation('open');
+	                        }
+	                        else{
+	                        	$('#emailWontSendModal').foundation('close');
+	                        	window.location.replace("project-management.php?pid=<?php echo $projectID;  ?>#evaluation");
+	                        }
+						} else {
+							$('#errorbidSentModal').foundation('open');
+						}
+					},
+				 	error: function(jqXHR, textStatus, errorThrown) {
+		  				console.log(textStatus, errorThrown);
+						console.log(jqXHR.responseText);
+				 	}
+		    	});
+		    }
+	});
+		
+
+	$("#sendForReview").click(function(){
+		$('#loading-image').show();
+		$.ajax({
+       	 	url: 'bid-created.php',
+        	dataType: "json",
+        	contentType: 'application/json',
+        	type: "POST",
+        	contentType: "application/x-www-form-urlencoded",
+        	data: {
+				evaluationID: $('#evaluationID').attr('value')
+        	},
+			success: function (response) {
+				//console.log(response);
+				if (response == 'true') {
+					$('#loading-image').hide();
+					window.location.href = "project-management.php?pid=<?php echo $projectID;?>#evaluation";
+				}
+			},
+		 	error: function(jqXHR, textStatus, errorThrown) {
+  				console.log(textStatus, errorThrown);
+				console.log(jqXHR.responseText);
+		 	}
+    	});
+	});
+
+	
+	//Show Setup Modal if Clicked in Top Nav
+    $('#showSetup').click(showSetupModal);
+
+    //Show Setup Modal On Page Load if it Hasn't Been Viewed Since Yesterday
+    showSetupModal('true');
+
+    //Update Last Viewed When Modal Opens
+    $('#setupModal').on('open.zf.reveal', function() {
+        $.ajax({
+            url: 'setupProgressUpdate.php',
+            dataType: "json",
+            contentType: 'application/json',
+            type: "POST",
+            contentType: "application/x-www-form-urlencoded",
+            data: {
+                updateSetupNotice: 'true'
+            },
+            success: function (response) {
+                //console.log(response);
+                // if (response == 'true') {
+                // }
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+                console.log(jqXHR.responseText);
+            }
+        });
+
+    });
+
+    //Update Checkmarks When Clicked
+    $('img.setupProgressCheckmark').click(updateChecks);
+
+    //Stop Showing Setup Modal
+    $('#setupComplete').click(setupComplete);	
+	
+});
+
+var finalizeBid = function() {
+	if ($('select[name="bidDiscountType"]').val() == ''  && $('input[name="bidDiscount"]').val() == '') {
+			var validationPassed = true;
+	}
+	else{
+			var validationPassed = validateDiscount($('select[name="bidDiscountType"]').val());
+	}
+	 
+	if (validationPassed == false){
+		return false;
+	}
+	else{
+		$.ajax({
+       	 	url: 'getBidTotal.php',
+        	dataType: "json",
+        	contentType: 'application/json',
+        	type: "POST",
+        	contentType: "application/x-www-form-urlencoded",
+        	data: {
+           	evaluationID: $('#evaluationID').attr('value')
+        	},
+        	success: function (response) {
+        		$('#loading-image').hide();
+
+        		function ReplaceNumberWithCommas(Total) {
+				    //Seperates the components of the number
+				    var n= Total.toString().split(".");
+				    //Comma-fies the first part
+				    n[0] = n[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+				    //Combines the two sections
+				    return n.join(".");
+				}
+
+				var discountTotal = $('.discountTotal').text();
+
+				var bidTotal = response.toString();
+
+				bidTotal = Number(bidTotal - discountTotal);
+
+				var bidTotalFormat = parseFloat(bidTotal).toFixed(2);
+				$('#bidTotal').html(ReplaceNumberWithCommas(bidTotalFormat));
+
+				
+				var bidAcceptPercent = parseFloat($('[name="invoiceSplitBidAcceptance"]').val()); 
+				var bidAcceptanceTotal = bidAcceptPercent / 100 * bidTotal;
+				bidAcceptanceTotal = parseFloat(bidAcceptanceTotal).toFixed(2);
+				$('[name="bidAcceptanceTotal"]').val(bidAcceptanceTotal);
+				
+				var projectCompletePercent = parseFloat($('#invoiceSplitProjectComplete').text()); 
+				var projectCompleteTotal = projectCompletePercent / 100 * bidTotal;
+				projectCompleteTotal = parseFloat(projectCompleteTotal).toFixed(2);
+				$('#projectCompleteTotal').text(projectCompleteTotal);
+
+				if ('<?php echo $defaultInvoices;  ?>' > 2) {
+					var defaultTotalInvoices = '<?php echo $defaultInvoices;  ?>' - 2;
+
+					for (i = 0; i < defaultTotalInvoices; i++) {
+					    var oldValue = $('.invoiceTable tbody > tr:last-child input').attr("sort");
+					    var newVal = parseFloat(oldValue) + 1;
+
+					    $cloneBlankRow = $('.invoiceTable tbody tr:first').clone().css('display', '');
+					    $('.invoiceTable tbody').append($cloneBlankRow);
+					    $('.invoiceTable tbody > tr:last-child td input').attr("sort", "" + (newVal) + "");
+					    $('.invoiceTable tbody > tr:last-child td input.changeInvoiceAmount').change(addInvoiceTotalAmount);
+					    $('.invoiceTable tbody > tr:last-child td input.changeInvoicePercent').change(addInvoiceTotalPercent);
+
+					    
+					}
+				} 
+				$(".invoiceCountInput .invoiceCount").val('<?php echo $defaultInvoices;  ?>');
+        	},
+		 	error: function(jqXHR, textStatus, errorThrown) {
+  				console.log(textStatus, errorThrown);
+				console.log(jqXHR.responseText);
+		 	}
+    	});
+	
+		$.ajax({
+       	 	url: 'getLastBidNumber.php',
+        	dataType: "json",
+        	contentType: 'application/json',
+        	type: "GET",
+        	contentType: "application/x-www-form-urlencoded",
+			success: function (response) {
+				if (!response){
+					console.log("error");
+				}
+				else{	
+					if (response[0].bidNumber != null) {
+						$('[name="bidNumber"]').val(parseInt(response[0].bidNumber) + 1);	
+					} else {
+						$('[name="bidNumber"]').val('1');	
+					}
+									
+				}
+
+				$('#loading-image').hide();
+			},
+		 	error: function(jqXHR, textStatus, errorThrown) {
+  				console.log(textStatus, errorThrown);
+				console.log(jqXHR.responseText);
+		 	}
+    	});
+
+    	if ('<?php echo $qbConnectionStatus;  ?>' == 'qb-disconnected') {
+    		$('#disconnectedError').addClass('is-visible');
+    		$('#invoiceApprove').prop('disabled', 'disabled');
+    	}
+
+		$('#invoiceModal').foundation('open');
+	}
+};
+
+var removeInvoiceRowError = function(){
+	$(this).parent().removeClass('is-invalid-label');
+    $(this).removeClass('is-invalid-input');
+    $(this).parent().find('.form-error').removeClass('is-visible');
+};
+
+var addInvoiceTotalAmount = function() {
+	//var value = parseFloat($(this).val());  
+	//var updatedName = $(this).attr('name');
+	var invoiceTotal = $('#bidTotal').text();
+	var invoiceTotalFormat = invoiceTotal.replace(/,/g, '');
+	invoiceTotalFormat = parseFloat(invoiceTotalFormat);
+
+
+		var totalAmount = 0;
+		$('#invoiceModal').find(".changeInvoiceAmount").each(function() {
+			var amount = $(this).val();
+
+			if (amount != '') {
+				var amountPercent = amount / invoiceTotalFormat * 100;
+				amountPercent = parseFloat(amountPercent).toFixed(2);
+
+				if ($(this).hasClass('default')) {
+					$(this).parent().parent().parent().parent().find('.changeInvoicePercent').val(amountPercent);
+				} else {
+					$(this).parent().parent().find('.changeInvoicePercent').val(amountPercent);
+				}
+
+				totalAmount += Number(amount); 
+			}
+			
+		});
+
+
+		totalAmount = parseFloat(totalAmount).toFixed(2);
+		var newinvoiceTotal = invoiceTotalFormat - totalAmount;
+		newinvoiceTotal = parseFloat(newinvoiceTotal).toFixed(2);
+
+		$('#projectCompleteTotal').text(ReplaceNumberWithCommas(newinvoiceTotal));
+
+		var totalPercent = 0;
+		$('#invoiceModal').find(".changeInvoicePercent").each(function() {
+			var percent = $(this).val();
+
+			if (percent != '') {
+				//var amountPercent = percent / invoiceTotalFormat * 100;
+				//amountPercent = parseFloat(amountPercent).toFixed(2);
+
+				//$(this).parent().parent().find('.changeInvoicePercent').val(amountPercent);
+
+				totalPercent += Number(percent); 
+			}
+			
+		});
+
+		totalPercent = parseFloat(totalPercent).toFixed(2);
+		var newinvoicePercent = 100 - totalPercent;
+		newinvoicePercent = parseFloat(newinvoicePercent).toFixed(2);
+
+		$('#invoiceSplitProjectComplete').text(newinvoicePercent);
+
+	
+};
+
+
+var addInvoiceTotalPercent = function() {
+	//var value = parseFloat($(this).val());  
+	//var updatedName = $(this).attr('name');
+	var invoiceTotal = $('#bidTotal').text();
+	var invoiceTotalFormat = invoiceTotal.replace(/,/g, '');
+	invoiceTotalFormat = parseFloat(invoiceTotalFormat);
+
+
+		var totalPercent = 0;
+		$('#invoiceModal').find(".changeInvoicePercent").each(function() {
+			var percent = $(this).val();
+
+			if (percent != '') {
+				if (percent > 100){
+					$(this).val(100);
+					percent = 100;
+				}
+				else if (percent < 0){
+					$(this).val(0);
+					percent = 0;
+				}
+				var percentDecimal = percent / 100;
+
+				var amountPercent = invoiceTotalFormat * percentDecimal;
+				amountPercent = parseFloat(amountPercent).toFixed(2);
+
+				if ($(this).hasClass('default')) {
+					$(this).parent().parent().parent().parent().find('.changeInvoiceAmount').val(amountPercent);
+				} else {
+					$(this).parent().parent().find('.changeInvoiceAmount').val(amountPercent);
+				}
+				
+
+				totalPercent += Number(percent);
+
+			}
+			
+		});
+
+		totalPercent = parseFloat(totalPercent).toFixed(2);
+		var newinvoicePercent = 100 - totalPercent;
+		newinvoicePercent = parseFloat(newinvoicePercent).toFixed(2);
+
+
+		$('#invoiceSplitProjectComplete').text(newinvoicePercent);
+
+		var totalAmount = 0;
+		$('#invoiceModal').find(".changeInvoiceAmount").each(function() {
+			var amount = $(this).val();
+
+			if (amount != '') {
+				// var amountPercent = amount / invoiceTotalFormat * 100;
+				// amountPercent = parseFloat(amountPercent).toFixed(2);
+
+				// $(this).parent().parent().find('.changeInvoicePercent').val(amountPercent);
+
+				totalAmount += Number(amount); 
+			}
+			
+		});
+
+
+		totalAmount = parseFloat(totalAmount).toFixed(2);
+		var newinvoiceTotal = invoiceTotalFormat - totalAmount;
+		newinvoiceTotal = parseFloat(newinvoiceTotal).toFixed(2);
+
+		$('#projectCompleteTotal').text(ReplaceNumberWithCommas(newinvoiceTotal));
+
+	
+};
+
+function ReplaceNumberWithCommas(Total) {
+    //Seperates the components of the number
+    var n= Total.toString().split(".");
+    //Comma-fies the first part
+    n[0] = n[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    //Combines the two sections
+    return n.join(".");
+}
+
+
+function resetAll(valDiscountType){
+			$('input[name="bidDiscount"]').val('0.00');
+			$('input[name="bidDiscount"]').text('0.00');
+			$('select[name="bidDiscountType"]').val(valDiscountType);
+			$('#noDiscountType').hide();	
+			$('#discountNotNumeric').hide();
+			$('#discountTotalInvalid').hide();
+			$('#discountPercentInvalid').hide();
+			
+			$('#discountCantBeZero').hide();
+			$('#discountCantBeZero').removeClass("is-invalid-input");
+			$('#discountCantBeZero').removeClass("required");
+
+			$('input[name="bidDiscount"]').removeClass("is-invalid-input");
+			$('select[name="bidDiscountType"]').removeClass("is-invalid-input");
+			$('input[name="bidDiscount"]').removeClass("required");
+			$('select[name="bidDiscountType"]').removeClass("required");
+};
+
+function validateDiscount(discount_type){
+		
+		//check for valid discount
+
+		if(discount_type == null){
+				discount_type='';
+			}
+
+			if(discount_type == '--'){
+				discount_type='';
+			}
+
+			if(discount_type == 0){
+				discount_type='';
+			}
+
+			if(discount_type == 'Total Amount'){
+				discount_type =1;
+			}
+
+			if(discount_type == 'Percentage'){
+				discount_type =2;
+			}
+
+			if (discount_type =='1'){
+				discount_type =1;
+			}
+
+			if(discount_type =='2'){
+				discount_type=2;
+			}
+
+
+
+		switch (discount_type){
+
+			
+			case '':
+
+
+				if ($('select[name="bidDiscountType"]').val() == '' && $('input[name="bidDiscount"]').val() == '') {
+					return true;
+				}
+
+				if ($('input[name="bidDiscount"]')=='' || $('input[name="bidDiscount"]')==null){
+					$('input[name="bidDiscount"]').val('0.00')
+					resetAll(0);
+					return true;
+				}				
+
+
+				if(!$.isNumeric($('input[name="bidDiscount"]').val())){
+					resetAll(0);
+					$('#discountNotNumeric').show();
+					$('input[name="bidDiscount"]').addClass("is-invalid-input");
+					$('input[name="bidDiscount"]').addClass("required");
+					return false;
+				}
+
+				var enteredDiscountAmount = parseFloat($('input[name="bidDiscount"]').val());
+
+				if (enteredDiscountAmount == 0){
+					//this is ok
+					resetAll(0);
+					return true;
+				}else{
+					$('#noDiscountType').show();
+					$('#noDiscountType').addClass("is-invalid-input");
+					$('#noDiscountType').addClass("required");
+					return false;
+				}
+
+			
+				
+				// return false;
+
+			case 1:
+
+				// alert("total amount");
+				
+				if(!$.isNumeric($('input[name="bidDiscount"]').val())){
+					resetAll(1);
+					$('#discountNotNumeric').show();
+					$('input[name="bidDiscount"]').addClass("is-invalid-input");
+					$('input[name="bidDiscount"]').addClass("required");
+					return false;
+				}
+
+				var totalDiscountAmount = parseFloat($('input[name="bidDiscount"]').val());
+				var subTotal = parseFloat ($('#bid-sub-total').text());
+
+				if (totalDiscountAmount == 0){
+					resetAll(1);
+					$('#discountCantBeZero').show();
+					$('input[name="bidDiscount"]').addClass("is-invalid-input");
+					$('input[name="bidDiscount"]').addClass("required");
+					return false;
+				}else{
+					$('#discountCantBeZero').hide();
+					$('#discountCantBeZero').removeClass("required");
+					$('#discountCantBeZero').removeClass("is-invalid-input");
+
+				}
+
+				if(totalDiscountAmount>subTotal){
+					resetAll(1);
+					$('#discountTotalInvalid').show();
+					$('input[name="bidDiscount"]').addClass("is-invalid-input");
+					$('input[name="bidDiscount"]').addClass("required");
+					return false;
+				}else{
+					$('#discountTotalInvalid').hide();
+					$('#discountNotNumeric').hide();
+					$('input[name="bidDiscount"]').removeClass("is-invalid-input");
+					$('input[name="bidDiscount"]').removeClass("required");
+					$('select[name="Discount"]').val(1);
+					return true;
+				}
+
+				break;
+
+			case 2:
+				// alert("percentage");
+
+				if(!$.isNumeric($('input[name="bidDiscount"]').val())){
+					resetAll(2);
+					$('#discountNotNumeric').show();
+					$('input[name="bidDiscount"]').addClass("is-invalid-input");
+					$('input[name="bidDiscount"]').addClass("required");
+					return false;
+				}
+
+				var totalDiscountPercent = parseFloat($('input[name="bidDiscount"]').val());
+				
+
+				if(totalDiscountPercent>100 || totalDiscountPercent < 0.1){
+					resetAll(2);
+					$('#discountPercentInvalid').show();
+					$('input[name="bidDiscount"]').addClass("is-invalid-input");
+					$('input[name="bidDiscount"]').addClass("required");
+					return false;
+				}else{
+					$('#discountPercentInvalid').hide();
+					$('#discountNotNumeric').hide();
+					$('input[name="bidDiscount"]').removeClass("is-invalid-input");
+					$('input[name="bidDiscount"]').removeClass("required");
+					$('select[name="Discount"]').val(2);
+					return true;
+				}
+
+			default:
+				// alert("uh oh - uncaught case: " + discount_type);
+				// console.log("unkown error ln803Bid-Summary");
+
+		}
+};
+
+var ajaxSave = function() {
+    var answer = $(this);
+	var answer_name = $(answer).attr('name');
+	var answer_value = $(answer).val();
+	var answer_section = $(answer).attr('section');
+	var evaluationID = $('#evaluationID').attr('value');
+	var isChanged = '1';
+	
+	// validateDiscount(answer_name);
+
+	if(answer_name =='bidDiscountType'){
+		resetAll(answer_value);
+	}
+
+	if (answer_name == 'bidDiscountType' || answer_name == 'bidDiscount') {
+			//Add Discount
+			var bidSubTotal = $('#bid-sub-total').text();
+			var bidDiscountType = $('select[name="bidDiscountType"]').val();
+
+			// console.log(bidDiscountType);
+
+			var bidDiscount = $('input[name="bidDiscount"]').val();
+
+			if (bidDiscountType != '' && bidDiscount != '') {
+				if (bidDiscountType == 1) {
+					//do nothing
+				}
+
+				if (bidDiscountType == 2) {
+					bidDiscount = bidDiscount / 100;
+					bidDiscount = bidSubTotal * bidDiscount;
+				} 
+			}
+
+				$('.discountTotal').text(bidDiscount);
+				var bidDiscountFormatted = parseFloat(bidDiscount).toFixed(2);
+				$('.discountTotalFormat').text('Total: -$'+ReplaceNumberWithCommas(bidDiscountFormatted));
+
+				var bidTotal = bidSubTotal - bidDiscount;
+
+				bidTotal = parseFloat(bidTotal).toFixed(2);
+				$('h5.bid-total').text('Total: $'+ReplaceNumberWithCommas(bidTotal));
+			
+				// bidTotal = parseFloat(bidTotal).toFixed(2);
+				// $('.discountTotal').text('Discount Total: $'+ReplaceNumberWithCommas(bidTotal));
+				//console.log(bidTotal);
+	} else {
+		//If Discount Is Applied
+		if ($('select[name="bidDiscountType"]').val() != '' && $('input[name="bidDiscount"]').val() != ''){
+
+			if (validateDiscount(answer_name) ==false){
+				return false;
+			} else {
+
+				//Get Bid Total Price
+				var totalPrice = 0;
+
+				$('body').find(".Answer").each(function() {
+					var price = $(this).val();
+					totalPrice += Number(price); 
+				});
+
+				//Update Total And SubTotal Price	
+				totalPrice = parseFloat(totalPrice).toFixed(2);
+				$('#bid-total').text(totalPrice);
+				$('body').find("h6.bid-sub-total").text('Subtotal: $' + ReplaceNumberWithCommas(totalPrice));
+				$('body').find("#bid-sub-total").text(totalPrice);
+				$('body').find("h5.bid-total").text('Total: $' + ReplaceNumberWithCommas(totalPrice));
+
+				//Update Total and SubTotal with Discount
+				var bidSubTotal = $('#bid-sub-total').text();
+				var bidDiscountType = $('select[name="bidDiscountType"]').val();
+				
+				console.log(bidDiscountType);
+
+				var bidDiscount = $('input[name="bidDiscount"]').val();
+
+				if (bidDiscountType != '' && bidDiscount != '') {
+							
+					if (bidDiscountType == 1) {
+						//do nothing
+					} else if (bidDiscountType == 2) {
+						bidDiscount = bidDiscount / 100;
+						bidDiscount = bidSubTotal * bidDiscount;
+					} 
+
+					$('.discountTotal').text(bidDiscount);
+
+					var bidDiscountFormatted = parseFloat(bidDiscount).toFixed(2);
+					$('.discountTotalFormat').text('Total: -$'+ReplaceNumberWithCommas(bidDiscountFormatted));
+
+					var bidTotal = bidSubTotal - bidDiscount;
+
+					bidTotal = parseFloat(bidTotal).toFixed(2);
+					$('h5.bid-total').text('Total: $'+ReplaceNumberWithCommas(bidTotal));
+
+				}					
+				
+			}
+
+		 } else {
+		
+			//Else Discount Is Not Applied
+			//Get Bid Total Price
+			var totalPrice = 0;
+
+			$('body').find(".Answer").each(function() {
+			var price = $(this).val();
+			totalPrice += Number(price); 
+			});
+			//Update Total Price	
+			totalPrice = parseFloat(totalPrice).toFixed(2);
+			$('#bid-total').text(totalPrice);
+			$('body').find("h6.bid-sub-total").text('Subtotal: $' + ReplaceNumberWithCommas(totalPrice));
+			$('body').find("#bid-sub-total").text(totalPrice);
+			$('body').find("h5.bid-total").text('Total: $' + ReplaceNumberWithCommas(totalPrice));					
+		}
+	}
+
+
+	//Update Table Row Totals
+	$('body').find("tr").each(function() {
+		var totalRowPrice = 0;
+	
+		$(this).find(".Answer").each(function() {
+			var price = $(this).val();
+			totalRowPrice += Number(price); 
+		});
+
+		//Update Total Price	In Each Table Row
+		totalRowPrice = parseFloat(totalRowPrice).toFixed(2);
+		$(this).find(".price-subtotal").text('$' + ReplaceNumberWithCommas(totalRowPrice));
+	});
+
+
+	//Update Table Totals
+	$('body').find("table").each(function() {
+		var totalTablePrice = 0;
+
+		$(this).find(".Answer").each(function() {
+			var price = $(this).val();
+			totalTablePrice += Number(price); 
+		});
+
+		//Update Total Price	In Each Table Row
+		totalTablePrice = parseFloat(totalTablePrice).toFixed(2);
+		$(this).find(".price-total").text('$' + ReplaceNumberWithCommas(totalTablePrice));
+	});
+
+	//Add Blue Background
+	$(answer).parent().addClass( "save-pending" );
+
+	$.ajax({
+		url: 'evaluation-wizard-ajax.php',
+		dataType: "json",
+		contentType: 'application/json',
+		type: "POST",
+		contentType: "application/x-www-form-urlencoded",
+		data: {
+				evaluationID: evaluationID,
+				questionName: answer_name,
+				questionValue: answer_value,
+				questionSection: answer_section
+				},
+		success: function (response) {
+				//console.log(response);
+				//Remove Blue Background
+				$(answer).parent().removeClass( "save-pending" );
+				//Add Green Background and then Remove
+				$(answer).parent().css('background-Color', '#90EE90').animate({ backgroundColor: "transparent" }, 1000);//.addClass('save-success');
+				$(answer).val(response);
+
+				if ($(answer).parent().hasClass('pierSelect')) {
+					$(answer).removeClass('change');
+				}
+
+				//TODO Enable Save Button - Make sure nothing is in save pending before enable  
+			},
+		error: function(jqXHR, textStatus, errorThrown) {
+				console.log(textStatus, errorThrown);
+				console.log(jqXHR.responseText);
+
+				$(answer).parent().removeClass( "save-pending" );
+				$(answer).parent().addClass( "save-error" );
+				//window.location.replace("login.php?returnurl=/evaluation-wizard.php?eid=<?php echo $evaluationID;  ?>");
+				}
+
+		});
+};
+
+</script>
+</head>
+<style>
+	 #propertyLocationMap, #propertyLocationStreetview  {
+        height: 320px;
+		border:1px solid #000;
+      }
+	 
+	#calendarMap {
+        height: 320px;
+		border:1px solid #000;
+      } 
+    div.loadingImage {
+        position: fixed;
+        z-index: 1500;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #eee;
+        opacity: 0.5;
+        text-align: center;
+    }
+    div.loadingImage {
+        display: none;
+    }
+    div.loadingImage > img {
+        position: absolute;
+        top: 40%;
+    }
+</style>
+  <body>
+	<?php  include_once 'header.html'  ?>
+    <div id="loading-image" class="loadingImage">
+        <img src="images/ajax-loader.gif" />
+    </div>
+	<div class="row expanded first-row" style="background-color:#f6f7fb;">
+     	<div class="medium-12 columns">
+      		<div class="medium-12 columns">
+        		<h1 class="project-title"><?php echo $firstName; ?> <?php echo $lastName; ?> - <?php echo $projectDescription; ?></h1>
+        	</div>
+      	</div>
+   	</div>
+    <div class="row expanded" style="margin-bottom: 4rem;">
+     	<div class="medium-12 columns" style="margin-top:1rem;">
+        	<div class="medium-12 columns">
+      			<h5><strong><?php echo $evaluationCreated;  ?> Evaluation</strong></h5>
+          		<?php echo $addressDisplay;  ?>  
+          	</div> 	
+         	<div class="medium-12 columns">
+            	<?php echo $pieringDisplay;  ?>  
+              	<?php echo $wallRepairDisplay;  ?>  
+              	<?php echo $waterManagementDisplay;  ?>  
+              	<?php echo $supportPostDisplay;  ?>  
+              	<?php echo $crackRepairDisplay;  ?>  
+              	<?php echo $mudjackingDisplay;  ?>  
+              	<?php echo $polyurethaneDisplay;  ?> 
+              	<?php echo $customServicesDisplay;  ?>
+              	<?php echo $otherServicesDisplay;  ?>  
+          		<?php echo $obstructionsDisplay;  ?>  
+         	</div>
+         	<div class="medium-12 columns" style="margin-bottom: 2rem;">
+      			<h6 class="bid-sub-total" style="font-weight:bold;">Subtotal: $<?php echo $bidSubTotalFormatted; ?></h5>
+      			<div id="bid-sub-total" class="is-hidden"><?php echo $bidSubTotal; ?></div>
+          	</div> 	
+          	<div class="medium-12 columns" style="margin-bottom:2rem;">
+          		<div class="callout primary">
+	      			<h6><strong>Discount</strong></h6>
+	      			<div class="row">	
+	               		<div class="medium-2 columns">
+	               			<select class="Discount" section="pricing" name="bidDiscountType">
+	                    		<option value="">--</option>
+	           					
+	                       	 	<option <?php echo $bidDiscountTypeDollar; ?> value="1">Total Amount</option>
+	                        	<option <?php echo $bidDiscountTypePercentage; ?> value="2">Percent</option>
+	                		</select>
+	                		<small id="noDiscountType" class="form-error">You must choose a discount type, or enter 0 for discount amount.</small>
+	               		</div>
+	               		<div class="medium-2 columns">
+							<input class="Discount" section="pricing" name="bidDiscount" type="text" value="<?php echo $bidDiscount;  ?>">
+							<small id="discountNotNumeric" class="form-error">
+								You must enter a valid, numeric discount amount
+							</small>
+							<small id="discountTotalInvalid" class="form-error">
+								Your total discount amount cannot exceed your evaluation sub-total
+							</small>
+							<small id="discountCantBeZero" class="form-error">
+								Total Discount must be greater than 0.  Select '--' for no discount.
+							</small>
+							<small id="discountPercentInvalid" class="form-error">
+								Your discount percent must be between 0.1 and 100
+							</small>
+	               		</div>
+
+
+	               		<div class="medium-12 columns">
+	               			<p class="discountTotalFormat no-margin"><?php echo $bidDiscountTotalFormatted;  ?></p>
+	               			<div class="discountTotal is-hidden"><?php echo $bidDiscountTotal;  ?></div>
+	               		</div>	
+	               	</div>	
+	          	</div> 	
+          	</div>
+          	<div class="medium-12 columns">
+      			<h5 class="bid-total" style="font-weight:bold;">Total: $<?php echo $bidTotalFormatted; ?></h5>
+      			<div id="bid-total" class="is-hidden"><?php echo $bidTotal; ?></div>
+               <br/>
+              	<?php echo $submitBid;  ?>
+          	</div> 	
+      	</div>
+   	</div>
+	<div class="small reveal" id="invoiceModal" data-reveal data-close-on-esc="false" data-close-on-click="false">
+		<div class="row" style="position: relative;">
+	 		<h3>Billing</h3>
+	 		<div class="medium-2 columns" style="position: absolute; right: 130px; top: 40%; transform: translate(0, -50%)">Bid #</div>
+	  		<div class="medium-2 columns no pad" style="position: absolute; right: 0rem;">
+	 		 	<input class="changeBidNumber number" type="text" value="" name="bidNumber">
+				<small class="form-error" id="bidUsed">This bid number has already been used.</small>
+	    	</div>
+    	</div>
+		<p>Set the invoice split percentages.</p>
+      	<div class="row">
+        	<div class="medium-6 columns">
+                <div class="row">
+                    <div class="small-12 columns">
+                        <div class="row no-pad">
+                            <div class="medium-2 columns no-pad-left">
+                                <a class="button xtiny counter numberInvoices">-</a>
+                            </div>
+                            <div class="medium-2 columns no-pad invoiceCountInput">
+                                <input onload="getValue(this)" class="invoiceCount Integer" style="text-align:center;" type="text" value="0" />
+                            </div>
+                            <div class="medium-2 columns no-pad-right">
+                                <a class="button xtiny counter numberInvoices">+</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>  
+          	</div>
+          	<div class="medium-3 columns">
+            	<div class="row">
+        			<div class="medium-10 columns">
+            			<p class="text-center">Percentage</p>
+                	</div>
+                  <div class="medium-2 columns no-pad-left text-left"></div>
+             	</div>
+          	</div>
+          	<div class="medium-3 columns">
+            	<div class="row">
+                	<div class="medium-2 columns no-pad-right text-right"></div>
+        			<div class="medium-10 columns">
+            			<p class="text-center">Invoice Amount</p>
+                	</div>
+             	</div>
+          	</div>
+       	</div>
+       	<div class="row">
+        	<div class="medium-6 columns">
+            	<input class="required" type="text" value="Bid Acceptance" id="bidAcceptanceName" name="bidAcceptanceName">
+            	<small id="ba" class="form-error">You must include a name for 'Bid Acceptance'.</small>
+          	</div>
+          	<div class="medium-3 columns">
+            	<div class="row">
+        			<div class="medium-10 columns">
+            			<input class="changeInvoicePercent default" type="text" value="<?php echo $invoiceSplitBidAcceptance; ?>" name="invoiceSplitBidAcceptance" />
+                	</div>
+                 	<div class="medium-2 columns no-pad-left text-left">%</div>
+             	</div>
+          	</div>
+          	<div class="medium-3 columns">
+            	<div class="row">
+                	<div class="medium-2 columns no-pad-right text-right">$</div>
+        			<div class="medium-10 columns">
+            			<input class="changeInvoiceAmount default" type="text" value="1000.00" name="bidAcceptanceTotal" />
+                	</div>
+             	</div>
+          	</div>
+          	<!-- <div class="medium-2 columns">
+            	<div class="row">
+        			<div class="medium-12 columns">
+            			<input class="invoiceNumber number" type="text" value="" name="bidAcceptanceNumber" />
+            			<small id="existingInvoice" class="form-error">This invoice number has already been used.</small>
+            			<small id="duplicateInvoice" class="form-error">This is a duplicate invoice number.</small>
+                	</div>
+             	</div>
+          	</div> -->
+       	</div>
+       	<div class="row">
+       		<div class="medium-12 columns no-pad">
+       			<table class="evaluationTable invoiceTable" cellpadding="0" cellspacing="0">
+                    <thead style="background:none;">
+                        <tr>
+                            <th style="text-align:left;color:#0a0a0a;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;" width="50%"></th>
+                            <th style="text-align:left;color:#0a0a0a;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;" width="25%"></th>
+                            <th style="text-align:left;color:#0a0a0a;line-height: .5rem;border-bottom:0;padding:0rem 0.4rem;" width="25%"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="display:none;">
+                            <td style="color:#36413e;text-align:center;padding: 0 .9rem;">
+                                <input sort="0" name="invoiceName[]" type="text" value="" placeholder="Invoice Name" />
+                            </td>
+                            <td style="color:#36413e;text-align:center;">
+                                <input sort="0" class="changeInvoicePercent" name="invoiceSplit[]" type="text" value="" placeholder="Invoice Split" />
+                            </td>
+                            <td style="color:#36413e;text-align:center;">
+                                <input sort="0" class="changeInvoiceAmount" name="invoiceAmount[]" type="text" value="" placeholder="Invoice Amount" />
+                            </td>
+                            <!-- <td style="color:#36413e;text-align:center;">
+                                <input class="invoiceNumber number" sort="0" name="invoiceNumber[]" type="text" value="" placeholder="Number" />
+                                <small id="duplicateInvoice" class="form-error">This is a duplicate invoice number.</small>
+                                <small id="existingInvoice" class="form-error">This invoice number has already been used.</small>
+                            </td> -->
+                        </tr>
+                    </tbody>
+                </table>
+       		</div>
+       	</div>
+    	<div class="row">
+        	<div class="medium-6 columns">
+            	<input class="required" type="text" id="projectCompleteName" name="projectCompleteName" value="Project Completion">
+            	<small class="form-error">You must include a name for 'Project Completion'.</small>
+          	</div>
+       		<div class="medium-3 columns">
+            	<div class="row">
+        			<div class="medium-10 columns">
+            			<p id="invoiceSplitProjectComplete" style="margin-left: .5rem;"><?php echo $invoiceSplitProjectComplete; ?></p>
+                	</div>
+                 	<div class="medium-2 columns no-pad-left text-left">%</div>
+             	</div>
+          	</div>
+          	<div class="medium-3 columns">
+            	<div class="row">
+                	<div class="medium-2 columns no-pad-right text-right">$</div>
+        			<div class="medium-10 columns">
+            			<p id="projectCompleteTotal" style="margin-left: .5rem;">1000.00</p>
+                	</div>
+             	</div>
+          	</div> 
+          	<!-- <div class="medium-2 columns">
+            	<div class="row">
+        			<div class="medium-12 columns">
+            			<input class="invoiceNumber number" type="text" value="" name="projectCompleteNumber" />
+            			<small id="existingInvoice" class="form-error">This invoice number has already been used.</small>
+            			<small id="duplicateInvoice" class="form-error">This is a duplicate invoice number.</small>
+                	</div>
+             	</div>
+          	</div>	 -->
+       	</div>
+       	<div class="row" style="border-top:1px solid #000;">
+        	<div class="medium-6 columns" style="margin-top: .5rem;">
+            	<p class="lead">Total</p>
+          	</div>
+          	<div class="medium-3 columns" style="margin-top: .5rem;">
+            	<p style="margin-left: .5rem;">100%</p>
+          	</div>
+          	<div class="medium-3 columns" style="margin-top: .5rem;">
+            	<div class="row">
+                	<div class="medium-2 columns no-pad-right text-right">$</div>
+        			<div class="medium-10 columns">
+            			<p id="bidTotal" style="margin-left: .5rem;"></p>
+                	</div>
+             	</div>
+          	</div> 	
+       	</div>
+      	<div class="row">
+        	<div class="medium-12 columns">
+        		<small id="disconnectedError" class="form-error">You are disconnected from Quickbooks. <span data-tooltip aria-haspopup="true" class="has-tip top" data-disable-hover="false" tabindex="8" title="Quickbooks has become disconnected. The primary user must click Refresh Connection in the Company Profile."><img src="images/icons/info.png" /></span></small>
+            	<button class="button" id="invoiceApprove">Send Bid</button>  
+            	<button class="button" id="previewBid">Preview Bid</button> 
+              	<button class="button secondary" id="cancelInvoice">Cancel</button> 	
+           </div>
+  		</div>
+	</div>
+   	<div class="tiny reveal" id="bidSentModal" data-reveal data-close-on-esc="false" data-close-on-click="false">
+ 		<h3 class="text-center">Bid Sent</h3>
+      	<div class="row">
+        	<div class="medium-12 columns">
+            	<p class="text-center no-margin">
+                	Your bid has been sent to <?php echo $firstName;  ?> <?php echo $lastName;  ?> at <?php echo $email;  ?>.
+                 	<br/><br/>
+             		<button class="button" id="bidSentOk">OK</button>
+             	</p> 
+          	</div>
+       	</div>
+   	</div>
+   	<div class="tiny reveal" id="errorbidSentModal" data-reveal data-close-on-esc="false" data-close-on-click="false">
+ 		<h3 class="text-center">Error Sending Bid</h3>
+      	<div class="row">
+        	<div class="medium-12 columns">
+            	<p class="text-center no-margin modal-content">
+                	Your bid did not send because you are disconnected from Quickbooks. The primary user must click Refresh Connection in the Company Profile.
+                 	<br/><br/>
+             		<button class="button" data-close>OK</button>
+             	</p> 
+          	</div>
+       	</div>
+   	</div>
+    <div class="tiny reveal" id="emailWontSendModal" data-reveal data-close-on-esc="false" data-close-on-click="false">
+        <h3 class="text-center">Email Will Not Send</h3>
+        <div class="row">
+            <div class="medium-12 columns">
+                <p class="text-center no-margin">
+                </p> 
+            </div>
+            <div class="medium-12 columns text-center">
+                <br/>
+                <button class="button" id="continueWithoutEmail">Yes</button>
+                <button class="button" data-close>Cancel</button>
+            </div>
+        </div>
+    </div>
+    <div id="unsubscribedStatus" class="is-hidden"><?php echo $unsubscribed;  ?></div>
+    <div id="noEmailRequiredStatus" class="is-hidden"><?php echo $noEmailRequired;  ?></div>
+   	<input id="companyID" type="hidden" name="companyID" value="<?php echo $companyID;  ?>" />
+	<input id="projectID" type="hidden" name="projectID" value="<?php echo $projectID;  ?>" />
+	<input id="evaluationID" type="hidden" name="evaluationID" value="<?php echo $evaluationID;  ?>" />
+	<input id="currentDate" type="hidden" name="currentDate" value="2016-04-11" />
+	<?php  include_once 'setup-modal.html'  ?>
+	<?php  include_once 'footer.html'  ?> 
+    
+
+<script src="js/foundation.min.js"></script>
+    <script>
+      $(document).foundation();
+    </script>
+    <script type="text/javascript" src="js/jquery.mask.min.js"></script>
+    <script type="text/javascript">
+	$(function() {
+   		$('.phone').mask('(000) 000-0000');
+   		$('.number').mask('00000000000');
+	});
+</script>
+  </body>
+</html>

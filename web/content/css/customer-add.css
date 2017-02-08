@@ -1,0 +1,91 @@
+.locationData {
+    font-size: 80%;
+    display: none;
+}
+
+#scheduledStartDate, #scheduledEndDate, #scheduledStartTime, #scheduledEndTime  {
+    background-color: #fefefe;
+    cursor: default;
+}
+
+.ui-menu-item {
+    color: #0a0a0a;
+    background-color: #fefefe;
+    font-size: 1rem;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+}
+
+.ui-selectmenu-menu {
+	padding: 0;
+	margin: 0;
+	position: absolute;
+	top: 0;
+	left: 0;
+	display: none;
+}
+.ui-selectmenu-menu .ui-menu {
+	overflow: auto;
+	overflow-x: hidden;
+	padding-bottom: 1px;
+}
+.ui-selectmenu-menu .ui-menu .ui-selectmenu-optgroup {
+	font-size: 1em;
+	font-weight: bold;
+	line-height: 1.5;
+	padding: 2px 0.4em;
+	margin: 0.5em 0 0 0;
+	height: auto;
+	border: 0;
+}
+.ui-selectmenu-open {
+    color: #0a0a0a;
+    background-color: #fefefe;
+    font-size: 1rem;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+	display: block;
+}
+.ui-selectmenu-text {
+    color: #0a0a0a;
+    background-color: #fefefe;
+    font-size: 1rem;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+}
+.ui-selectmenu-button.ui-button {
+	text-align: left;
+	white-space: nowrap;
+	width: 14em;
+    border-radius: 5px;
+    height: 2.4375rem;
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #cacaca;
+    box-shadow: inset 0 1px 2px rgba(10, 10, 10, 0.1);
+
+}
+.ui-selectmenu-icon.ui-icon {
+	float: right;
+	margin-top: 0;
+}
+
+.overflow {
+	height: 150px;
+}
+
+.ui-state-active, .ui-widget-content .ui-state-active, .ui-widget-header .ui-state-active {
+	background: #2089cb !important;
+	color: #fff !important;
+	border-radius: 5px !important;
+}
+
+.ui-menu-item-wrapper {
+    padding-top: 2px;
+    padding-left: 5px;
+}
+
+.subsource {
+    font-weight: bolder;
+}
+

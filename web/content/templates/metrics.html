@@ -1,0 +1,372 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Foundation Accelerator</title>
+    <link rel="stylesheet" href="css/foundation.css" />
+    <link rel="stylesheet" href="css/custom.css" />
+    <link rel="stylesheet" href="css/metrics.css" />
+    <link rel="stylesheet" href="css/motion-ui.css" />
+    <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+    <link href='css/fullcalendar.css' rel='stylesheet' />
+    <link href='css/scheduler.css' rel='stylesheet' />
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
+    <script src="js/jquery.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+    <script src='js/moment.min.js'></script>
+    <script src='js/fullcalendar.min.js'></script>
+    <script src='js/scheduler.min.js'></script>
+    <script src='js/jquery.tablesorter.min.js'></script>
+    <script src='js/chart.js'></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src='js/setup-progress.js'></script>
+    <script src='js/zen.js'></script>
+
+    <script>
+        var loadChart;
+        $(document).ready(function () {
+            $( document ).tooltip();
+            userInfo = {
+                name: "<?php echo $userFirstName;  ?>" + " <?php echo $userLastName;  ?>",
+                email: "<?php echo $userEmail;  ?>"
+            }
+
+            loadChart = new ChartSet();
+             $('input[required], select[required]').change(function(){
+                if ($(this).val() == ''){
+                    $(this).parent().addClass('is-invalid-label');
+                    $(this).addClass('is-invalid-input');
+                    $(this).parent().find('.form-error').addClass('is-visible');
+                } else {
+                    $(this).parent().removeClass('is-invalid-label');
+                    $(this).removeClass('is-invalid-input');
+                    $(this).parent().find('.form-error').removeClass('is-visible');
+                }
+            });
+            $('select[name="reportType"]').change(function(){ 
+               if ($('select[name="reportType"]').val() == 'OpenBidsPerSalesman') {
+                    $('input[name="dateFrom"]').parent().parent().hide();
+                    $('input[name="dateTo"]').parent().parent().hide();
+               } else {
+                    $('input[name="dateFrom"]').parent().parent().show();
+                    $('input[name="dateTo"]').parent().parent().show();
+               }
+            });
+            $('#runReport').click(runReport);
+           $(function () {
+                $(".datepickerFrom").datepicker({
+                    defaultDate: "+1w",
+                    changeMonth: true,
+                    numberOfMonths: 1,
+                    onClose: function (selectedDate) {
+                        $(".datepickerTo").datepicker("option", "minDate", selectedDate);
+                    }
+                });
+                $(".datepickerTo").datepicker({
+                    defaultDate: "+1w",
+                    changeMonth: true,
+                    numberOfMonths: 1,
+                    onClose: function (selectedDate) {
+                        $(".datepickerFrom").datepicker("option", "maxDate", selectedDate);
+                    }
+                });
+            });
+
+           //Show Setup Modal if Clicked in Top Nav
+            $('#showSetup').click(showSetupModal);
+
+            //Show Setup Modal On Page Load if it Hasn't Been Viewed Since Yesterday
+            showSetupModal('true');
+
+            //Update Last Viewed When Modal Opens
+            $('#setupModal').on('open.zf.reveal', function() {
+                $.ajax({
+                    url: 'setupProgressUpdate.php',
+                    dataType: "json",
+                    contentType: 'application/json',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    data: {
+                        updateSetupNotice: 'true'
+                    },
+                    success: function (response) {
+                        //console.log(response);
+                        // if (response == 'true') {
+                        // }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                        console.log(jqXHR.responseText);
+                    }
+                });
+
+            });
+
+            //Update Checkmarks When Clicked
+            $('img.setupProgressCheckmark').click(updateChecks);
+
+            //Stop Showing Setup Modal
+            $('#setupComplete').click(setupComplete);
+        });
+        var runReport = function() {
+            $('#marketingReport').remove();
+            $('#chart').parent().parent().css('display', '');
+            var getReport;
+            if ($('select[name="reportType"]').val() == 'OpenBidsPerSalesman') {
+                getReport = 1;
+            } else {
+                if ($('input[name="dateFrom"]').val() == '' || $('input[name="dateTo"]').val() == '') {
+                    getReport = 0;
+                    $('input[required]').each(function(){
+                        if ($(this).val() == '') {
+                            $(this).parent().addClass('is-invalid-label');
+                            $(this).addClass('is-invalid-input');
+                            $(this).parent().find('.form-error').addClass('is-visible');
+                        } else {
+                            $(this).parent().removeClass('is-invalid-label');
+                            $(this).removeClass('is-invalid-input');
+                            $(this).parent().find('.form-error').removeClass('is-visible');
+                        }
+                    });
+                }
+                 else {
+                    getReport = 1;
+                }
+            }
+            if (getReport == 1) {
+                var reportType = $('select[name="reportType"]').val();
+                //var reportRange = $('select[name="reportRange"]').val();
+                var dateFrom = $('input[name="dateFrom"]').val();
+                var dateTo = $('input[name="dateTo"]').val();
+                var chart = 'ColumnChart';
+                if (reportType != "Marketing"){
+                reportType = 'metrics.'+reportType+'.php'
+              
+                loadChart.drawChart(document.getElementById('chart'), reportType, dateFrom, dateTo, chart);
+                }
+                else{
+                    getMarketingReport();
+                }
+            }
+        };
+
+        var buildMarketingReportTableRow = function(marketingData){
+            $('#marketingReport').remove();
+            $('#chart').parent().parent().css('display', 'none');
+            $('#marketingTable').clone().attr('id', 'marketingReport').css('display', 'block').insertBefore('#marketingTable');
+            var allMarketing = marketingData.all;
+            var unsourced = marketingData.unsourced;
+            var allMarketingRow = $('#heading').clone().attr('id', 'allMarketing');
+            var unsourcedRow = $('#heading').clone().attr('id', 'unsourced');
+            var sources = marketingData.sources;
+
+            for (var key in allMarketing){
+                allMarketingRow.find('[name="' + key + '"]').text(allMarketing[key]);
+            }
+
+            $('#marketingReport tbody').append(allMarketingRow);
+
+            for (var key in unsourced){
+                unsourcedRow.find('[name="' + key + '"]').text(unsourced[key]);
+            }
+            
+            unsourcedRow.addClass('source');
+            $('#marketingReport tbody').append(unsourcedRow);
+
+            for (var source in sources){
+                var sourceRow = $('#heading').clone().attr('id', '');
+                var subsources = sources[source]['subsources'];
+                var sourceName = sources[source].leadSource;
+                sourceRow.attr('name', sourceName );
+                sourceRow.addClass('source');
+                for (var key in sources[source]){
+                    if (key != 'subsources'){
+                        sourceRow.find('[name="' + key + '"]').text(sources[source][key]);
+                    }
+                }
+                $('#marketingReport tbody').append(sourceRow);
+
+                var gray = true; //toggle this for each row to alternate the colors under a source between white and gray.
+                for (var subsource in subsources){
+                    gray = !gray;
+                    var subsourceRow = $('#heading').clone().attr('id', '');
+                    subsourceRow.addClass('subsource');
+                    subsourceRow.attr('name', subsources[subsource].leadSource);
+                    if (gray){
+                        subsourceRow.css('background-color', '#F6F7FB');
+                    }
+                    for (var key in subsources[subsource]){
+                        subsourceRow.find('[name="' + key + '"]').text(subsources[subsource][key]);
+                    }
+                    subsourceRow.find('[name="leadSource"]').addClass('subsourceName');
+                    if (subsources[subsource].unspecified){
+                        subsourceRow.find('[name="leadSource"]').append(' <img class="tip" src="images/icons/info.png" title="This is an unspecified source - ' + sourceName + ' was selected, but a source was not specified."/>');
+                        if (subsources[subsource].leads == "0"){
+                            subsourceRow = null; //remove unspecified row if there is no unspecified data.
+                        }
+                    }
+                    $('#marketingReport tbody').append(subsourceRow);
+                }
+
+            }
+            $('loading-image').hide();
+        };
+
+        var getMarketingReport = function() {
+            $('loading-image').show();
+            var dateFrom = $('input[name="dateFrom"]').val();
+            var dateTo = $('input[name="dateTo"]').val();
+            $.ajax({
+                url: 'marketing-report.php',
+                dataType: "json",
+                contentType: 'application/json',
+                type: "POST",
+                contentType: "application/x-www-form-urlencoded",
+                data: {
+                    startDate: dateFrom,
+                    endDate: dateTo
+                },
+                success: function (response) {
+                    $('loading-image').hide();
+                    buildMarketingReportTableRow(response);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                    console.log(jqXHR.responseText);
+                }
+            });
+        };
+    </script>
+</head>
+<body>
+    <?php  include_once 'header.html'  ?>
+    <div class="row expanded first-row">
+        <div class="medium-12 columns">
+            <div class="medium-12 columns">
+                <h1 class="project-title" style="margin-bottom:1rem;">Metrics</h1>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="medium-12 columns">
+            <div class="row">
+                <div class="medium-12 columns">
+                    <!-- <h4>Filter</h4> -->
+                </div>
+                <div class="medium-4 columns">
+                    <label>Report
+                        <select required name="reportType">
+                            <option></option>
+                            <!-- <option value="AvgPricePerProject">Avg Price Per Project</option> -->
+                            <option value="OpenBidsPerSalesman">Open Bids Per Salesman</option>
+                            <option value="SalesTotalPerSalesman">Sales Total Per Salesman</option>
+                            <option value="NumberOfProjectsSoldPerSalesman">Projects Sold Per Salesman</option>
+                            <option value="AvgPriceOfProjectsSold">Average Price Of Projects Sold</option>
+                            <option value="AvgPricePerProjectsBid">Average Price Per Projects Bid</option>
+                            <option value="AvgTimeFromBidToSale">Average Time From Bid To Sale</option>
+                            <option value="LeadConversion">Lead Conversion</option>
+                            <option value="Marketing">Marketing</option>
+                        </select>
+                        <small class="form-error">Report type is required.</small>
+                    </label>
+                </div>
+               <!--  <div class="medium-3 columns">
+                    <label>Range
+                        <select required name="reportRange">
+                            <option></option>
+                            <option value="custom">Custom</option>
+                        </select>
+                        <small class="form-error">Report range is required.</small>
+                    </label>
+                </div> -->
+                <div class="medium-2 columns">
+                    <label>From
+                        <input required type="text" class="datepickerFrom" name="dateFrom" value="">
+                        <small class="form-error">From date is required.</small>
+                    </label>
+                </div>
+                <div class="medium-2 columns">
+                    <label>To
+                        <input required type="text" class="datepickerTo" name="dateTo" value="">
+                        <small class="form-error">To date  is required.</small>
+                    </label>
+                </div>
+                <div class="medium-3 columns" style="padding-top: 1.6rem;">
+                    <button id="runReport" class="button">Run</button>
+                </div>
+            </div>
+        </div>
+    </div>
+     <div class="row">
+        <div class="medium-12 columns">
+            <div id="chart" style="width: 900px; height: 500px;"></div>
+        </div>
+    </div>
+    <div id="marketingTable" class="row" style="display: none; padding-bottom: 5rem;">
+<!--             <h3 class="title">Marketing Report</h3>
+            <p class="weekRange">2016-11-01 - 2016-11-30</p> -->
+            <table width="100%">
+                <tbody>
+                  <tr id="heading">
+                    <td name="leadSource">Lead Category</td>
+                    <td name="totalMarketingCosts">Total Marketing Costs</td>
+                    <td name="grossSales">Gross Sales</td>
+                    <td name="leads"style="width: 4.5%;">Leads</td>
+                    <td name="appointments" style="width: 7.5%;">Appointments</td>
+                    <td name="bids" style="width: 4%;">Bids</td>
+                    <td name="sales" style="width: 4.5%;">Sales</td>
+                    <td name="costPerLead">Cost Per Lead <img class="tip" src="images/icons/info.png" title="Cost Per Lead = Total Marketing Costs/Leads"/></td>
+                    <td name="costPerSale">Cost Per Sale <img class="tip" src="images/icons/info.png" title="Cost Per Sale = Total Marketing Costs/Sales"/></td>
+                    <td name="percentTotalMarketingCosts">% of Total Marketing Costs</td>
+                    <td name="percentTotalLeads">% of Total Leads</td>
+                    <td name="revenuePerLead">Revenue Per Lead <img class="tip" src="images/icons/info.png" title="Revenue Per Lead = Gross Sales/Leads"/></td>
+                  </tr>
+                </tbody>
+            </table>
+    </div>
+    <!-- <div class="row expanded" id="customerButtons">
+        <div class="medium-12 columns">
+            
+        </div>
+    </div> -->
+   
+    <!-- <div class="row expanded" id="existingCustomerDisplay" style="display:none;margin-bottom:4rem;">
+        <div class="medium-12 columns no-pad">
+            <table id="existingCustomersTable" cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <td>Customer</td>
+                        <td>Address</td>
+                        <td>Phone</td>
+                        <td>Email</td>
+                        <td></td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="display:none;">
+                        <td class="name"></td>
+                        <td class="address"></td>
+                        <td class="phone"></td>
+                        <td class="email"></td>
+                        <td class="link"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div> -->
+    <?php  include_once 'setup-modal.html'  ?>
+    <?php  include_once 'footer.html'  ?>
+
+
+
+    <script src="js/foundation.min.js"></script>
+    <script>
+        $(document).foundation();
+    </script>
+    <script type="text/javascript" src="js/jquery.mask.min.js"></script>
+    
+</body>
+</html>
